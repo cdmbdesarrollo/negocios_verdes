@@ -25,6 +25,8 @@ class SubcategoriaService {
     required String nombre,
     required String slug,
     String? icono,
+    String? iconoUrl,
+    String? iconoPath,
     int orden = 0,
   }) async {
     try {
@@ -33,6 +35,8 @@ class SubcategoriaService {
         'nombre': nombre,
         'slug': slug,
         'icono': icono,
+        'icono_url': iconoUrl,
+        'icono_path': iconoPath,
         'orden': orden,
       });
     } catch (e) {
@@ -46,6 +50,8 @@ class SubcategoriaService {
     required String nombre,
     required String slug,
     String? icono,
+    String? iconoUrl,
+    String? iconoPath,
     int orden = 0,
   }) async {
     try {
@@ -54,6 +60,8 @@ class SubcategoriaService {
         'nombre': nombre,
         'slug': slug,
         'icono': icono,
+        'icono_url': iconoUrl,
+        'icono_path': iconoPath,
         'orden': orden,
       }).eq('id', id);
     } catch (e) {

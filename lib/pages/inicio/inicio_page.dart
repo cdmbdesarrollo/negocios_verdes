@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../catalogos.dart';
 import '../../core/seo_tags.dart';
 import '../../core/widgets/chip_filtro.dart';
+import '../../core/widgets/icono_etiqueta.dart';
 import '../../core/widgets/logo_negocios_verdes.dart';
 import '../../core/widgets/pie_pagina.dart';
 import '../../core/widgets/section_header.dart';
@@ -158,7 +159,7 @@ class _InicioPageState extends State<InicioPage> {
           subtitulo: 'Agrosistemas, ecoturismo, apicultura, energías '
               'renovables y más.',
           icono: Icons.category_outlined,
-          fondo: const LinearGradient(colors: [NVColors.exito, NVColors.primary]),
+          fondo: NVColors.gradientOscuro,
           textoBoton: 'Ver categorías',
           onTap: () => _irA(const {}),
         ),
@@ -167,8 +168,7 @@ class _InicioPageState extends State<InicioPage> {
           subtitulo: 'Bucaramanga, Floridablanca, Girón, Piedecuesta y 9 '
               'municipios más de la jurisdicción CDMB.',
           icono: Icons.map_outlined,
-          fondo:
-              const LinearGradient(colors: [NVColors.primaryDark, NVColors.exito]),
+          fondo: NVColors.gradientDuo,
           textoBoton: 'Buscar por municipio',
           onTap: () => context.go('/buscar'),
         ),
@@ -192,55 +192,71 @@ class _InicioPageState extends State<InicioPage> {
     );
   }
 
+  /// Antes esta franja era verde sólido justo debajo del slider (también
+  /// verde) — dos bloques de marca apilados sin ningún respiro, la causa
+  /// principal de la sensación de "pared verde" que se reportó. Ahora es
+  /// clara (se funde con el fondo de la página), un quiebre visual real en
+  /// vez de una franja de color más. Antes esta sección flotaba con
+  /// Transform.translate encima del borde del slider para dar sensación de
+  /// tarjeta — con banners reales (imagen de borde a borde, a veces con
+  /// texto propio cerca del borde inferior) terminaba tapando el banner en
+  /// vez de solo el borde, así que ya no se solapa: queda debajo del
+  /// slider, en flujo normal.
   Widget _buscadorPersistente(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: NVColors.primaryDark,
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+      color: NVColors.fondo,
+      padding: const EdgeInsets.fromLTRB(20, 28, 20, 36),
       child: Column(
         children: [
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Material(
+                elevation: 4,
+                shadowColor: Colors.black.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(30),
+                child: TextField(
+                  controller: _busquedaCtrl,
+                  onSubmitted: _buscar,
+                  decoration: InputDecoration(
+                    hintText: 'Busca por nombre, categoría o municipio...',
+                    prefixIcon:
+                        const Icon(Icons.search, color: NVColors.primary),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.arrow_forward),
+                      color: NVColors.primaryDark,
+                      onPressed: () => _buscar(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const LogoNegociosVerdes(altura: 26),
-              const SizedBox(width: 8),
+              const LogoNegociosVerdes(altura: 36),
+              const SizedBox(width: 10),
               const Flexible(
                 child: Text(
                   'Negocios Verdes CDMB',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
+                    color: NVColors.textoPrincipal,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 16),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: Material(
-              borderRadius: BorderRadius.circular(30),
-              child: TextField(
-                controller: _busquedaCtrl,
-                onSubmitted: _buscar,
-                decoration: InputDecoration(
-                  hintText: 'Busca por nombre, categoría o municipio...',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.arrow_forward),
-                    onPressed: () => _buscar(),
-                  ),
-                ),
-              ),
-            ),
           ),
         ],
       ),
@@ -269,32 +285,46 @@ class _InicioPageState extends State<InicioPage> {
   }
 
   Widget _tarjetaCategoria(BuildContext context, CategoriaOficial categoria) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: () => _irA({'categoria': categoria.slug}),
-      child: Container(
-        width: 132,
-        height: 104,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: NVColors.primaryLight,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(categoria.iconoOTexto, style: const TextStyle(fontSize: 20)),
-            const SizedBox(height: 6),
-            Expanded(
-              child: Text(
-                categoria.nombre,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style:
-                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 11),
+    return Material(
+      color: NVColors.primaryLight,
+      elevation: 1,
+      shadowColor: Colors.black.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(14),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _irA({'categoria': categoria.slug}),
+        child: Container(
+          width: 132,
+          height: 124,
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              IconoEtiqueta(
+                  iconoUrl: categoria.iconoUrl,
+                  iconoTexto: categoria.iconoOTexto,
+                  tamano: 22),
+              const SizedBox(height: 6),
+              Expanded(
+                child: Text(
+                  categoria.nombre,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  // height (interlineado) explícito: Work Sans no tiene el
+                  // mismo alto de línea por defecto que el Roboto que se
+                  // usaba antes de agregar la tipografía de marca — con la
+                  // altura fija de la tarjeta, esa diferencia bastaba para
+                  // que la 3ra línea de nombres largos ("Aprovechamiento y
+                  // Valorización de Residuos") quedara cortada en vez de
+                  // recortada con puntos suspensivos.
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                      height: 1.2),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -306,10 +336,7 @@ class _InicioPageState extends State<InicioPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader(
-            titulo: 'Buscar por subcategoría',
-            subtitulo: 'Ej. Apicultura, Ecoturismo de aventura, Reciclaje...',
-          ),
+          const SectionHeader(titulo: 'Buscar por subcategoría'),
           const SizedBox(height: 16),
           Wrap(
             spacing: 8,

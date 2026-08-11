@@ -23,6 +23,7 @@ class LogoNegociosVerdes extends StatelessWidget {
           return CachedNetworkImage(
             imageUrl: url,
             height: altura,
+            filterQuality: FilterQuality.high,
             errorWidget: (context, url, error) => _logoPorDefecto(),
           );
         }
@@ -35,6 +36,7 @@ class LogoNegociosVerdes extends StatelessWidget {
     return Image.asset(
       'assets/images/logo.png',
       height: altura,
+      filterQuality: FilterQuality.high,
       errorBuilder: (context, error, stackTrace) => Text(
         '🌱',
         style: TextStyle(fontSize: altura * 0.75),

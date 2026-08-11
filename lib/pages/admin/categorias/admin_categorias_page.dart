@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../../../core/admin_guard.dart';
 import '../../../core/texto_utils.dart';
+import '../../../core/widgets/icono_etiqueta.dart';
 import '../../../core/widgets/nv_card.dart';
+import '../../../core/widgets/selector_icono_imagen.dart';
 import '../../../models/categoria_oficial.dart';
 import '../../../services/categoria_service.dart';
+import '../../../services/storage_service.dart';
 import '../../../theme/nv_colors.dart';
 
 class AdminCategoriasPage extends StatefulWidget {
@@ -116,7 +119,8 @@ class _AdminCategoriasPageState extends State<AdminCategoriasPage> {
         return NVCard(
           child: Row(
             children: [
-              Text(c.iconoOTexto, style: const TextStyle(fontSize: 24)),
+              IconoEtiqueta(
+                  iconoUrl: c.iconoUrl, iconoTexto: c.iconoOTexto, tamano: 26),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -162,6 +166,7 @@ class _DialogoCategoria extends StatefulWidget {
 class _DialogoCategoriaState extends State<_DialogoCategoria> {
   final _formKey = GlobalKey<FormState>();
   final _service = CategoriaService();
+  final _storage = StorageService();
   late final TextEditingController _nombreCtrl;
   late final TextEditingController _slugCtrl;
   late final TextEditingController _descripcionCtrl;
@@ -169,6 +174,12 @@ class _DialogoCategoriaState extends State<_DialogoCategoria> {
   late final TextEditingController _categoriaNacionalCtrl;
   bool _slugEditadoManualmente = false;
   bool _guardando = false;
+
+  // Ícono de imagen: arranca con lo que ya tenía la categoría (si existe) y
+  // se reemplaza al subir uno nuevo o al quitarlo — ver _guardar() para el
+  // borrado del archivo anterior en Storage cuando cambia.
+  String? _iconoUrl;
+  String? _iconoPath;
 
   @override
   void initState() {
@@ -181,6 +192,8 @@ class _DialogoCategoriaState extends State<_DialogoCategoria> {
     _categoriaNacionalCtrl =
         TextEditingController(text: c?.categoriaNacional ?? '');
     _slugEditadoManualmente = c != null;
+    _iconoUrl = c?.iconoUrl;
+    _iconoPath = c?.iconoPath;
   }
 
   @override
@@ -203,6 +216,7 @@ class _DialogoCategoriaState extends State<_DialogoCategoria> {
       final descripcion = _descripcionCtrl.text.trim();
       final icono = _iconoCtrl.text.trim();
       final categoriaNacional = _categoriaNacionalCtrl.text.trim();
+      final pathAnterior = widget.categoria?.iconoPath;
 
       if (widget.categoria == null) {
         await _service.crear(
@@ -210,6 +224,8 @@ class _DialogoCategoriaState extends State<_DialogoCategoria> {
           slug: slug,
           descripcion: descripcion.isEmpty ? null : descripcion,
           icono: icono.isEmpty ? null : icono,
+          iconoUrl: _iconoUrl,
+          iconoPath: _iconoPath,
           categoriaNacional:
               categoriaNacional.isEmpty ? null : categoriaNacional,
         );
@@ -220,10 +236,21 @@ class _DialogoCategoriaState extends State<_DialogoCategoria> {
           slug: slug,
           descripcion: descripcion.isEmpty ? null : descripcion,
           icono: icono.isEmpty ? null : icono,
+          iconoUrl: _iconoUrl,
+          iconoPath: _iconoPath,
           categoriaNacional:
               categoriaNacional.isEmpty ? null : categoriaNacional,
           orden: widget.categoria!.orden,
         );
+      }
+      if (pathAnterior != null &&
+          pathAnterior.isNotEmpty &&
+          pathAnterior != _iconoPath) {
+        // No bloquear el guardado por esto — mismo criterio que el resto
+        // de los slots de imagen del sitio (apariencia, banners).
+        _storage
+            .eliminarImagen(bucket: kBucketSitioAssets, path: pathAnterior)
+            .catchError((_) {});
       }
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
@@ -271,8 +298,19 @@ class _DialogoCategoriaState extends State<_DialogoCategoria> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _iconoCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'Ícono (un emoji, ej. 🌱)'),
+                decoration: const InputDecoration(
+                  labelText: 'Ícono (un emoji, ej. 🌱)',
+                  helperText: 'Se usa si no subes una imagen abajo.',
+                ),
+              ),
+              const SizedBox(height: 12),
+              SelectorIconoImagen(
+                carpeta: 'categorias-iconos',
+                iconoUrlInicial: _iconoUrl,
+                onCambio: (subida) => setState(() {
+                  _iconoUrl = subida?.url;
+                  _iconoPath = subida?.path;
+                }),
               ),
               const SizedBox(height: 12),
               TextFormField(

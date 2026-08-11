@@ -41,6 +41,7 @@ dependencies:
   # lo reescribe como "flutter_web_plugins: any" rompe flutter pub get.
   flutter_web_plugins:
     sdk: flutter
+  google_fonts: ^8.2.1
 
 dev_dependencies:
   flutter_test:

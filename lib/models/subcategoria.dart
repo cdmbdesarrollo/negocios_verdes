@@ -4,6 +4,8 @@ class Subcategoria {
   final String nombre;
   final String slug;
   final String? icono;
+  final String? iconoUrl;
+  final String? iconoPath;
   final int orden;
   final bool activo;
 
@@ -13,6 +15,8 @@ class Subcategoria {
     required this.nombre,
     required this.slug,
     this.icono,
+    this.iconoUrl,
+    this.iconoPath,
     this.orden = 0,
     this.activo = true,
   });
@@ -24,6 +28,8 @@ class Subcategoria {
       nombre: json['nombre']?.toString() ?? '',
       slug: json['slug']?.toString() ?? '',
       icono: json['icono']?.toString(),
+      iconoUrl: json['icono_url']?.toString(),
+      iconoPath: json['icono_path']?.toString(),
       orden: (json['orden'] as num?)?.toInt() ?? 0,
       activo: json['activo'] as bool? ?? true,
     );

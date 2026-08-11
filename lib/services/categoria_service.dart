@@ -26,6 +26,8 @@ class CategoriaService {
     required String slug,
     String? descripcion,
     String? icono,
+    String? iconoUrl,
+    String? iconoPath,
     String? categoriaNacional,
     int orden = 0,
   }) async {
@@ -35,6 +37,8 @@ class CategoriaService {
         'slug': slug,
         'descripcion': descripcion,
         'icono': icono,
+        'icono_url': iconoUrl,
+        'icono_path': iconoPath,
         'categoria_nacional': categoriaNacional,
         'orden': orden,
       });
@@ -49,6 +53,8 @@ class CategoriaService {
     required String slug,
     String? descripcion,
     String? icono,
+    String? iconoUrl,
+    String? iconoPath,
     String? categoriaNacional,
     int orden = 0,
   }) async {
@@ -58,6 +64,8 @@ class CategoriaService {
         'slug': slug,
         'descripcion': descripcion,
         'icono': icono,
+        'icono_url': iconoUrl,
+        'icono_path': iconoPath,
         'categoria_nacional': categoriaNacional,
         'orden': orden,
       }).eq('id', id);

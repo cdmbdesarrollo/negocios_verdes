@@ -4,6 +4,8 @@ class CategoriaOficial {
   final String slug;
   final String? descripcion;
   final String? icono;
+  final String? iconoUrl;
+  final String? iconoPath;
   final String? categoriaNacional;
   final int orden;
   final bool activo;
@@ -14,6 +16,8 @@ class CategoriaOficial {
     required this.slug,
     this.descripcion,
     this.icono,
+    this.iconoUrl,
+    this.iconoPath,
     this.categoriaNacional,
     this.orden = 0,
     this.activo = true,
@@ -26,6 +30,8 @@ class CategoriaOficial {
       slug: json['slug']?.toString() ?? '',
       descripcion: json['descripcion']?.toString(),
       icono: json['icono']?.toString(),
+      iconoUrl: json['icono_url']?.toString(),
+      iconoPath: json['icono_path']?.toString(),
       categoriaNacional: json['categoria_nacional']?.toString(),
       orden: (json['orden'] as num?)?.toInt() ?? 0,
       activo: json['activo'] as bool? ?? true,

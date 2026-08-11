@@ -142,41 +142,38 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                ChipFiltro(
-                  etiqueta: 'Todos',
-                  seleccionado: _filtroActivo == null,
-                  onTap: () => setState(() => _filtroActivo = null),
-                ),
-                const SizedBox(width: 8),
-                ChipFiltro(
-                  etiqueta: 'Publicados',
-                  seleccionado: _filtroActivo == true,
-                  onTap: () => setState(() => _filtroActivo = true),
-                ),
-                const SizedBox(width: 8),
-                ChipFiltro(
-                  etiqueta: 'Ocultos',
-                  seleccionado: _filtroActivo == false,
-                  onTap: () => setState(() => _filtroActivo = false),
-                ),
-                const SizedBox(width: 16),
-                DropdownButton<String?>(
-                  value: _filtroMunicipio,
-                  hint: const Text('Municipio'),
-                  items: [
-                    const DropdownMenuItem(
-                        value: null, child: Text('Todos los municipios')),
-                    for (final m in kMunicipios)
-                      DropdownMenuItem(value: m, child: Text(m)),
-                  ],
-                  onChanged: (v) => setState(() => _filtroMunicipio = v),
-                ),
-              ],
-            ),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              ChipFiltro(
+                etiqueta: 'Todos',
+                seleccionado: _filtroActivo == null,
+                onTap: () => setState(() => _filtroActivo = null),
+              ),
+              ChipFiltro(
+                etiqueta: 'Publicados',
+                seleccionado: _filtroActivo == true,
+                onTap: () => setState(() => _filtroActivo = true),
+              ),
+              ChipFiltro(
+                etiqueta: 'Ocultos',
+                seleccionado: _filtroActivo == false,
+                onTap: () => setState(() => _filtroActivo = false),
+              ),
+              DropdownButton<String?>(
+                value: _filtroMunicipio,
+                hint: const Text('Municipio'),
+                items: [
+                  const DropdownMenuItem(
+                      value: null, child: Text('Todos los municipios')),
+                  for (final m in kMunicipios)
+                    DropdownMenuItem(value: m, child: Text(m)),
+                ],
+                onChanged: (v) => setState(() => _filtroMunicipio = v),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 8),

@@ -3,12 +3,16 @@ class ConfiguracionSitio {
   final String? logoPath;
 
   /// Sellos institucionales del pie de página — Negocios Verdes es un
-  /// micrositio de la Sede Electrónica de la CDMB, que muestra estos dos
-  /// sellos en la franja verde inferior de su footer.
+  /// micrositio de la Sede Electrónica de la CDMB. GOV.CO y Colombia son
+  /// los que trae esa página en su franja azul inferior; el de "Colombia
+  /// Potencia de la Vida" es la marca país vigente, va justo a la derecha
+  /// del sello de Colombia.
   final String? logoGovcoUrl;
   final String? logoGovcoPath;
   final String? logoColombiaUrl;
   final String? logoColombiaPath;
+  final String? logoPotenciaUrl;
+  final String? logoPotenciaPath;
 
   const ConfiguracionSitio({
     this.logoUrl,
@@ -17,6 +21,8 @@ class ConfiguracionSitio {
     this.logoGovcoPath,
     this.logoColombiaUrl,
     this.logoColombiaPath,
+    this.logoPotenciaUrl,
+    this.logoPotenciaPath,
   });
 
   factory ConfiguracionSitio.fromJson(Map<String, dynamic> json) {
@@ -27,6 +33,8 @@ class ConfiguracionSitio {
       logoGovcoPath: json['logo_govco_path']?.toString(),
       logoColombiaUrl: json['logo_colombia_url']?.toString(),
       logoColombiaPath: json['logo_colombia_path']?.toString(),
+      logoPotenciaUrl: json['logo_potencia_url']?.toString(),
+      logoPotenciaPath: json['logo_potencia_path']?.toString(),
     );
   }
 
@@ -37,6 +45,8 @@ class ConfiguracionSitio {
     String? logoGovcoPath,
     String? logoColombiaUrl,
     String? logoColombiaPath,
+    String? logoPotenciaUrl,
+    String? logoPotenciaPath,
   }) {
     return ConfiguracionSitio(
       logoUrl: logoUrl ?? this.logoUrl,
@@ -45,6 +55,8 @@ class ConfiguracionSitio {
       logoGovcoPath: logoGovcoPath ?? this.logoGovcoPath,
       logoColombiaUrl: logoColombiaUrl ?? this.logoColombiaUrl,
       logoColombiaPath: logoColombiaPath ?? this.logoColombiaPath,
+      logoPotenciaUrl: logoPotenciaUrl ?? this.logoPotenciaUrl,
+      logoPotenciaPath: logoPotenciaPath ?? this.logoPotenciaPath,
     );
   }
 }

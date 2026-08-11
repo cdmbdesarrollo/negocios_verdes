@@ -30,10 +30,10 @@ const List<EnlaceNav> enlacesNavPublicos = [
 ///
 /// Estructura calcada de la Sede Electrónica de la CDMB
 /// (micolombiadigital.gov.co) de la que este sitio es micrositio: franja
-/// azul GOV.CO arriba, header blanco con logo+nombre, barra de navegación
-/// con el ítem activo resaltado en verde institucional, línea verde
-/// divisoria. No se replican los datos de contacto/redes del footer de esa
-/// página porque ya viven (honestos, sin inventar) en /contacto.
+/// azul GOV.CO arriba, header blanco con logo+nombre+buscador, barra de
+/// navegación con el ítem activo resaltado en verde institucional, línea
+/// verde divisoria. Los datos de contacto/redes sí se replican (mismos de
+/// la Sede Electrónica) en PiePagina y en /contacto — ver catalogos.dart.
 class SiteShell extends StatefulWidget {
   final Widget child;
 
@@ -102,6 +102,11 @@ class _SiteShellState extends State<SiteShell> {
                     ],
                   ),
                 ),
+              ),
+              IconButton(
+                tooltip: 'Buscar',
+                icon: const Icon(Icons.search, color: NVColors.textoPrincipal),
+                onPressed: () => context.go('/buscar'),
               ),
               if (!ancha)
                 IconButton(
@@ -175,6 +180,7 @@ class _FranjaGovCo extends StatelessWidget {
         return Container(
           width: double.infinity,
           color: NVColors.govCoAzul,
+          alignment: Alignment.centerLeft,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: CachedNetworkImage(imageUrl: url, height: 20),
         );

@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import '../../../core/admin_guard.dart';
 import '../../../core/texto_utils.dart';
 import '../../../core/widgets/chip_filtro.dart';
+import '../../../core/widgets/icono_etiqueta.dart';
 import '../../../core/widgets/nv_card.dart';
+import '../../../core/widgets/selector_icono_imagen.dart';
 import '../../../models/categoria_oficial.dart';
 import '../../../models/subcategoria.dart';
 import '../../../services/categoria_service.dart';
+import '../../../services/storage_service.dart';
 import '../../../services/subcategoria_service.dart';
 import '../../../theme/nv_colors.dart';
 
@@ -148,27 +151,23 @@ class _AdminSubcategoriasPageState extends State<AdminSubcategoriasPage> {
         if (_categorias.isNotEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ChipFiltro(
+                  etiqueta: 'Todas',
+                  seleccionado: _filtroCategoriaId == null,
+                  onTap: () => setState(() => _filtroCategoriaId = null),
+                ),
+                for (final c in _categorias)
                   ChipFiltro(
-                    etiqueta: 'Todas',
-                    seleccionado: _filtroCategoriaId == null,
-                    onTap: () => setState(() => _filtroCategoriaId = null),
+                    etiqueta: c.nombre,
+                    icono: c.icono,
+                    seleccionado: _filtroCategoriaId == c.id,
+                    onTap: () => setState(() => _filtroCategoriaId = c.id),
                   ),
-                  const SizedBox(width: 8),
-                  for (final c in _categorias) ...[
-                    ChipFiltro(
-                      etiqueta: c.nombre,
-                      icono: c.icono,
-                      seleccionado: _filtroCategoriaId == c.id,
-                      onTap: () => setState(() => _filtroCategoriaId = c.id),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                ],
-              ),
+              ],
             ),
           ),
         Expanded(
@@ -183,8 +182,10 @@ class _AdminSubcategoriasPageState extends State<AdminSubcategoriasPage> {
                     return NVCard(
                       child: Row(
                         children: [
-                          Text(s.iconoOTexto,
-                              style: const TextStyle(fontSize: 22)),
+                          IconoEtiqueta(
+                              iconoUrl: s.iconoUrl,
+                              iconoTexto: s.iconoOTexto,
+                              tamano: 24),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -242,12 +243,16 @@ class _DialogoSubcategoria extends StatefulWidget {
 class _DialogoSubcategoriaState extends State<_DialogoSubcategoria> {
   final _formKey = GlobalKey<FormState>();
   final _service = SubcategoriaService();
+  final _storage = StorageService();
   late final TextEditingController _nombreCtrl;
   late final TextEditingController _slugCtrl;
   late final TextEditingController _iconoCtrl;
   String? _categoriaId;
   bool _slugEditadoManualmente = false;
   bool _guardando = false;
+
+  String? _iconoUrl;
+  String? _iconoPath;
 
   @override
   void initState() {
@@ -260,6 +265,8 @@ class _DialogoSubcategoriaState extends State<_DialogoSubcategoria> {
         widget.categoriaInicialId ??
         widget.categorias.first.id;
     _slugEditadoManualmente = s != null;
+    _iconoUrl = s?.iconoUrl;
+    _iconoPath = s?.iconoPath;
   }
 
   @override
@@ -279,6 +286,7 @@ class _DialogoSubcategoriaState extends State<_DialogoSubcategoria> {
           ? generarSlug(_nombreCtrl.text)
           : generarSlug(_slugCtrl.text.trim());
       final icono = _iconoCtrl.text.trim();
+      final pathAnterior = widget.subcategoria?.iconoPath;
 
       if (widget.subcategoria == null) {
         await _service.crear(
@@ -286,6 +294,8 @@ class _DialogoSubcategoriaState extends State<_DialogoSubcategoria> {
           nombre: _nombreCtrl.text.trim(),
           slug: slug,
           icono: icono.isEmpty ? null : icono,
+          iconoUrl: _iconoUrl,
+          iconoPath: _iconoPath,
         );
       } else {
         await _service.actualizar(
@@ -294,8 +304,17 @@ class _DialogoSubcategoriaState extends State<_DialogoSubcategoria> {
           nombre: _nombreCtrl.text.trim(),
           slug: slug,
           icono: icono.isEmpty ? null : icono,
+          iconoUrl: _iconoUrl,
+          iconoPath: _iconoPath,
           orden: widget.subcategoria!.orden,
         );
+      }
+      if (pathAnterior != null &&
+          pathAnterior.isNotEmpty &&
+          pathAnterior != _iconoPath) {
+        _storage
+            .eliminarImagen(bucket: kBucketSitioAssets, path: pathAnterior)
+            .catchError((_) {});
       }
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
@@ -361,8 +380,19 @@ class _DialogoSubcategoriaState extends State<_DialogoSubcategoria> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _iconoCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'Ícono (un emoji, ej. 🐝)'),
+                decoration: const InputDecoration(
+                  labelText: 'Ícono (un emoji, ej. 🐝)',
+                  helperText: 'Se usa si no subes una imagen abajo.',
+                ),
+              ),
+              const SizedBox(height: 12),
+              SelectorIconoImagen(
+                carpeta: 'subcategorias-iconos',
+                iconoUrlInicial: _iconoUrl,
+                onCambio: (subida) => setState(() {
+                  _iconoUrl = subida?.url;
+                  _iconoPath = subida?.path;
+                }),
               ),
             ],
           ),

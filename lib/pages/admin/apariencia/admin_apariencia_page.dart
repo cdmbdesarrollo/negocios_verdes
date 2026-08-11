@@ -170,8 +170,14 @@ class _AdminAparienciaPageState extends State<AdminAparienciaPage> {
     if (confirmar != true) return;
     try {
       await _bannerService.eliminar(banner.id);
-      await _storage.eliminarImagen(
-          bucket: kBucketSitioAssets, path: banner.imagenPath);
+      // No bloquear la UI por esto (mismo motivo que en _cambiarImagen): si
+      // falla el borrado en Storage después de que el registro ya se borró
+      // de la base de datos, antes esto se reportaba como si el borrado
+      // completo hubiera fallado y la lista no se refrescaba, aunque el
+      // banner ya no existiera — parecía "no me deja borrar" sin serlo.
+      _storage
+          .eliminarImagen(bucket: kBucketSitioAssets, path: banner.imagenPath)
+          .catchError((_) {});
       _cargar();
     } catch (e) {
       _avisar(e.toString().replaceFirst('Exception: ', ''));
@@ -227,6 +233,12 @@ class _AdminAparienciaPageState extends State<AdminAparienciaPage> {
                 url: _configuracion?.logoColombiaUrl,
                 etiqueta: 'Sello Colombia',
                 ayuda: 'Pie de página, junto al sello GOV.CO.',
+              ),
+              _filaImagen(
+                slot: _SlotImagenConfig.potencia,
+                url: _configuracion?.logoPotenciaUrl,
+                etiqueta: 'Sello Colombia Potencia de la Vida',
+                ayuda: 'Pie de página, a la derecha del sello de Colombia.',
               ),
               _filaImagen(
                 slot: _SlotImagenConfig.govco,
@@ -460,6 +472,15 @@ class _SlotImagenConfig {
     guardar: (s, url, path) => s.actualizarLogoColombia(url: url, path: path),
     aplicar: (c, url, path) =>
         c.copyWith(logoColombiaUrl: url, logoColombiaPath: path),
+  );
+
+  static final potencia = _SlotImagenConfig(
+    nombre: 'Sello de Colombia Potencia de la Vida',
+    carpeta: 'sello-potencia',
+    pathActual: (c) => c?.logoPotenciaPath,
+    guardar: (s, url, path) => s.actualizarLogoPotencia(url: url, path: path),
+    aplicar: (c, url, path) =>
+        c.copyWith(logoPotenciaUrl: url, logoPotenciaPath: path),
   );
 }
 

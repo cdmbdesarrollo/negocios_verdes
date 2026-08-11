@@ -19,24 +19,23 @@ class NVCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderRadius = BorderRadius.circular(16);
-    final contenido = Container(
-      padding: padding,
-      decoration: BoxDecoration(
-        color: NVColors.superficie,
-        border: Border.all(color: NVColors.borde),
-        borderRadius: borderRadius,
-      ),
-      child: child,
-    );
-
-    if (onTap == null) return contenido;
-
+    // Antes era un Container con solo borde (sin sombra) — se veía plano.
+    // Material con elevation dibuja sombra real por fuera del borde sin
+    // que el clip del InkWell se la coma, y sigue funcionando igual si
+    // onTap es null (el InkWell simplemente no responde al toque).
     return Material(
-      color: Colors.transparent,
-      borderRadius: borderRadius,
+      color: NVColors.superficie,
+      elevation: 2,
+      shadowColor: Colors.black.withValues(alpha: 0.14),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: NVColors.borde),
+      ),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(onTap: onTap, child: contenido),
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(padding: padding, child: child),
+      ),
     );
   }
 }

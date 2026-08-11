@@ -52,14 +52,30 @@ Future<void> main() async {
     return true;
   };
   ErrorWidget.builder = (details) {
-    return const Material(
-      color: Color(0xFFFAF8F3),
+    // TEMPORAL: mientras se investiga el crash al borrar un banner, esta
+    // pantalla muestra el error real en vez de un mensaje genérico — así
+    // se puede copiar el texto exacto en vez de adivinar a ciegas. Volver
+    // al mensaje genérico (sin el Text de abajo) una vez esté resuelto,
+    // nunca mostrar detalles de excepción en producción de verdad.
+    return Material(
+      color: const Color(0xFFFAF8F3),
       child: Center(
         child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text(
-            'Ocurrió un error inesperado. Por favor recarga la página.',
-            textAlign: TextAlign.center,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Ocurrió un error inesperado. Por favor recarga la página.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              SelectableText(
+                details.exceptionAsString(),
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+            ],
           ),
         ),
       ),

@@ -29,3 +29,9 @@ en un Supabase nuevo:
 12. `0012_logos_footer_institucional.sql` — columnas para los sellos de
     Colombia y GOV.CO del pie de página (Negocios Verdes es un micrositio
     de la Sede Electrónica de la CDMB).
+13. `0013_sello_colombia_potencia.sql` — columna para el tercer sello del
+    pie de página, "Colombia Potencia de la Vida", a la derecha del sello
+    de Colombia.
+14. `0014_iconos_imagen_categorias.sql` — columnas para subir un ícono de
+    imagen (PNG/SVG) por categoría oficial y subcategoría, alternativa al
+    emoji de texto que ya existía.

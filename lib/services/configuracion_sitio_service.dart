@@ -29,6 +29,10 @@ class ConfiguracionSitioService {
       _actualizarPar('logo_colombia_url', url, 'logo_colombia_path', path,
           'el sello de Colombia');
 
+  Future<void> actualizarLogoPotencia({String? url, String? path}) =>
+      _actualizarPar('logo_potencia_url', url, 'logo_potencia_path', path,
+          'el sello de Colombia Potencia de la Vida');
+
   Future<void> _actualizarPar(String campoUrl, String? url, String campoPath,
       String? path, String descripcion) async {
     try {

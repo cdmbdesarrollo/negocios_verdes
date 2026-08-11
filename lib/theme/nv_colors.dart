@@ -34,6 +34,13 @@ abstract final class NVColors {
   static const Color textoSecundario = Color(0xFF5B6B60);
   static const Color borde = Color(0xFFE1E5DF);
 
+  /// Neutro oscuro (no es verde) para romper la monotonía cuando varias
+  /// piezas de marca —slider, franjas, botones— quedan apiladas y todo
+  /// terminaría leyéndose como "una pared verde". Se usa en piezas grandes
+  /// de fondo (p. ej. una diapositiva del slider), nunca en texto ni ícono
+  /// pequeño, donde [textoPrincipal] sigue siendo lo correcto.
+  static const Color neutroOscuro = Color(0xFF20272A);
+
   static const Color error = Color(0xFFC0392B);
   static const Color exito = Color(0xFF2E8B57);
   static const Color advertencia = Color(0xFFD98B2B);
@@ -50,5 +57,21 @@ abstract final class NVColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [primaryDark, primary],
+  );
+
+  /// Neutro oscuro, para diapositivas/secciones grandes que necesitan
+  /// contrastar con el verde de marca sin salirse de la paleta.
+  static const LinearGradient gradientOscuro = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [neutroOscuro, Color(0xFF37423F)],
+  );
+
+  /// Mezcla verde→ámbar, para piezas grandes donde marca y acento conviven
+  /// en la misma pieza en vez de alternarlas en piezas separadas.
+  static const LinearGradient gradientDuo = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [primaryDark, accentDark],
   );
 }
