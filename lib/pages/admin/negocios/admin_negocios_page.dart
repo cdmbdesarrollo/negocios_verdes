@@ -192,7 +192,13 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
   }
 
   Widget _tarjetaNegocio(Negocio n) {
+    // Key estable por id: ListView.separated recicla widgets fuera de
+    // pantalla por posición si no se les da identidad propia — al borrar
+    // un negocio del medio de la lista eso puede confundir qué tarjeta le
+    // corresponde a cuál dato justo en el momento del borrado (mismo
+    // problema ya visto y corregido en la lista de banners).
     return NVCard(
+      key: ValueKey(n.id),
       onTap: () => context.go('/admin/negocios/${n.id}/editar'),
       child: Row(
         children: [

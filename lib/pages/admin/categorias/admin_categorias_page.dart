@@ -117,6 +117,7 @@ class _AdminCategoriasPageState extends State<AdminCategoriasPage> {
       itemBuilder: (context, i) {
         final c = categorias[i];
         return NVCard(
+          key: ValueKey(c.id),
           child: Row(
             children: [
               IconoEtiqueta(

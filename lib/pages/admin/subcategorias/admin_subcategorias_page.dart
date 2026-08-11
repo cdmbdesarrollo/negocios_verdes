@@ -180,6 +180,7 @@ class _AdminSubcategoriasPageState extends State<AdminSubcategoriasPage> {
                   itemBuilder: (context, i) {
                     final s = visibles[i];
                     return NVCard(
+                      key: ValueKey(s.id),
                       child: Row(
                         children: [
                           IconoEtiqueta(

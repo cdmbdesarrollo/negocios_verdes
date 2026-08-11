@@ -64,6 +64,7 @@ class _AdminLogsPageState extends State<AdminLogsPage> {
         final log = logs[i];
         final nombreDetalle = log.detalle?['nombre']?.toString();
         return NVCard(
+          key: ValueKey(log.id),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
