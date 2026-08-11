@@ -1,10 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../catalogos.dart';
 import '../../models/configuracion_sitio.dart';
 import '../../services/configuracion_sitio_service.dart';
 import '../../theme/nv_colors.dart';
+import '../responsive.dart';
 import 'logo_negocios_verdes.dart';
 import 'redes_sociales_cdmb.dart';
 
@@ -32,47 +34,22 @@ class PiePagina extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _cuerpoBlanco(),
+        _cuerpoBlanco(context),
         _franjaSellos(),
       ],
     );
   }
 
-  Widget _cuerpoBlanco() {
+  Widget _cuerpoBlanco(BuildContext context) {
+    final ancho = esPantallaAncha(context);
     return Container(
       width: double.infinity,
       color: NVColors.superficie,
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const LogoNegociosVerdes(altura: 30),
-          const SizedBox(height: 14),
-          const Text(
-            'CDMB — Corporación Autónoma Regional para la Defensa de la '
-            'Meseta de Bucaramanga',
-            style: TextStyle(
-              color: NVColors.textoPrincipal,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Ventanilla de Negocios Verdes · Directorio de negocios verdes '
-            'en los 13 municipios de la jurisdicción CDMB.',
-            style: TextStyle(color: NVColors.textoSecundario, fontSize: 13),
-          ),
-          const SizedBox(height: 18),
-          const Divider(color: NVColors.borde, height: 1),
-          const SizedBox(height: 16),
-          const _FilaDato(icono: Icons.location_on_outlined, texto: kCdmbDireccion),
-          const _FilaDato(icono: Icons.schedule_outlined, texto: kCdmbHorario),
-          const _FilaDato(
-            icono: Icons.call_outlined,
-            texto: 'Conmutador $kCdmbTelefonoConmutador · Línea gratuita '
-                '$kCdmbLineaGratuita',
-          ),
-          const _FilaDato(icono: Icons.email_outlined, texto: kCdmbCorreoInstitucional),
+          if (ancho) _columnasAnchas(context) else _columnaAngosta(),
           const SizedBox(height: 10),
           const Divider(color: NVColors.borde, height: 1),
           const SizedBox(height: 16),
@@ -105,6 +82,142 @@ class PiePagina extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  /// Layout angosto (< 900px): una sola columna apilada, igual que antes de
+  /// agregar el layout de 3 columnas — logo/nombre/tagline arriba y los 4
+  /// datos de contacto debajo, todo en el mismo ancho.
+  Widget _columnaAngosta() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const LogoNegociosVerdes(altura: 30),
+        const SizedBox(height: 14),
+        const Text(
+          'CDMB — Corporación Autónoma Regional para la Defensa de la '
+          'Meseta de Bucaramanga',
+          style: TextStyle(
+            color: NVColors.textoPrincipal,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Ventanilla de Negocios Verdes · Directorio de negocios verdes '
+          'en los 13 municipios de la jurisdicción CDMB.',
+          style: TextStyle(color: NVColors.textoSecundario, fontSize: 13),
+        ),
+        const SizedBox(height: 18),
+        const Divider(color: NVColors.borde, height: 1),
+        const SizedBox(height: 16),
+        const _FilaDato(icono: Icons.location_on_outlined, texto: kCdmbDireccion),
+        const _FilaDato(icono: Icons.schedule_outlined, texto: kCdmbHorario),
+        const _FilaDato(
+          icono: Icons.call_outlined,
+          texto: 'Conmutador $kCdmbTelefonoConmutador · Línea gratuita '
+              '$kCdmbLineaGratuita',
+        ),
+        const _FilaDato(icono: Icons.email_outlined, texto: kCdmbCorreoInstitucional),
+      ],
+    );
+  }
+
+  /// Layout ancho (>= 900px): 3 columnas — antes todo el texto quedaba en
+  /// una franja angosta con mucho blanco vacío a los lados en pantallas de
+  /// escritorio. "Explorar" es nuevo: son los mismos destinos del navbar,
+  /// repetidos aquí porque un footer con solo marca+contacto en un sitio
+  /// de este ancho se ve incompleto/despoblado.
+  Widget _columnasAnchas(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 3,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const LogoNegociosVerdes(altura: 30),
+              const SizedBox(height: 14),
+              const Text(
+                'CDMB — Corporación Autónoma Regional para la Defensa de '
+                'la Meseta de Bucaramanga',
+                style: TextStyle(
+                  color: NVColors.textoPrincipal,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Ventanilla de Negocios Verdes · Directorio de negocios '
+                'verdes en los 13 municipios de la jurisdicción CDMB.',
+                style: TextStyle(color: NVColors.textoSecundario, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 32),
+        Expanded(
+          flex: 3,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _tituloColumna('Contacto CDMB'),
+              const SizedBox(height: 14),
+              const _FilaDato(
+                  icono: Icons.location_on_outlined, texto: kCdmbDireccion),
+              const _FilaDato(
+                  icono: Icons.schedule_outlined, texto: kCdmbHorario),
+              const _FilaDato(
+                icono: Icons.call_outlined,
+                texto: 'Conmutador $kCdmbTelefonoConmutador · Línea '
+                    'gratuita $kCdmbLineaGratuita',
+              ),
+              const _FilaDato(
+                  icono: Icons.email_outlined, texto: kCdmbCorreoInstitucional),
+            ],
+          ),
+        ),
+        const SizedBox(width: 32),
+        Expanded(
+          flex: 2,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _tituloColumna('Explorar'),
+              const SizedBox(height: 14),
+              _enlaceFooter(context, 'Inicio', '/'),
+              _enlaceFooter(context, 'Buscar negocios', '/buscar'),
+              _enlaceFooter(context, 'Qué son los Negocios Verdes', '/nosotros'),
+              _enlaceFooter(context, 'Contacto', '/contacto'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _tituloColumna(String texto) {
+    return Text(
+      texto,
+      style: const TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 13,
+        color: NVColors.primaryDark,
+      ),
+    );
+  }
+
+  Widget _enlaceFooter(BuildContext context, String etiqueta, String ruta) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        onTap: () => context.go(ruta),
+        child: Text(
+          etiqueta,
+          style: const TextStyle(color: NVColors.textoSecundario, fontSize: 13),
+        ),
       ),
     );
   }

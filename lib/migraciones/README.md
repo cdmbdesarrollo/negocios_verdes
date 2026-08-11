@@ -35,3 +35,10 @@ en un Supabase nuevo:
 14. `0014_iconos_imagen_categorias.sql` — columnas para subir un ícono de
     imagen (PNG/SVG) por categoría oficial y subcategoría, alternativa al
     emoji de texto que ya existía.
+15. `0015_negocios_multi_categoria.sql` — un negocio puede pertenecer hasta
+    a 3 categorías oficiales (antes solo a una). Reemplaza la firma de
+    `guardar_negocio` (`p_categoria_oficial_id` uuid → `p_categoria_oficial_ids`
+    uuid[]) — **hay que correr esta migración ANTES de desplegar el código
+    que la usa**, o el buscador público completo (no solo el admin) deja de
+    cargar negocios, porque el SELECT público ya pediría el embed de
+    `negocios_categorias`, que no existiría todavía.

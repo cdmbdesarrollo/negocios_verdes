@@ -27,6 +27,11 @@ class Negocio {
   final String slug;
   final String categoriaOficialId;
   final CategoriaOficial? categoriaOficial;
+  /// Todas las categorías del negocio (hasta 3) — [categoriaOficial] arriba
+  /// sigue siendo solo la principal (la primera elegida), para no romper
+  /// nada que ya filtre/muestre por una sola. Esta lista es la fuente de
+  /// verdad completa, viene de negocios_categorias.
+  final List<CategoriaOficial> categoriasOficiales;
   final List<Subcategoria> subcategorias;
   final String municipio;
   final String? direccion;
@@ -55,6 +60,7 @@ class Negocio {
     required this.slug,
     required this.categoriaOficialId,
     this.categoriaOficial,
+    this.categoriasOficiales = const [],
     this.subcategorias = const [],
     required this.municipio,
     this.direccion,
@@ -84,6 +90,7 @@ class Negocio {
     final categoriaJson = _desenvolverUno(json['categorias_oficiales']);
     final fotosJson = _desenvolverLista(json['negocio_fotos']);
     final subcategoriasJoin = _desenvolverLista(json['negocios_subcategorias']);
+    final categoriasJoin = _desenvolverLista(json['negocios_categorias']);
 
     return Negocio(
       id: json['id']?.toString() ?? '',
@@ -92,6 +99,11 @@ class Negocio {
       categoriaOficialId: json['categoria_oficial_id']?.toString() ?? '',
       categoriaOficial:
           categoriaJson != null ? CategoriaOficial.fromJson(categoriaJson) : null,
+      categoriasOficiales: categoriasJoin
+          .map((e) => _desenvolverUno(e['categorias_oficiales']))
+          .whereType<Map<String, dynamic>>()
+          .map(CategoriaOficial.fromJson)
+          .toList(),
       subcategorias: subcategoriasJoin
           .map((e) => _desenvolverUno(e['subcategorias']))
           .whereType<Map<String, dynamic>>()
@@ -132,6 +144,7 @@ class Negocio {
       slug: slug,
       categoriaOficialId: categoriaOficialId,
       categoriaOficial: categoriaOficial,
+      categoriasOficiales: categoriasOficiales,
       subcategorias: subcategorias,
       municipio: municipio,
       direccion: direccion,

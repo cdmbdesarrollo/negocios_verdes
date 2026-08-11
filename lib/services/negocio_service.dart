@@ -5,7 +5,9 @@ import '../models/filtro_busqueda.dart';
 import '../models/negocio.dart';
 
 const String _selectConEmbeds =
-    '*, categorias_oficiales(*), negocio_fotos(*), negocios_subcategorias(subcategorias(*))';
+    '*, categorias_oficiales(*), negocio_fotos(*), '
+    'negocios_subcategorias(subcategorias(*)), '
+    'negocios_categorias(categorias_oficiales(*))';
 
 class NegocioService {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -118,7 +120,7 @@ class NegocioService {
   Future<String> guardar({
     required String id,
     required String nombre,
-    required String categoriaOficialId,
+    required List<String> categoriaOficialIds,
     required String municipio,
     String? direccion,
     double? latitud,
@@ -142,7 +144,7 @@ class NegocioService {
       final resultado = await _supabase.rpc('guardar_negocio', params: {
         'p_id': id,
         'p_nombre': nombre,
-        'p_categoria_oficial_id': categoriaOficialId,
+        'p_categoria_oficial_ids': categoriaOficialIds,
         'p_municipio': municipio,
         'p_direccion': direccion,
         'p_latitud': latitud,

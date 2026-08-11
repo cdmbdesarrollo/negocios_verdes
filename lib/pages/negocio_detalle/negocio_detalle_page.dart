@@ -109,7 +109,10 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         BadgeNivel(nivel: negocio.nivelDesarrollo),
-                        if (negocio.categoriaOficial != null)
+                        if (negocio.categoriasOficiales.isNotEmpty)
+                          for (final cat in negocio.categoriasOficiales)
+                            _chip('${cat.iconoOTexto} ${cat.nombre}')
+                        else if (negocio.categoriaOficial != null)
                           _chip(
                             '${negocio.categoriaOficial!.iconoOTexto} '
                             '${negocio.categoriaOficial!.nombre}',

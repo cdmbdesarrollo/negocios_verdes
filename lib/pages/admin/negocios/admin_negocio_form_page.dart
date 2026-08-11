@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../catalogos.dart';
 import '../../../core/admin_guard.dart';
+import '../../../core/widgets/chip_filtro.dart';
 import '../../../models/categoria_oficial.dart';
 import '../../../models/negocio_foto.dart';
 import '../../../models/subcategoria.dart';
@@ -56,7 +57,11 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
 
   List<CategoriaOficial> _categorias = [];
   List<Subcategoria> _subcategorias = [];
-  String? _categoriaOficialId;
+  /// Hasta 3 — orden de selección, la primera es la "principal" (la que
+  /// queda en negocios.categoria_oficial_id para todo lo que ya filtra o
+  /// muestra por una sola categoría). Lista, no Set, para que ese orden sea
+  /// predecible.
+  List<String> _categoriaOficialIds = [];
   Set<String> _subcategoriaIds = {};
   String? _municipio;
   double? _latitud;
@@ -103,7 +108,9 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           throw Exception('No se encontró el negocio.');
         }
         _nombreCtrl.text = existente.nombre;
-        _categoriaOficialId = existente.categoriaOficialId;
+        _categoriaOficialIds = existente.categoriasOficiales.isNotEmpty
+            ? existente.categoriasOficiales.map((c) => c.id).toList()
+            : [existente.categoriaOficialId];
         _municipio = existente.municipio;
         _direccionCtrl.text = existente.direccion ?? '';
         _latitud = existente.latitud;
@@ -143,8 +150,8 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
 
   Future<void> _guardar() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    if (_categoriaOficialId == null) {
-      _avisar('Selecciona una categoría oficial.');
+    if (_categoriaOficialIds.isEmpty) {
+      _avisar('Selecciona al menos una categoría oficial.');
       return;
     }
     if (_municipio == null) {
@@ -165,7 +172,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
       await _negocioService.guardar(
         id: _negocioId,
         nombre: _nombreCtrl.text.trim(),
-        categoriaOficialId: _categoriaOficialId!,
+        categoriaOficialIds: _categoriaOficialIds,
         municipio: _municipio!,
         direccion: _vacioANulo(_direccionCtrl.text),
         latitud: _latitud,
@@ -220,6 +227,28 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
         orden: i,
       );
     }
+  }
+
+  void _alternarCategoria(String id) {
+    setState(() {
+      if (_categoriaOficialIds.contains(id)) {
+        _categoriaOficialIds.remove(id);
+        // Poda subcategorías de la categoría que se acaba de quitar — si
+        // no, quedan seleccionadas "a escondidas" (ya no se ven en el
+        // selector de abajo, pero se seguirían guardando).
+        final idsDeEstaCategoria = _subcategorias
+            .where((s) => s.categoriaOficialId == id)
+            .map((s) => s.id)
+            .toSet();
+        _subcategoriaIds.removeWhere(idsDeEstaCategoria.contains);
+      } else {
+        if (_categoriaOficialIds.length >= 3) {
+          _avisar('Máximo 3 categorías por negocio.');
+          return;
+        }
+        _categoriaOficialIds.add(id);
+      }
+    });
   }
 
   String? _vacioANulo(String texto) =>
@@ -278,26 +307,42 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           ),
           const SizedBox(height: 20),
           _seccion('Categoría y subcategorías'),
-          DropdownButtonFormField<String>(
-            initialValue: _categoriaOficialId,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Categoría oficial'),
-            items: [
+          Text(
+            'Categorías oficiales (hasta 3 — la primera que marques queda '
+            'como principal)',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
               for (final c in _categorias)
-                DropdownMenuItem(
-                  value: c.id,
-                  child: Text(
-                    '${c.iconoOTexto} ${c.nombre}',
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                ChipFiltro(
+                  etiqueta: c.nombre,
+                  icono: c.iconoOTexto,
+                  seleccionado: _categoriaOficialIds.contains(c.id),
+                  onTap: () => _alternarCategoria(c.id),
+                  variante: true,
                 ),
             ],
-            onChanged: (v) => setState(() => _categoriaOficialId = v),
-            validator: (v) => v == null ? 'Requerido' : null,
           ),
-          const SizedBox(height: 12),
+          if (_categoriaOficialIds.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(top: 6),
+              child: Text('Selecciona al menos una.',
+                  style: TextStyle(color: NVColors.error, fontSize: 12)),
+            ),
+          const SizedBox(height: 16),
+          // Key por el conjunto de categorías elegidas: al agregar/quitar
+          // una, el selector de abajo debe volver a partir de cero de qué
+          // subcategorías mostrar, no arrastrar el estado interno de la
+          // combinación anterior.
           SelectorSubcategorias(
-            categorias: _categorias,
+            key: ValueKey(_categoriaOficialIds.join(',')),
+            categorias: _categorias
+                .where((c) => _categoriaOficialIds.contains(c.id))
+                .toList(),
             subcategorias: _subcategorias,
             seleccionadas: _subcategoriaIds,
             onCambio: (ids) => _subcategoriaIds = ids,

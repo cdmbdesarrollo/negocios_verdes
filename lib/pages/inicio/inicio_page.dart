@@ -371,6 +371,7 @@ class _InicioPageState extends State<InicioPage> {
               for (final municipio in kMunicipios)
                 ChipFiltro(
                   etiqueta: municipio,
+                  icono: '📍',
                   seleccionado: false,
                   onTap: () => _irA({'municipio': municipio}),
                 ),
@@ -428,6 +429,17 @@ class _InicioPageState extends State<InicioPage> {
       color: NVColors.primaryLight,
       child: Column(
         children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: const BoxDecoration(
+              color: NVColors.superficie,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: const Icon(Icons.eco, color: NVColors.primary, size: 30),
+          ),
+          const SizedBox(height: 16),
           const Text(
             '¿Qué son los Negocios Verdes?',
             textAlign: TextAlign.center,
