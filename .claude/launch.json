@@ -4,7 +4,7 @@
     {
       "name": "negocios-verdes-web",
       "runtimeExecutable": "flutter",
-      "runtimeArgs": ["run", "-d", "web-server", "--web-port", "8766"],
+      "runtimeArgs": ["run", "-d", "web-server", "--web-port", "8766", "--dart-define=SUPABASE_URL=https://tbnvnuvqzhtgfthuuidi.supabase.co", "--dart-define=SUPABASE_ANON_KEY=sb_publishable_-MRqMkg1iZlXqXCDgZopdg_Pc4o8yti"],
       "port": 8766
     }
   ]
