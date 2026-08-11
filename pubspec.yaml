@@ -1,0 +1,51 @@
+name: negocios_verdes_cdmb
+description: "Negocios Verdes CDMB — Directorio y buscador de negocios verdes en los 13 municipios de la jurisdicción CDMB."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Backend
+  supabase_flutter: ^2.17.1
+
+  # Navegación
+  go_router: ^17.5.0
+
+  # Mapa (directorio + selector de ubicación en el admin)
+  flutter_map: ^8.3.1
+  flutter_map_marker_cluster: ^8.2.2
+  latlong2: ^0.9.1
+  geolocator: ^14.0.3
+
+  # Imágenes
+  image_picker: ^1.2.3
+  cached_network_image: ^3.4.1
+
+  # Utilidades
+  intl: ^0.20.2
+  url_launcher: ^6.3.2
+  uuid: ^4.6.0
+  web: ^1.1.1
+
+  # BUG FIX (ver CLAUDE.md de HuellaQR) — flutter_web_plugins vive dentro del
+  # SDK de Flutter, no en pub.dev. Debe declararse como paquete de SDK igual
+  # que flutter/flutter_localizations arriba; si una herramienta automática
+  # lo reescribe como "flutter_web_plugins: any" rompe flutter pub get.
+  flutter_web_plugins:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
