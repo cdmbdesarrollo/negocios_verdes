@@ -357,7 +357,14 @@ class _AdminAparienciaPageState extends State<AdminAparienciaPage> {
     final banner = _banners[indice];
     final tieneDestino =
         banner.urlDestino != null && banner.urlDestino!.isNotEmpty;
+    // Key estable por id: sin esto, al borrar un banner del medio de la
+    // lista, Flutter reconcilia los widgets restantes por POSICIÓN en vez
+    // de por identidad, y el CachedNetworkImage de una fila puede quedar
+    // asociado brevemente a la URL de otro banner durante la transición —
+    // con listas cortas normalmente no se nota, pero es la clase de bug
+    // que sí puede tronar en el momento exacto de borrar.
     return Padding(
+      key: ValueKey(banner.id),
       padding: const EdgeInsets.only(bottom: 10),
       child: NVCard(
         child: Row(
