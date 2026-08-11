@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/seo_tags.dart';
+import '../../core/widgets/logo_negocios_verdes.dart';
 import '../../core/widgets/pie_pagina.dart';
 import '../../theme/nv_colors.dart';
 
@@ -34,11 +35,11 @@ class _NosotrosPageState extends State<NosotrosPage> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
             decoration: const BoxDecoration(gradient: NVColors.gradientHero),
-            child: const Column(
+            child: Column(
               children: [
-                Text('🌱', style: TextStyle(fontSize: 36)),
-                SizedBox(height: 8),
-                Text(
+                const LogoNegociosVerdes(altura: 48),
+                const SizedBox(height: 8),
+                const Text(
                   '¿Qué son los Negocios Verdes?',
                   textAlign: TextAlign.center,
                   style: TextStyle(

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
 import '../services/roles_service.dart';
 import '../theme/nv_colors.dart';
+import 'widgets/logo_negocios_verdes.dart';
 
 class EnlaceAdmin {
   final String titulo;
@@ -56,17 +57,26 @@ class AdminShellPage extends StatelessWidget {
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
-              const DrawerHeader(
-                decoration: BoxDecoration(color: NVColors.primaryDark),
+              DrawerHeader(
+                decoration: const BoxDecoration(color: NVColors.primaryDark),
                 child: Align(
                   alignment: Alignment.bottomLeft,
-                  child: Text(
-                    '🌱 Negocios Verdes CDMB',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const LogoNegociosVerdes(altura: 26),
+                      const SizedBox(width: 8),
+                      const Flexible(
+                        child: Text(
+                          'Negocios Verdes CDMB',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

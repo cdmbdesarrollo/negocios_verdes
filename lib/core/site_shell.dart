@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../theme/nv_colors.dart';
 import 'responsive.dart';
+import 'widgets/logo_negocios_verdes.dart';
 
 class EnlaceNav {
   final String titulo;
@@ -47,12 +48,12 @@ class _SiteShellState extends State<SiteShell> {
         titleSpacing: 16,
         title: InkWell(
           onTap: () => context.go('/'),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('🌱', style: TextStyle(fontSize: 22)),
-              SizedBox(width: 8),
-              Flexible(
+              const LogoNegociosVerdes(altura: 28),
+              const SizedBox(width: 8),
+              const Flexible(
                 child: Text(
                   'Negocios Verdes CDMB',
                   overflow: TextOverflow.ellipsis,

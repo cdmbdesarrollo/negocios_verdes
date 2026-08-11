@@ -49,3 +49,10 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # assets/images/logo.png es el ÚNICO archivo que hay que reemplazar para
+  # cambiar el logo de toda la app (navbar, login admin, drawer admin,
+  # inicio) — ver lib/core/widgets/logo_negocios_verdes.dart. Cualquier PNG
+  # (idealmente con fondo transparente) sirve, no hace falta tocar código.
+  assets:
+    - assets/images/logo.png

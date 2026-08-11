@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/widgets/logo_negocios_verdes.dart';
 import '../../theme/nv_colors.dart';
 
 class NoEncontradoPage extends StatelessWidget {
@@ -16,7 +17,7 @@ class NoEncontradoPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('🌱', style: TextStyle(fontSize: 48)),
+              const LogoNegociosVerdes(altura: 56),
               const SizedBox(height: 16),
               const Text(
                 'No encontramos esta página',

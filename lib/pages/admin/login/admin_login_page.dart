@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/logo_negocios_verdes.dart';
 import '../../../services/auth_service.dart';
 import '../../../theme/nv_colors.dart';
 
@@ -56,11 +57,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
-                  '🌱',
-                  style: TextStyle(fontSize: 40),
-                  textAlign: TextAlign.center,
-                ),
+                const Center(child: LogoNegociosVerdes(altura: 56)),
                 const SizedBox(height: 8),
                 const Text(
                   'Negocios Verdes CDMB',
