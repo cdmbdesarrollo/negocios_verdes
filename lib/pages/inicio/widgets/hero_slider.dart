@@ -35,10 +35,12 @@ class SlideInfo {
   }) : imagenUrl = null;
 }
 
-/// Carrusel superior con auto-avance e indicadores de puntos. Construido
-/// sobre PageView (nativo de Flutter, sin dependencia nueva) en vez de un
-/// paquete de terceros — consistente con el resto del proyecto, que no trae
-/// gestor de estado ni librerías de UI adicionales.
+/// Carrusel superior con auto-avance, indicadores de puntos, flechas
+/// prev/next y control de pausa — mismo patrón de interacción que el
+/// carrusel de la Sede Electrónica de la CDMB (pausa/reanuda + puntos +
+/// flechas), pero construido sobre PageView nativo de Flutter (sin
+/// dependencia nueva) y a la medida que le sirve a este sitio, no una
+/// réplica pixel a pixel.
 class HeroSlider extends StatefulWidget {
   final List<SlideInfo> slides;
   final double altura;
@@ -59,6 +61,7 @@ class _HeroSliderState extends State<HeroSlider> {
   late final PageController _controller;
   Timer? _timer;
   int _indiceActual = 0;
+  bool _reproduciendo = true;
 
   @override
   void initState() {
@@ -81,16 +84,33 @@ class _HeroSliderState extends State<HeroSlider> {
 
   void _iniciarAutoAvance() {
     _timer?.cancel();
-    if (widget.slides.length <= 1) return;
-    _timer = Timer.periodic(widget.intervalo, (_) {
-      if (!mounted || !_controller.hasClients) return;
-      final siguiente = (_indiceActual + 1) % widget.slides.length;
-      _controller.animateToPage(
-        siguiente,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
-    });
+    if (!_reproduciendo || widget.slides.length <= 1) return;
+    _timer = Timer.periodic(widget.intervalo, (_) => _irA(_indiceActual + 1));
+  }
+
+  void _irA(int indice) {
+    if (!mounted || !_controller.hasClients || widget.slides.isEmpty) return;
+    final destino = indice % widget.slides.length;
+    _controller.animateToPage(
+      destino,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _anterior() {
+    _irA(_indiceActual - 1 + widget.slides.length);
+    _iniciarAutoAvance(); // no pelea con el auto-avance justo después
+  }
+
+  void _siguiente() {
+    _irA(_indiceActual + 1);
+    _iniciarAutoAvance();
+  }
+
+  void _alternarReproduccion() {
+    setState(() => _reproduciendo = !_reproduciendo);
+    _iniciarAutoAvance();
   }
 
   @override
@@ -103,6 +123,7 @@ class _HeroSliderState extends State<HeroSlider> {
   @override
   Widget build(BuildContext context) {
     if (widget.slides.isEmpty) return const SizedBox.shrink();
+    final variasSlides = widget.slides.length > 1;
 
     return SizedBox(
       height: widget.altura,
@@ -114,30 +135,95 @@ class _HeroSliderState extends State<HeroSlider> {
             onPageChanged: (i) => setState(() => _indiceActual = i),
             itemBuilder: (context, i) => _diapositiva(widget.slides[i]),
           ),
-          if (widget.slides.length > 1)
+          if (variasSlides) ...[
             Positioned(
-              bottom: 16,
-              left: 0,
-              right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (var i = 0; i < widget.slides.length; i++)
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      margin: const EdgeInsets.symmetric(horizontal: 3),
-                      width: i == _indiceActual ? 22 : 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        color: Colors.white
-                            .withValues(alpha: i == _indiceActual ? 0.95 : 0.5),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                ],
+              left: 8,
+              top: 0,
+              bottom: 32,
+              child: Center(
+                child: _botonRedondo(Icons.chevron_left, _anterior),
               ),
             ),
+            Positioned(
+              right: 8,
+              top: 0,
+              bottom: 32,
+              child: Center(
+                child: _botonRedondo(Icons.chevron_right, _siguiente),
+              ),
+            ),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                color: Colors.black.withValues(alpha: 0.25),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: InkWell(
+                        onTap: _alternarReproduccion,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _reproduciendo
+                                  ? Icons.pause_circle_outline
+                                  : Icons.play_circle_outline,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _reproduciendo ? 'Detener' : 'Reanudar',
+                              style:
+                                  const TextStyle(color: Colors.white, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (var i = 0; i < widget.slides.length; i++)
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            margin: const EdgeInsets.symmetric(horizontal: 3),
+                            width: i == _indiceActual ? 22 : 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(
+                                  alpha: i == _indiceActual ? 0.95 : 0.5),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
+      ),
+    );
+  }
+
+  Widget _botonRedondo(IconData icono, VoidCallback onTap) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.25),
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Padding(
+          padding: const EdgeInsets.all(6),
+          child: Icon(icono, color: Colors.white, size: 22),
+        ),
       ),
     );
   }

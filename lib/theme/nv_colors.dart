@@ -21,6 +21,12 @@ abstract final class NVColors {
   static const Color accent = Color(0xFFD98B2B);
   static const Color accentDark = Color(0xFFB06F1D);
 
+  /// Azul de la franja superior obligatoria de GOV.CO — NO es parte de la
+  /// paleta propia de la marca, es el color que trae la franja institucional
+  /// de gov.co en la Sede Electrónica de la CDMB (de la que este sitio es
+  /// micrositio). Se usa solo en esa franja, en ningún otro lado.
+  static const Color govCoAzul = Color(0xFF3366CC);
+
   static const Color fondo = Color(0xFFFAF8F3);
   static const Color superficie = Color(0xFFFFFFFF);
 
