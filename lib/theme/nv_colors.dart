@@ -1,0 +1,43 @@
+import 'package:flutter/material.dart';
+
+/// Paleta de Negocios Verdes CDMB. Todo el árbol de widgets debe consumir
+/// estas constantes (nunca colores sueltos) para que un cambio de marca sea
+/// un solo archivo, igual que PawColors en HuellaQR.
+///
+/// Convención de uso: [primary] para marca/navegación, [accent] SOLO para
+/// llamados a la acción de conversión (nunca para decoración), [whatsapp]
+/// SOLO para el botón de WhatsApp (color de marca reconocible, no se reusa
+/// como acento genérico). Sin texto de CTA en mayúsculas sostenidas.
+abstract final class NVColors {
+  static const Color primary = Color(0xFF1E7A4C);
+  static const Color primaryDark = Color(0xFF124D30);
+  static const Color primaryLight = Color(0xFFDCEEE0);
+
+  static const Color accent = Color(0xFFD98B2B);
+  static const Color accentDark = Color(0xFFB06F1D);
+
+  static const Color fondo = Color(0xFFFAF8F3);
+  static const Color superficie = Color(0xFFFFFFFF);
+
+  static const Color textoPrincipal = Color(0xFF1B2A20);
+  static const Color textoSecundario = Color(0xFF5B6B60);
+  static const Color borde = Color(0xFFE1E5DF);
+
+  static const Color error = Color(0xFFC0392B);
+  static const Color exito = Color(0xFF2E8B57);
+  static const Color advertencia = Color(0xFFD98B2B);
+
+  /// Verde oficial de marca de WhatsApp — reservado únicamente para el
+  /// botón de contacto por WhatsApp, no se usa como acento del sitio.
+  static const Color whatsapp = Color(0xFF25D366);
+
+  static const Color nivelEnVerificacion = Color(0xFF8C8C7A);
+  static const Color nivelVerificado = primary;
+  static const Color nivelAncla = Color(0xFFB8860B);
+
+  static const LinearGradient gradientHero = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [primaryDark, primary],
+  );
+}
