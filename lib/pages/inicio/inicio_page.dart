@@ -181,10 +181,10 @@ class _InicioPageState extends State<InicioPage> {
         children: [
           HeroSlider(slides: _slides),
           _buscadorPersistente(context),
+          if (_destacados.isNotEmpty) _seccionDestacados(context),
           if (_categorias.isNotEmpty) _seccionCategorias(context),
           if (_subcategorias.isNotEmpty) _seccionSubcategorias(context),
           _seccionMunicipios(context),
-          if (_destacados.isNotEmpty) _seccionDestacados(context),
           _seccionQueSon(context),
           const PiePagina(),
         ],
@@ -265,7 +265,7 @@ class _InicioPageState extends State<InicioPage> {
 
   Widget _seccionCategorias(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+      padding: const EdgeInsets.fromLTRB(20, 32, 20, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -384,7 +384,7 @@ class _InicioPageState extends State<InicioPage> {
 
   Widget _seccionDestacados(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 32, 20, 8),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
