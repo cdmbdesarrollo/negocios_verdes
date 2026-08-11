@@ -26,3 +26,6 @@ en un Supabase nuevo:
     inicio administrables desde `/admin/apariencia` (proyectos ya montados
     antes de que existiera este archivo solo necesitan correr este, no hay
     que repetir el resto).
+12. `0012_logos_footer_institucional.sql` — columnas para los sellos de
+    Colombia y GOV.CO del pie de página (Negocios Verdes es un micrositio
+    de la Sede Electrónica de la CDMB).

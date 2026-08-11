@@ -280,11 +280,17 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           _seccion('Categoría y subcategorías'),
           DropdownButtonFormField<String>(
             initialValue: _categoriaOficialId,
+            isExpanded: true,
             decoration: const InputDecoration(labelText: 'Categoría oficial'),
             items: [
               for (final c in _categorias)
                 DropdownMenuItem(
-                    value: c.id, child: Text('${c.iconoOTexto} ${c.nombre}')),
+                  value: c.id,
+                  child: Text(
+                    '${c.iconoOTexto} ${c.nombre}',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
             ],
             onChanged: (v) => setState(() => _categoriaOficialId = v),
             validator: (v) => v == null ? 'Requerido' : null,
@@ -300,6 +306,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           _seccion('Ubicación'),
           DropdownButtonFormField<String>(
             initialValue: _municipio,
+            isExpanded: true,
             decoration: const InputDecoration(labelText: 'Municipio'),
             items: [
               for (final m in kMunicipios) DropdownMenuItem(value: m, child: Text(m)),
@@ -383,6 +390,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           _seccion('Publicación'),
           DropdownButtonFormField<String>(
             initialValue: _nivelDesarrollo,
+            isExpanded: true,
             decoration: const InputDecoration(labelText: 'Nivel de desarrollo'),
             items: [
               for (final entrada in kNivelesDesarrolloEtiqueta.entries)

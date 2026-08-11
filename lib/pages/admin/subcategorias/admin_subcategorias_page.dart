@@ -324,11 +324,17 @@ class _DialogoSubcategoriaState extends State<_DialogoSubcategoria> {
             children: [
               DropdownButtonFormField<String>(
                 initialValue: _categoriaId,
+                isExpanded: true,
                 decoration: const InputDecoration(labelText: 'Categoría oficial'),
                 items: [
                   for (final c in widget.categorias)
                     DropdownMenuItem(
-                        value: c.id, child: Text('${c.iconoOTexto} ${c.nombre}')),
+                      value: c.id,
+                      child: Text(
+                        '${c.iconoOTexto} ${c.nombre}',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                 ],
                 onChanged: (v) => setState(() => _categoriaId = v),
                 validator: (v) => v == null ? 'Requerido' : null,

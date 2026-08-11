@@ -26,8 +26,11 @@ class _AdminAparienciaPageState extends State<AdminAparienciaPage> {
   ConfiguracionSitio? _configuracion;
   List<BannerSitio> _banners = [];
   bool _cargando = true;
-  bool _subiendoLogo = false;
   String? _error;
+
+  /// Cuál de los 3 slots de imagen está subiendo ahora mismo (o ninguno) —
+  /// evita tener tres banderas booleanas sueltas para lo mismo.
+  _SlotImagenConfig? _subiendo;
 
   @override
   void initState() {
@@ -63,23 +66,22 @@ class _AdminAparienciaPageState extends State<AdminAparienciaPage> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mensaje)));
   }
 
-  Future<void> _cambiarLogo() async {
+  Future<void> _cambiarImagen(_SlotImagenConfig slot) async {
     final elegida = await elegirImagenValidada(onError: _avisar);
     if (elegida == null) return;
-    setState(() => _subiendoLogo = true);
+    setState(() => _subiendo = slot);
     try {
       final subida = await _storage.subirImagen(
         bytes: elegida.bytes,
         bucket: kBucketSitioAssets,
-        carpeta: 'logo',
+        carpeta: slot.carpeta,
         extension: elegida.extension,
       );
-      final pathAnterior = _configuracion?.logoPath;
-      await _configService.actualizarLogo(
-          logoUrl: subida.url, logoPath: subida.path);
+      final pathAnterior = slot.pathActual(_configuracion);
+      await slot.guardar(_configService, subida.url, subida.path);
       if (pathAnterior != null && pathAnterior.isNotEmpty) {
-        // Sin bloquear la UI por esto — si falla el borrado del logo
-        // viejo no es grave, solo queda un archivo huérfano en Storage.
+        // Sin bloquear la UI por esto — si falla el borrado de la imagen
+        // vieja no es grave, solo queda un archivo huérfano en Storage.
         _storage
             .eliminarImagen(bucket: kBucketSitioAssets, path: pathAnterior)
             .catchError((_) {});
@@ -88,14 +90,15 @@ class _AdminAparienciaPageState extends State<AdminAparienciaPage> {
       if (mounted) {
         setState(() {
           _configuracion =
-              ConfiguracionSitio(logoUrl: subida.url, logoPath: subida.path);
+              slot.aplicar(_configuracion ?? const ConfiguracionSitio(),
+                  subida.url, subida.path);
         });
       }
-      _avisar('Logo actualizado.');
+      _avisar('${slot.nombre} actualizado.');
     } catch (e) {
       _avisar(e.toString().replaceFirst('Exception: ', ''));
     } finally {
-      if (mounted) setState(() => _subiendoLogo = false);
+      if (mounted) setState(() => _subiendo = null);
     }
   }
 
@@ -198,50 +201,99 @@ class _AdminAparienciaPageState extends State<AdminAparienciaPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Logo',
+          const Text('Logo e identidad institucional',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 4),
           const Text(
-            'Aparece en la barra superior, el inicio, el login admin y el '
-            'menú admin. Usa un PNG con fondo transparente si es posible.',
+            'Negocios Verdes es un micrositio de la Sede Electrónica de la '
+            'CDMB — estos sellos aparecen en el pie de página igual que en '
+            'esa página. Usa PNG con fondo transparente si es posible.',
             style: TextStyle(color: NVColors.textoSecundario, fontSize: 12),
           ),
           const SizedBox(height: 16),
+          Wrap(
+            spacing: 24,
+            runSpacing: 16,
+            children: [
+              _filaImagen(
+                slot: _SlotImagenConfig.logo,
+                url: _configuracion?.logoUrl,
+                etiqueta: 'Logo principal',
+                ayuda:
+                    'Barra superior, inicio, login admin y menú admin.',
+              ),
+              _filaImagen(
+                slot: _SlotImagenConfig.colombia,
+                url: _configuracion?.logoColombiaUrl,
+                etiqueta: 'Sello Colombia',
+                ayuda: 'Pie de página, junto al sello GOV.CO.',
+              ),
+              _filaImagen(
+                slot: _SlotImagenConfig.govco,
+                url: _configuracion?.logoGovcoUrl,
+                etiqueta: 'Sello GOV.CO',
+                ayuda: 'Pie de página. Usa la versión blanca — el fondo '
+                    'es verde oscuro.',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _filaImagen({
+    required _SlotImagenConfig slot,
+    required String? url,
+    required String etiqueta,
+    required String ayuda,
+  }) {
+    final subiendoEste = _subiendo == slot;
+    final tieneImagen = url != null && url.isNotEmpty;
+    return SizedBox(
+      width: 200,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(etiqueta, style: const TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
           Row(
             children: [
               Container(
-                width: 90,
-                height: 90,
+                width: 64,
+                height: 64,
                 decoration: BoxDecoration(
                   color: NVColors.primaryLight,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 alignment: Alignment.center,
-                child: _subiendoLogo
-                    ? const CircularProgressIndicator()
-                    : (_configuracion?.logoUrl != null &&
-                            _configuracion!.logoUrl!.isNotEmpty
+                child: subiendoEste
+                    ? const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : (tieneImagen
                         ? Padding(
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(8),
                             child: CachedNetworkImage(
-                              imageUrl: _configuracion!.logoUrl!,
-                              fit: BoxFit.contain,
-                            ),
+                                imageUrl: url, fit: BoxFit.contain),
                           )
                         : const Icon(Icons.image_outlined,
-                            size: 36, color: NVColors.primary)),
+                            size: 28, color: NVColors.primary)),
               ),
-              const SizedBox(width: 16),
-              ElevatedButton.icon(
-                onPressed: _subiendoLogo ? null : _cambiarLogo,
-                icon: const Icon(Icons.upload),
-                label: Text(_configuracion?.logoUrl != null &&
-                        _configuracion!.logoUrl!.isNotEmpty
-                    ? 'Cambiar logo'
-                    : 'Subir logo'),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextButton(
+                  onPressed:
+                      subiendoEste ? null : () => _cambiarImagen(slot),
+                  child: Text(tieneImagen ? 'Cambiar' : 'Subir'),
+                ),
               ),
             ],
           ),
+          const SizedBox(height: 4),
+          Text(ayuda,
+              style:
+                  const TextStyle(color: NVColors.textoSecundario, fontSize: 11)),
         ],
       ),
     );
@@ -362,6 +414,53 @@ class _AdminAparienciaPageState extends State<AdminAparienciaPage> {
       ),
     );
   }
+}
+
+/// Los 3 slots de imagen de configuracion_sitio (logo, sello GOV.CO, sello
+/// Colombia) comparten exactamente el mismo flujo de subida — esto evita
+/// triplicar el método _cambiarImagen para cada uno.
+class _SlotImagenConfig {
+  final String nombre;
+  final String carpeta;
+  final String? Function(ConfiguracionSitio?) pathActual;
+  final Future<void> Function(ConfiguracionSitioService, String url, String path)
+      guardar;
+  final ConfiguracionSitio Function(
+      ConfiguracionSitio actual, String url, String path) aplicar;
+
+  _SlotImagenConfig({
+    required this.nombre,
+    required this.carpeta,
+    required this.pathActual,
+    required this.guardar,
+    required this.aplicar,
+  });
+
+  static final logo = _SlotImagenConfig(
+    nombre: 'Logo',
+    carpeta: 'logo',
+    pathActual: (c) => c?.logoPath,
+    guardar: (s, url, path) => s.actualizarLogo(logoUrl: url, logoPath: path),
+    aplicar: (c, url, path) => c.copyWith(logoUrl: url, logoPath: path),
+  );
+
+  static final govco = _SlotImagenConfig(
+    nombre: 'Sello GOV.CO',
+    carpeta: 'sello-govco',
+    pathActual: (c) => c?.logoGovcoPath,
+    guardar: (s, url, path) => s.actualizarLogoGovco(url: url, path: path),
+    aplicar: (c, url, path) =>
+        c.copyWith(logoGovcoUrl: url, logoGovcoPath: path),
+  );
+
+  static final colombia = _SlotImagenConfig(
+    nombre: 'Sello de Colombia',
+    carpeta: 'sello-colombia',
+    pathActual: (c) => c?.logoColombiaPath,
+    guardar: (s, url, path) => s.actualizarLogoColombia(url: url, path: path),
+    aplicar: (c, url, path) =>
+        c.copyWith(logoColombiaUrl: url, logoColombiaPath: path),
+  );
 }
 
 class _DialogoBanner extends StatefulWidget {

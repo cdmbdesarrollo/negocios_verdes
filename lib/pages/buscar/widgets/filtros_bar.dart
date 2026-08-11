@@ -91,84 +91,72 @@ class _FiltrosBarState extends State<FiltrosBar> {
           onChanged: (v) => widget.onCambio(widget.filtro.copyWith(query: v)),
         ),
         const SizedBox(height: 12),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            ChipFiltro(
+              etiqueta: 'Todas las categorías',
+              seleccionado: widget.filtro.categoriaSlug == null,
+              onTap: () => widget.onCambio(widget.filtro.copyWith(
+                limpiarCategoria: true,
+                limpiarSubcategoria: true,
+              )),
+            ),
+            for (final c in widget.categorias)
               ChipFiltro(
-                etiqueta: 'Todas las categorías',
-                seleccionado: widget.filtro.categoriaSlug == null,
+                etiqueta: c.nombre,
+                icono: c.icono,
+                seleccionado: widget.filtro.categoriaSlug == c.slug,
                 onTap: () => widget.onCambio(widget.filtro.copyWith(
-                  limpiarCategoria: true,
+                  categoriaSlug: c.slug,
                   limpiarSubcategoria: true,
                 )),
               ),
-              const SizedBox(width: 8),
-              for (final c in widget.categorias) ...[
-                ChipFiltro(
-                  etiqueta: c.nombre,
-                  icono: c.icono,
-                  seleccionado: widget.filtro.categoriaSlug == c.slug,
-                  onTap: () => widget.onCambio(widget.filtro.copyWith(
-                    categoriaSlug: c.slug,
-                    limpiarSubcategoria: true,
-                  )),
-                ),
-                const SizedBox(width: 8),
-              ],
-            ],
-          ),
+          ],
         ),
         if (subcategoriasDisponibles.isNotEmpty) ...[
           const SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ChipFiltro(
+                etiqueta: 'Todas',
+                seleccionado: widget.filtro.subcategoriaSlug == null,
+                onTap: () => widget.onCambio(
+                    widget.filtro.copyWith(limpiarSubcategoria: true)),
+              ),
+              for (final s in subcategoriasDisponibles)
                 ChipFiltro(
-                  etiqueta: 'Todas',
-                  seleccionado: widget.filtro.subcategoriaSlug == null,
+                  etiqueta: s.nombre,
+                  icono: s.icono,
+                  seleccionado: widget.filtro.subcategoriaSlug == s.slug,
                   onTap: () => widget.onCambio(
-                      widget.filtro.copyWith(limpiarSubcategoria: true)),
+                      widget.filtro.copyWith(subcategoriaSlug: s.slug)),
                 ),
-                const SizedBox(width: 8),
-                for (final s in subcategoriasDisponibles) ...[
-                  ChipFiltro(
-                    etiqueta: s.nombre,
-                    icono: s.icono,
-                    seleccionado: widget.filtro.subcategoriaSlug == s.slug,
-                    onTap: () => widget.onCambio(
-                        widget.filtro.copyWith(subcategoriaSlug: s.slug)),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-              ],
-            ),
+            ],
           ),
         ],
         const SizedBox(height: 8),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            ChipFiltro(
+              etiqueta: 'Todos los municipios',
+              seleccionado: widget.filtro.municipio == null,
+              onTap: () => widget.onCambio(
+                  widget.filtro.copyWith(limpiarMunicipio: true)),
+            ),
+            for (final m in kMunicipios)
               ChipFiltro(
-                etiqueta: 'Todos los municipios',
-                seleccionado: widget.filtro.municipio == null,
-                onTap: () => widget.onCambio(
-                    widget.filtro.copyWith(limpiarMunicipio: true)),
+                etiqueta: m,
+                seleccionado: widget.filtro.municipio == m,
+                onTap: () =>
+                    widget.onCambio(widget.filtro.copyWith(municipio: m)),
               ),
-              const SizedBox(width: 8),
-              for (final m in kMunicipios) ...[
-                ChipFiltro(
-                  etiqueta: m,
-                  seleccionado: widget.filtro.municipio == m,
-                  onTap: () =>
-                      widget.onCambio(widget.filtro.copyWith(municipio: m)),
-                ),
-                const SizedBox(width: 8),
-              ],
-            ],
-          ),
+          ],
         ),
       ],
     );

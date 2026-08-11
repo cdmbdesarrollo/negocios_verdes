@@ -9,9 +9,14 @@ import 'package:flutter/material.dart';
 /// SOLO para el botón de WhatsApp (color de marca reconocible, no se reusa
 /// como acento genérico). Sin texto de CTA en mayúsculas sostenidas.
 abstract final class NVColors {
-  static const Color primary = Color(0xFF1E7A4C);
-  static const Color primaryDark = Color(0xFF124D30);
-  static const Color primaryLight = Color(0xFFDCEEE0);
+  // Verde institucional real de la CDMB (#038F67) — tomado directo de su
+  // Sede Electrónica (micolombiadigital.gov.co), donde es el color del
+  // ítem de navegación activo y de la franja inferior del pie de página.
+  // Negocios Verdes es un micrositio de esa página, por eso el primary ya
+  // no es un verde inventado sino el verde real de la entidad.
+  static const Color primary = Color(0xFF038F67);
+  static const Color primaryDark = Color(0xFF026B4D);
+  static const Color primaryLight = Color(0xFFDCEEE6);
 
   static const Color accent = Color(0xFFD98B2B);
   static const Color accentDark = Color(0xFFB06F1D);
