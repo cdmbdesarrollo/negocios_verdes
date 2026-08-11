@@ -157,10 +157,13 @@ class _GaleriaEditorState extends State<GaleriaEditor> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Foto de portada', style: TextStyle(fontWeight: FontWeight.bold)),
+        const Text('Foto de portada o logo',
+            style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
         const Text(
-          'Obligatoria para poder publicar el negocio.',
+          'Obligatoria para poder publicar el negocio. Puede ser una foto '
+          'real o el logo del negocio — se muestra completa, sin recortar '
+          'ni estirar.',
           style: TextStyle(color: NVColors.textoSecundario, fontSize: 12),
         ),
         const SizedBox(height: 8),
@@ -192,10 +195,12 @@ class _GaleriaEditorState extends State<GaleriaEditor> {
               border: Border.all(color: NVColors.borde),
             ),
             clipBehavior: Clip.antiAlias,
+            padding: const EdgeInsets.all(12),
+            alignment: Alignment.center,
             child: _subiendoPortada
                 ? const Center(child: CircularProgressIndicator())
                 : (_portadaUrl != null
-                    ? CachedNetworkImage(imageUrl: _portadaUrl!, fit: BoxFit.cover)
+                    ? CachedNetworkImage(imageUrl: _portadaUrl!, fit: BoxFit.contain)
                     : const Center(
                         child: Icon(Icons.add_a_photo_outlined,
                             size: 40, color: NVColors.primary),

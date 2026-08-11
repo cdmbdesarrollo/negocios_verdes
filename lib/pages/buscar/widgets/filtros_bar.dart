@@ -5,6 +5,7 @@ import '../../../core/widgets/chip_filtro.dart';
 import '../../../models/categoria_oficial.dart';
 import '../../../models/filtro_busqueda.dart';
 import '../../../models/subcategoria.dart';
+import '../../../theme/nv_colors.dart';
 
 class FiltrosBar extends StatefulWidget {
   final List<CategoriaOficial> categorias;
@@ -90,7 +91,9 @@ class _FiltrosBarState extends State<FiltrosBar> {
           ),
           onChanged: (v) => widget.onCambio(widget.filtro.copyWith(query: v)),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
+        _etiquetaFiltro('Categoría'),
+        const SizedBox(height: 6),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -116,13 +119,16 @@ class _FiltrosBarState extends State<FiltrosBar> {
           ],
         ),
         if (subcategoriasDisponibles.isNotEmpty) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
+          _etiquetaFiltro('Subcategoría — dentro de la categoría elegida'),
+          const SizedBox(height: 6),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
               ChipFiltro(
                 etiqueta: 'Todas',
+                variante: true,
                 seleccionado: widget.filtro.subcategoriaSlug == null,
                 onTap: () => widget.onCambio(
                     widget.filtro.copyWith(limpiarSubcategoria: true)),
@@ -131,6 +137,7 @@ class _FiltrosBarState extends State<FiltrosBar> {
                 ChipFiltro(
                   etiqueta: s.nombre,
                   icono: s.icono,
+                  variante: true,
                   seleccionado: widget.filtro.subcategoriaSlug == s.slug,
                   onTap: () => widget.onCambio(
                       widget.filtro.copyWith(subcategoriaSlug: s.slug)),
@@ -138,7 +145,9 @@ class _FiltrosBarState extends State<FiltrosBar> {
             ],
           ),
         ],
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
+        _etiquetaFiltro('Municipio'),
+        const SizedBox(height: 6),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -159,6 +168,18 @@ class _FiltrosBarState extends State<FiltrosBar> {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _etiquetaFiltro(String texto) {
+    return Text(
+      texto.toUpperCase(),
+      style: const TextStyle(
+        color: NVColors.textoSecundario,
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.4,
+      ),
     );
   }
 }

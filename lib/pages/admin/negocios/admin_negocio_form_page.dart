@@ -323,6 +323,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           if (_municipio != null)
             SelectorUbicacionMapa(
               municipio: _municipio!,
+              direccionController: _direccionCtrl,
               latitudInicial: _latitud,
               longitudInicial: _longitud,
               onCambio: (lat, lng) {

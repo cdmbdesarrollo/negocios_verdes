@@ -47,18 +47,18 @@ class NegocioCard extends StatelessWidget {
             // altura fija en su lugar.
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
+              Container(
                 width: 100,
                 height: 128,
+                color: NVColors.primaryLight,
+                padding: const EdgeInsets.all(8),
+                alignment: Alignment.center,
                 child: negocio.fotoPortadaUrl != null &&
                         negocio.fotoPortadaUrl!.isNotEmpty
                     ? CachedNetworkImage(
-                        imageUrl: negocio.fotoPortadaUrl!, fit: BoxFit.cover)
-                    : Container(
-                        color: NVColors.primaryLight,
-                        child: const Icon(Icons.storefront,
-                            color: NVColors.primary, size: 32),
-                      ),
+                        imageUrl: negocio.fotoPortadaUrl!, fit: BoxFit.contain)
+                    : const Icon(Icons.storefront,
+                        color: NVColors.primary, size: 32),
               ),
               Expanded(
                   child: Padding(

@@ -204,17 +204,21 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
     );
   }
 
+  /// BoxFit.contain (no cover) a propósito — muchos negocios solo tienen a
+  /// mano su logo, no una foto ancha de portada, y recortarlo/estirarlo a
+  /// la fuerza para llenar un banner se veía borroso y mal encuadrado.
+  /// Así se ve completo tanto un logo como una foto real.
   Widget _portada(Negocio negocio) {
-    return SizedBox(
+    return Container(
       width: double.infinity,
       height: 280,
+      color: NVColors.primaryLight,
+      padding: const EdgeInsets.all(20),
+      alignment: Alignment.center,
       child: negocio.fotoPortadaUrl != null && negocio.fotoPortadaUrl!.isNotEmpty
-          ? CachedNetworkImage(imageUrl: negocio.fotoPortadaUrl!, fit: BoxFit.cover)
-          : Container(
-              color: NVColors.primaryLight,
-              child: const Icon(Icons.storefront,
-                  size: 64, color: NVColors.primary),
-            ),
+          ? CachedNetworkImage(
+              imageUrl: negocio.fotoPortadaUrl!, fit: BoxFit.contain)
+          : const Icon(Icons.storefront, size: 64, color: NVColors.primary),
     );
   }
 
