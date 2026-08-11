@@ -181,6 +181,7 @@ class _InicioPageState extends State<InicioPage> {
         children: [
           HeroSlider(slides: _slides),
           _buscadorPersistente(context),
+          _seccionEstadisticas(context),
           if (_destacados.isNotEmpty) _seccionDestacados(context),
           if (_categorias.isNotEmpty) _seccionCategorias(context),
           if (_subcategorias.isNotEmpty) _seccionSubcategorias(context),
@@ -257,6 +258,55 @@ class _InicioPageState extends State<InicioPage> {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Franja de cifras — cuentan hacia arriba desde 0 con TweenAnimationBuilder
+  /// en vez de aparecer ya escritas: cuando _cargar() termina y llega el
+  /// total real por setState, el "end" del tween cambia y el número sube
+  /// solo, sin animación manual que armar a mano. Municipios es fijo, pero
+  /// se anima igual para que las 3 cifras se vean como un mismo conjunto,
+  /// no dos animadas y una estática.
+  Widget _seccionEstadisticas(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      color: NVColors.primary,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: Wrap(
+            alignment: WrapAlignment.spaceEvenly,
+            runSpacing: 20,
+            children: [
+              _estadistica('Municipios', kMunicipios.length),
+              _estadistica('Negocios verdes', _totalNegocios),
+              _estadistica('Categorías', _categorias.length),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _estadistica(String etiqueta, int valor) {
+    return SizedBox(
+      width: 160,
+      child: Column(
+        children: [
+          _NumeroAnimado(valor: valor),
+          const SizedBox(height: 4),
+          Text(
+            etiqueta,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -463,6 +513,33 @@ class _InicioPageState extends State<InicioPage> {
             child: const Text('Conocer más'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Cuenta desde 0 hasta [valor] cada vez que [valor] cambia — sin
+/// AnimationController propio que crear/limpiar: TweenAnimationBuilder ya
+/// maneja ese ciclo de vida y reacciona solo a que cambie el "end".
+class _NumeroAnimado extends StatelessWidget {
+  final int valor;
+
+  const _NumeroAnimado({required this.valor});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: valor.toDouble()),
+      duration: const Duration(milliseconds: 1400),
+      curve: Curves.easeOutCubic,
+      builder: (context, valorAnimado, _) => Text(
+        valorAnimado.round().toString(),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 34,
+          fontWeight: FontWeight.bold,
+          height: 1,
+        ),
       ),
     );
   }
