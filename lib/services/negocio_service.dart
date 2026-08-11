@@ -4,8 +4,16 @@ import '../core/texto_utils.dart';
 import '../models/filtro_busqueda.dart';
 import '../models/negocio.dart';
 
+// categorias_oficiales!negocios_categoria_oficial_id_fkey (no solo
+// "categorias_oficiales"): desde que existe negocios_categorias,
+// PostgREST ve DOS caminos posibles de negocios a categorias_oficiales (el
+// FK directo de la categoría principal, y el de la tabla puente) y sin este
+// hint explícito responde 300 "more than one relationship was found" en
+// CUALQUIER consulta de negocios — se cae el sitio público entero, no solo
+// el admin. Este hint fija cuál de los dos es el embed "plano" de arriba.
 const String _selectConEmbeds =
-    '*, categorias_oficiales(*), negocio_fotos(*), '
+    '*, categorias_oficiales!negocios_categoria_oficial_id_fkey(*), '
+    'negocio_fotos(*), '
     'negocios_subcategorias(subcategorias(*)), '
     'negocios_categorias(categorias_oficiales(*))';
 
