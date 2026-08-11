@@ -5,6 +5,7 @@ import '../../../catalogos.dart';
 import '../../../core/admin_guard.dart';
 import '../../../core/widgets/badge_nivel.dart';
 import '../../../core/widgets/chip_filtro.dart';
+import '../../../core/widgets/error_dialog.dart';
 import '../../../core/widgets/nv_card.dart';
 import '../../../models/negocio.dart';
 import '../../../services/negocio_service.dart';
@@ -97,7 +98,7 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
       await _service.eliminar(n.id);
       _cargar();
     } catch (e) {
-      _mostrarError(e);
+      if (mounted) mostrarErrorEliminar(context, e);
     }
   }
 
@@ -197,9 +198,15 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
     // un negocio del medio de la lista eso puede confundir qué tarjeta le
     // corresponde a cuál dato justo en el momento del borrado (mismo
     // problema ya visto y corregido en la lista de banners).
+    //
+    // Antes toda la tarjeta era tocable (onTap acá mismo) para ir a editar,
+    // con el botón de eliminar ANIDADO adentro de esa misma zona — un tap
+    // exacto sobre "eliminar" podía disparar también la navegación a
+    // editar, cerrando el diálogo de confirmación a medias. Ahora "editar"
+    // es un ícono explícito, igual que en categorías/subcategorías/
+    // banners, sin superponer zonas tocables con acciones distintas.
     return NVCard(
       key: ValueKey(n.id),
-      onTap: () => context.go('/admin/negocios/${n.id}/editar'),
       child: Row(
         children: [
           ClipRRect(
@@ -258,6 +265,10 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
                 onPressed: () => _alternarDestacado(n),
               ),
             ],
+          ),
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () => context.go('/admin/negocios/${n.id}/editar'),
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline),

@@ -181,11 +181,11 @@ class _InicioPageState extends State<InicioPage> {
         children: [
           HeroSlider(slides: _slides),
           _buscadorPersistente(context),
-          _seccionEstadisticas(context),
           if (_destacados.isNotEmpty) _seccionDestacados(context),
           if (_categorias.isNotEmpty) _seccionCategorias(context),
           if (_subcategorias.isNotEmpty) _seccionSubcategorias(context),
           _seccionMunicipios(context),
+          _seccionEstadisticas(context),
           _seccionQueSon(context),
           const PiePagina(),
         ],

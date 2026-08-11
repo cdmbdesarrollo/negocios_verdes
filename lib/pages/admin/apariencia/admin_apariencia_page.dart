@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/admin_guard.dart';
 import '../../../core/selector_imagen.dart';
+import '../../../core/widgets/error_dialog.dart';
 import '../../../core/widgets/nv_card.dart';
 import '../../../models/banner_sitio.dart';
 import '../../../models/configuracion_sitio.dart';
@@ -180,7 +181,7 @@ class _AdminAparienciaPageState extends State<AdminAparienciaPage> {
           .catchError((_) {});
       _cargar();
     } catch (e) {
-      _avisar(e.toString().replaceFirst('Exception: ', ''));
+      if (mounted) mostrarErrorEliminar(context, e);
     }
   }
 

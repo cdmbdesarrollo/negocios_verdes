@@ -114,13 +114,11 @@ class _SiteShellState extends State<SiteShell> {
                   onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
                 )
               else
-                TextButton.icon(
+                IconButton(
+                  tooltip: 'Acceso administrativo',
                   onPressed: () => context.go('/admin/login'),
-                  icon: const Icon(Icons.lock_outline, size: 15),
-                  label: const Text('Acceso administrativo'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: NVColors.textoSecundario,
-                  ),
+                  icon: const Icon(Icons.lock_outline,
+                      color: NVColors.textoSecundario),
                 ),
             ],
           ),

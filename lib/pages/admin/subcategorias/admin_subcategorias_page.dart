@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/admin_guard.dart';
 import '../../../core/texto_utils.dart';
 import '../../../core/widgets/chip_filtro.dart';
+import '../../../core/widgets/error_dialog.dart';
 import '../../../core/widgets/icono_etiqueta.dart';
 import '../../../core/widgets/nv_card.dart';
 import '../../../core/widgets/selector_icono_imagen.dart';
@@ -103,7 +104,7 @@ class _AdminSubcategoriasPageState extends State<AdminSubcategoriasPage> {
       await _subService.eliminar(s.id);
       _cargar();
     } catch (e) {
-      _mostrarError(e);
+      if (mounted) mostrarErrorEliminar(context, e);
     }
   }
 

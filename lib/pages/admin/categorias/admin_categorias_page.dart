@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/admin_guard.dart';
 import '../../../core/texto_utils.dart';
+import '../../../core/widgets/error_dialog.dart';
 import '../../../core/widgets/icono_etiqueta.dart';
 import '../../../core/widgets/nv_card.dart';
 import '../../../core/widgets/selector_icono_imagen.dart';
@@ -21,16 +22,6 @@ class _AdminCategoriasPageState extends State<AdminCategoriasPage> {
   final _service = CategoriaService();
   List<CategoriaOficial>? _categorias;
   String? _error;
-
-  // TEMPORAL: log de diagnóstico visible en pantalla para encontrar el
-  // paso exacto donde se rompe el borrado — quitar junto con _diagnostico()
-  // y el panel en build() una vez identificada la causa real.
-  final List<String> _debugLog = [];
-
-  void _diagnostico(String mensaje) {
-    if (!mounted) return;
-    setState(() => _debugLog.add(mensaje));
-  }
 
   @override
   void initState() {
@@ -77,27 +68,17 @@ class _AdminCategoriasPageState extends State<AdminCategoriasPage> {
               onPressed: () => Navigator.pop(context, false),
               child: const Text('Cancelar')),
           TextButton(
-              onPressed: () {
-                _diagnostico('0: botón Eliminar tocado dentro del diálogo.');
-                Navigator.pop(context, true);
-              },
+              onPressed: () => Navigator.pop(context, true),
               child: const Text('Eliminar')),
         ],
       ),
     );
-    _diagnostico('0.5: showDialog resolvió con confirmar=$confirmar.');
     if (confirmar != true) return;
-    // TEMPORAL: instrumentación para encontrar en qué paso exacto se
-    // rompe la pantalla — quitar una vez identificado.
-    _diagnostico('1: diálogo confirmado, llamando a Supabase...');
     try {
       await _service.eliminar(categoria.id);
-      _diagnostico('2: Supabase respondió OK, recargando lista...');
       _cargar();
-      _diagnostico('3: _cargar() invocado, terminado el flujo.');
     } catch (e) {
-      _diagnostico('ERROR capturado: $e');
-      _mostrarError(e);
+      if (mounted) mostrarErrorEliminar(context, e);
     }
   }
 
@@ -116,31 +97,7 @@ class _AdminCategoriasPageState extends State<AdminCategoriasPage> {
         icon: const Icon(Icons.add),
         label: const Text('Nueva categoría'),
       ),
-      body: Column(
-        children: [
-          if (_debugLog.isNotEmpty) _panelDiagnostico(),
-          Expanded(child: _construirCuerpo()),
-        ],
-      ),
-    );
-  }
-
-  // TEMPORAL: ver comentario junto a _debugLog arriba.
-  Widget _panelDiagnostico() {
-    return Container(
-      width: double.infinity,
-      color: Colors.yellow.shade100,
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('DIAGNÓSTICO (temporal):',
-              style: TextStyle(fontWeight: FontWeight.bold)),
-          for (final linea in _debugLog)
-            Text(linea, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
-        ],
-      ),
+      body: _construirCuerpo(),
     );
   }
 
