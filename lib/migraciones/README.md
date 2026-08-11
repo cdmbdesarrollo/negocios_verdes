@@ -22,3 +22,7 @@ en un Supabase nuevo:
 10. `0010_seed_admin.sql` — **requiere un paso manual antes** (crear el usuario
     desde Authentication → Add user en el Dashboard). Ver el comentario dentro
     del archivo.
+11. `0011_sitio_configuracion_y_banners.sql` — logo y banners del carrusel de
+    inicio administrables desde `/admin/apariencia` (proyectos ya montados
+    antes de que existiera este archivo solo necesitan correr este, no hay
+    que repetir el resto).

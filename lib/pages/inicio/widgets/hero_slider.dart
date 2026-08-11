@@ -1,27 +1,38 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
-/// Contenido de una diapositiva. Sin foto por ahora (fondo = degradado de
-/// marca) — si más adelante se quiere una imagen real de fondo, agregar un
-/// campo `imagenUrl` opcional aquí y usar DecorationImage en vez del
-/// gradient cuando venga con valor.
+/// Contenido de una diapositiva — dos variantes:
+/// - [SlideInfo.imagen]: banner subido desde /admin/apariencia (sin texto,
+///   el banner ES la imagen), opcionalmente tocable.
+/// - [SlideInfo.texto]: diapositiva "de fábrica" (título+subtítulo+ícono+
+///   degradado), la que se muestra mientras no haya banners reales
+///   cargados — ver InicioPage.
 class SlideInfo {
-  final String titulo;
-  final String subtitulo;
-  final IconData icono;
-  final Gradient fondo;
+  final String? imagenUrl;
+  final VoidCallback? onTap;
+  final String? titulo;
+  final String? subtitulo;
+  final IconData? icono;
+  final Gradient? fondo;
   final String? textoBoton;
-  final VoidCallback? onBoton;
 
-  const SlideInfo({
+  const SlideInfo.imagen({required this.imagenUrl, this.onTap})
+      : titulo = null,
+        subtitulo = null,
+        icono = null,
+        fondo = null,
+        textoBoton = null;
+
+  const SlideInfo.texto({
     required this.titulo,
     required this.subtitulo,
     required this.icono,
     required this.fondo,
     this.textoBoton,
-    this.onBoton,
-  });
+    this.onTap,
+  }) : imagenUrl = null;
 }
 
 /// Carrusel superior con auto-avance e indicadores de puntos. Construido
@@ -54,6 +65,18 @@ class _HeroSliderState extends State<HeroSlider> {
     super.initState();
     _controller = PageController();
     _iniciarAutoAvance();
+  }
+
+  @override
+  void didUpdateWidget(covariant HeroSlider oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Si InicioPage termina de cargar los banners reales después del
+    // primer build, la cantidad de diapositivas cambia — reinicia el timer
+    // para no animar hacia un índice que ya no existe.
+    if (oldWidget.slides.length != widget.slides.length) {
+      _indiceActual = 0;
+      _iniciarAutoAvance();
+    }
   }
 
   void _iniciarAutoAvance() {
@@ -120,49 +143,61 @@ class _HeroSliderState extends State<HeroSlider> {
   }
 
   Widget _diapositiva(SlideInfo slide) {
-    final contenido = Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-      decoration: BoxDecoration(gradient: slide.fondo),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(slide.icono, color: Colors.white, size: 40),
-          const SizedBox(height: 12),
-          Text(
-            slide.titulo,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Text(
-              slide.subtitulo,
+    final Widget contenido;
+    if (slide.imagenUrl != null) {
+      contenido = SizedBox(
+        width: double.infinity,
+        height: double.infinity,
+        child: CachedNetworkImage(
+          imageUrl: slide.imagenUrl!,
+          fit: BoxFit.cover,
+        ),
+      );
+    } else {
+      contenido = Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        decoration: BoxDecoration(gradient: slide.fondo),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(slide.icono, color: Colors.white, size: 40),
+            const SizedBox(height: 12),
+            Text(
+              slide.titulo!,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70, fontSize: 15),
-            ),
-          ),
-          if (slide.textoBoton != null) ...[
-            const SizedBox(height: 16),
-            OutlinedButton(
-              onPressed: slide.onBoton,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                side: const BorderSide(color: Colors.white),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
               ),
-              child: Text(slide.textoBoton!),
             ),
+            const SizedBox(height: 8),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Text(
+                slide.subtitulo!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70, fontSize: 15),
+              ),
+            ),
+            if (slide.textoBoton != null) ...[
+              const SizedBox(height: 16),
+              OutlinedButton(
+                onPressed: slide.onTap,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Colors.white),
+                ),
+                child: Text(slide.textoBoton!),
+              ),
+            ],
           ],
-        ],
-      ),
-    );
+        ),
+      );
+    }
 
-    if (slide.onBoton == null) return contenido;
-    return InkWell(onTap: slide.onBoton, child: contenido);
+    if (slide.onTap == null) return contenido;
+    return InkWell(onTap: slide.onTap, child: contenido);
   }
 }

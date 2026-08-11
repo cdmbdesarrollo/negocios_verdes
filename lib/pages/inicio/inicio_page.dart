@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../catalogos.dart';
 import '../../core/seo_tags.dart';
@@ -7,10 +8,12 @@ import '../../core/widgets/chip_filtro.dart';
 import '../../core/widgets/logo_negocios_verdes.dart';
 import '../../core/widgets/pie_pagina.dart';
 import '../../core/widgets/section_header.dart';
+import '../../models/banner_sitio.dart';
 import '../../models/categoria_oficial.dart';
 import '../../models/filtro_busqueda.dart';
 import '../../models/negocio.dart';
 import '../../models/subcategoria.dart';
+import '../../services/banner_service.dart';
 import '../../services/categoria_service.dart';
 import '../../services/negocio_service.dart';
 import '../../services/subcategoria_service.dart';
@@ -29,11 +32,13 @@ class _InicioPageState extends State<InicioPage> {
   final _negocioService = NegocioService();
   final _categoriaService = CategoriaService();
   final _subcategoriaService = SubcategoriaService();
+  final _bannerService = BannerService();
   final _busquedaCtrl = TextEditingController();
 
   List<CategoriaOficial> _categorias = [];
   List<Subcategoria> _subcategorias = [];
   List<Negocio> _destacados = [];
+  List<BannerSitio> _banners = [];
   int _totalNegocios = 0;
   bool _cargando = true;
 
@@ -62,15 +67,18 @@ class _InicioPageState extends State<InicioPage> {
         _categoriaService.listarTodas(),
         _subcategoriaService.listarTodas(),
         _negocioService.buscar(const FiltroBusqueda()),
+        _bannerService.listarActivos(),
       ]);
       if (!mounted) return;
       final categorias = resultados[0] as List<CategoriaOficial>;
       final subcategorias = resultados[1] as List<Subcategoria>;
       final todos = resultados[2] as List<Negocio>;
+      final banners = resultados[3] as List<BannerSitio>;
       setState(() {
         _categorias = categorias.where((c) => c.activo).toList();
         _subcategorias = subcategorias.where((s) => s.activo).toList();
         _destacados = todos.where((n) => n.destacado).take(6).toList();
+        _banners = banners;
         _totalNegocios = todos.length;
         _cargando = false;
       });
@@ -92,8 +100,40 @@ class _InicioPageState extends State<InicioPage> {
     context.go(uri.toString());
   }
 
-  List<SlideInfo> get _slides => [
-        SlideInfo(
+  /// Banners reales subidos desde /admin/apariencia si existen; si la lista
+  /// todavía está vacía (recién instalado, o mientras carga), se usan las 4
+  /// diapositivas de fábrica de más abajo — nunca se muestra un carrusel
+  /// vacío.
+  List<SlideInfo> get _slides {
+    if (_banners.isNotEmpty) {
+      return [
+        for (final banner in _banners)
+          SlideInfo.imagen(
+            imagenUrl: banner.imagenUrl,
+            onTap: _resolverDestino(banner.urlDestino, banner.abrirEnPestanaNueva),
+          ),
+      ];
+    }
+    return _slidesDeFabrica;
+  }
+
+  VoidCallback? _resolverDestino(String? urlDestino, bool nuevaPestana) {
+    if (urlDestino == null || urlDestino.trim().isEmpty) return null;
+    if (urlDestino.startsWith('/')) {
+      return () => context.go(urlDestino);
+    }
+    return () async {
+      final uri = Uri.tryParse(urlDestino);
+      if (uri == null) return;
+      await launchUrl(
+        uri,
+        webOnlyWindowName: nuevaPestana ? '_blank' : '_self',
+      );
+    };
+  }
+
+  List<SlideInfo> get _slidesDeFabrica => [
+        SlideInfo.texto(
           titulo: 'Negocios Verdes CDMB',
           subtitulo: _cargando
               ? 'El directorio de negocios verdes de los 13 municipios de '
@@ -103,7 +143,7 @@ class _InicioPageState extends State<InicioPage> {
           icono: Icons.eco,
           fondo: NVColors.gradientHero,
         ),
-        SlideInfo(
+        SlideInfo.texto(
           titulo: '¿Qué son los Negocios Verdes?',
           subtitulo: 'Conoce los requisitos y beneficios de hacer parte '
               'del programa de la CDMB.',
@@ -111,18 +151,18 @@ class _InicioPageState extends State<InicioPage> {
           fondo:
               const LinearGradient(colors: [NVColors.accentDark, NVColors.accent]),
           textoBoton: 'Conocer más',
-          onBoton: () => context.go('/nosotros'),
+          onTap: () => context.go('/nosotros'),
         ),
-        SlideInfo(
+        SlideInfo.texto(
           titulo: 'Encuentra por categoría',
           subtitulo: 'Agrosistemas, ecoturismo, apicultura, energías '
               'renovables y más.',
           icono: Icons.category_outlined,
           fondo: const LinearGradient(colors: [NVColors.exito, NVColors.primary]),
           textoBoton: 'Ver categorías',
-          onBoton: () => _irA(const {}),
+          onTap: () => _irA(const {}),
         ),
-        SlideInfo(
+        SlideInfo.texto(
           titulo: '13 municipios, un solo directorio',
           subtitulo: 'Bucaramanga, Floridablanca, Girón, Piedecuesta y 9 '
               'municipios más de la jurisdicción CDMB.',
@@ -130,7 +170,7 @@ class _InicioPageState extends State<InicioPage> {
           fondo:
               const LinearGradient(colors: [NVColors.primaryDark, NVColors.exito]),
           textoBoton: 'Buscar por municipio',
-          onBoton: () => context.go('/buscar'),
+          onTap: () => context.go('/buscar'),
         ),
       ];
 

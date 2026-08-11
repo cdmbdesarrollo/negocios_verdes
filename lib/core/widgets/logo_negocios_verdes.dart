@@ -1,10 +1,13 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
-/// Logo de la app en un solo lugar. Para cambiarlo, reemplaza
-/// assets/images/logo.png por cualquier otro PNG (idealmente con fondo
-/// transparente) — no hace falta tocar código en ningún otro archivo.
-/// Si el archivo llegara a faltar o fallar al cargar, cae de vuelta al
-/// emoji 🌱 en vez de romper la pantalla.
+import '../../models/configuracion_sitio.dart';
+import '../../services/configuracion_sitio_service.dart';
+
+/// Logo de la app en un solo lugar. Se administra desde /admin/apariencia
+/// (sube la imagen a Storage, sin necesidad de recompilar) — mientras no se
+/// haya subido uno, cae de vuelta a assets/images/logo.png, y si hasta ese
+/// asset llegara a faltar, cae al emoji 🌱. Nunca rompe la pantalla.
 class LogoNegociosVerdes extends StatelessWidget {
   final double altura;
 
@@ -12,6 +15,23 @@ class LogoNegociosVerdes extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return FutureBuilder<ConfiguracionSitio>(
+      future: ConfiguracionSitioCache.obtener(),
+      builder: (context, snapshot) {
+        final url = snapshot.data?.logoUrl;
+        if (url != null && url.isNotEmpty) {
+          return CachedNetworkImage(
+            imageUrl: url,
+            height: altura,
+            errorWidget: (context, url, error) => _logoPorDefecto(),
+          );
+        }
+        return _logoPorDefecto();
+      },
+    );
+  }
+
+  Widget _logoPorDefecto() {
     return Image.asset(
       'assets/images/logo.png',
       height: altura,

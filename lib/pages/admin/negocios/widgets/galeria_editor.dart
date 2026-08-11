@@ -1,16 +1,12 @@
-import 'dart:typed_data';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/selector_imagen.dart';
 import '../../../../models/negocio_foto.dart';
 import '../../../../services/storage_service.dart';
 import '../../../../theme/nv_colors.dart';
 
 const int _maxFotosGaleria = 5;
-const int _maxBytesPorFoto = 8 * 1024 * 1024; // 8 MB
-const Set<String> _extensionesNoSoportadas = {'heic', 'heif'};
 
 class FotoLocal {
   final String url;
@@ -51,7 +47,6 @@ class GaleriaEditor extends StatefulWidget {
 
 class _GaleriaEditorState extends State<GaleriaEditor> {
   final _storage = StorageService();
-  final _picker = ImagePicker();
 
   String? _portadaUrl;
   String? _portadaPath;
@@ -70,31 +65,6 @@ class _GaleriaEditorState extends State<GaleriaEditor> {
         .toList();
   }
 
-  Future<Uint8List?> _elegirImagen() async {
-    final archivo =
-        await _picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
-    if (archivo == null) return null;
-
-    final extension = archivo.name.split('.').last.toLowerCase();
-    if (_extensionesNoSoportadas.contains(extension)) {
-      _avisar(
-          'Formato HEIC/HEIF no soportado — exporta la foto como JPG o PNG e intenta de nuevo.');
-      return null;
-    }
-
-    final bytes = await archivo.readAsBytes();
-    if (bytes.lengthInBytes > _maxBytesPorFoto) {
-      _avisar('La foto pesa demasiado (máximo 8 MB) — usa una versión más liviana.');
-      return null;
-    }
-    return bytes;
-  }
-
-  String _extensionDe(Uint8List bytes) {
-    if (bytes.length > 4 && bytes[0] == 0x89 && bytes[1] == 0x50) return 'png';
-    return 'jpg';
-  }
-
   void _avisar(String mensaje) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -102,15 +72,15 @@ class _GaleriaEditorState extends State<GaleriaEditor> {
   }
 
   Future<void> _subirPortada() async {
-    final bytes = await _elegirImagen();
-    if (bytes == null) return;
+    final elegida = await elegirImagenValidada(onError: _avisar);
+    if (elegida == null) return;
     setState(() => _subiendoPortada = true);
     try {
       final subida = await _storage.subirImagen(
-        bytes: bytes,
-        negocioId: widget.negocioId,
-        carpeta: 'portada',
-        extension: _extensionDe(bytes),
+        bytes: elegida.bytes,
+        bucket: kBucketNegociosFotos,
+        carpeta: 'negocios/${widget.negocioId}/portada',
+        extension: elegida.extension,
       );
       setState(() {
         _portadaUrl = subida.url;
@@ -138,15 +108,15 @@ class _GaleriaEditorState extends State<GaleriaEditor> {
           'Ya tienes $_maxFotosGaleria fotos en la galería — quita alguna para agregar otra.');
       return;
     }
-    final bytes = await _elegirImagen();
-    if (bytes == null) return;
+    final elegida = await elegirImagenValidada(onError: _avisar);
+    if (elegida == null) return;
     setState(() => _subiendoGaleria = true);
     try {
       final subida = await _storage.subirImagen(
-        bytes: bytes,
-        negocioId: widget.negocioId,
-        carpeta: 'galeria',
-        extension: _extensionDe(bytes),
+        bytes: elegida.bytes,
+        bucket: kBucketNegociosFotos,
+        carpeta: 'negocios/${widget.negocioId}/galeria',
+        extension: elegida.extension,
       );
       setState(() {
         _galeria = [
