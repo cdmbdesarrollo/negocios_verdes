@@ -28,6 +28,7 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
   Negocio? _negocio;
   bool _cargando = true;
   bool _noEncontrado = false;
+  bool _descripcionExpandida = false;
 
   @override
   void initState() {
@@ -151,6 +152,13 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
                           mensaje:
                               mensajeWhatsappPredeterminado(negocio.nombre),
                         ),
+                        if (negocio.telefono != null &&
+                            negocio.telefono!.isNotEmpty)
+                          OutlinedButton.icon(
+                            onPressed: () => _llamar(negocio.telefono!),
+                            icon: const Icon(Icons.call_outlined),
+                            label: Text(negocio.telefono!),
+                          ),
                         if (negocio.facebookUrl != null &&
                             negocio.facebookUrl!.isNotEmpty)
                           OutlinedButton.icon(
@@ -175,8 +183,9 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    Text(negocio.descripcion,
-                        style: const TextStyle(fontSize: 15, height: 1.5)),
+                    _infoContacto(negocio),
+                    const SizedBox(height: 24),
+                    _descripcion(negocio.descripcion),
                     if (negocio.fotos.isNotEmpty) ...[
                       const SizedBox(height: 24),
                       const Text('Galería',
@@ -287,6 +296,86 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
     );
   }
 
+  /// Los botones de arriba (WhatsApp, Llamar, redes) son para actuar; este
+  /// bloque es para LEER — con SelectableText, para que se pueda copiar un
+  /// correo o número a mano sin depender de que el link funcione.
+  Widget _infoContacto(Negocio negocio) {
+    final filas = [
+      if (negocio.direccion != null && negocio.direccion!.isNotEmpty)
+        (Icons.place_outlined, '${negocio.direccion}, ${negocio.municipio}'),
+      (Icons.chat_bubble_outline, '+${negocio.whatsapp} (WhatsApp)'),
+      if (negocio.telefono != null && negocio.telefono!.isNotEmpty)
+        (Icons.call_outlined, negocio.telefono!),
+      if (negocio.email != null && negocio.email!.isNotEmpty)
+        (Icons.email_outlined, negocio.email!),
+    ];
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: NVColors.primaryLight,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Información de contacto',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          const SizedBox(height: 12),
+          for (final (icono, valor) in filas) _filaContacto(icono, valor),
+        ],
+      ),
+    );
+  }
+
+  Widget _filaContacto(IconData icono, String valor) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icono, size: 18, color: NVColors.primaryDark),
+          const SizedBox(width: 10),
+          Expanded(
+            child: SelectableText(valor, style: const TextStyle(fontSize: 14)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Descripciones largas se ven "muy largas" a simple vista — se recorta a
+  /// 5 líneas con un botón "Leer más" en vez de bajarle el límite de
+  /// caracteres en el formulario (eso perdería contenido real que el
+  /// negocio sí quiere mostrar, solo que no todo de una).
+  Widget _descripcion(String texto) {
+    const umbralExpandir = 280;
+    final esLarga = texto.length > umbralExpandir;
+    final expandida = !esLarga || _descripcionExpandida;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          texto,
+          textAlign: TextAlign.justify,
+          maxLines: expandida ? null : 5,
+          overflow: expandida ? TextOverflow.visible : TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 15, height: 1.5),
+        ),
+        if (esLarga)
+          TextButton(
+            style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(0, 36),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+            onPressed: () => setState(
+                () => _descripcionExpandida = !_descripcionExpandida),
+            child: Text(_descripcionExpandida ? 'Leer menos' : 'Leer más'),
+          ),
+      ],
+    );
+  }
+
   Widget _chip(String texto) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -302,6 +391,10 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
     final uri = Uri.tryParse(url.startsWith('http') ? url : 'https://$url');
     if (uri == null) return;
     await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _llamar(String telefono) async {
+    await launchUrl(Uri(scheme: 'tel', path: telefono));
   }
 }
 

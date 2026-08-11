@@ -91,14 +91,15 @@ class NegocioCard extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 2),
-                        Text(
-                          '${negocio.categoriaOficial?.iconoOTexto ?? ''} '
-                          '${negocio.categoriaOficial?.nombre ?? ''} · ${negocio.municipio}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              color: NVColors.textoSecundario, fontSize: 12),
-                        ),
+                        if (negocio.categoriaOficial != null)
+                          Text(
+                            '${negocio.categoriaOficial!.iconoOTexto} '
+                            '${negocio.categoriaOficial!.nombre}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                color: NVColors.textoSecundario, fontSize: 12),
+                          ),
                         const SizedBox(height: 6),
                         Text(
                           negocio.descripcionCorta,
@@ -113,6 +114,12 @@ class NegocioCard extends StatelessWidget {
                           children: [
                             BadgeNivel(
                                 nivel: negocio.nivelDesarrollo, tamanoFuente: 10),
+                            // Municipio y subcategoría como tags aparte del
+                            // nombre de categoría de arriba — de un vistazo,
+                            // sin tener que abrir la ficha del negocio.
+                            _tag(negocio.municipio, icono: Icons.place_outlined),
+                            for (final sub in negocio.subcategorias.take(2))
+                              _tag(sub.nombre),
                             if (!negocio.tieneUbicacion)
                               Container(
                                 padding: const EdgeInsets.symmetric(
@@ -139,6 +146,34 @@ class NegocioCard extends StatelessWidget {
           ),
         ),
       );
+  }
+
+  Widget _tag(String texto, {IconData? icono}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: NVColors.primaryLight,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icono != null) ...[
+            Icon(icono, size: 10, color: NVColors.primaryDark),
+            const SizedBox(width: 3),
+          ],
+          Text(
+            texto,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+                fontSize: 10,
+                color: NVColors.primaryDark,
+                fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -206,7 +206,7 @@ class _InicioPageState extends State<InicioPage> {
     return Container(
       width: double.infinity,
       color: NVColors.fondo,
-      padding: const EdgeInsets.fromLTRB(20, 28, 20, 36),
+      padding: const EdgeInsets.fromLTRB(20, 28, 20, 16),
       child: Column(
         children: [
           Center(
@@ -265,7 +265,7 @@ class _InicioPageState extends State<InicioPage> {
 
   Widget _seccionCategorias(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 32, 20, 8),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
