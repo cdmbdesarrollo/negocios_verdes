@@ -225,15 +225,30 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
         scrollDirection: Axis.horizontal,
         itemCount: negocio.fotos.length,
         separatorBuilder: (_, _) => const SizedBox(width: 10),
-        itemBuilder: (context, i) => ClipRRect(
+        itemBuilder: (context, i) => InkWell(
           borderRadius: BorderRadius.circular(12),
-          child: CachedNetworkImage(
-            imageUrl: negocio.fotos[i].url,
-            width: 110,
-            height: 110,
-            fit: BoxFit.cover,
+          onTap: () => _abrirVisor(context, negocio, i),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: CachedNetworkImage(
+              imageUrl: negocio.fotos[i].url,
+              width: 110,
+              height: 110,
+              fit: BoxFit.cover,
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _abrirVisor(BuildContext context, Negocio negocio, int indiceInicial) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.92),
+      builder: (_) => _VisorGaleria(
+        urls: [for (final f in negocio.fotos) f.url],
+        indiceInicial: indiceInicial,
       ),
     );
   }
@@ -283,5 +298,119 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
     final uri = Uri.tryParse(url.startsWith('http') ? url : 'https://$url');
     if (uri == null) return;
     await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+}
+
+/// Visor de galería a pantalla completa — las miniaturas antes no hacían
+/// nada al tocarlas. BoxFit.contain (no cover) a propósito: acá sí importa
+/// ver la foto completa, no recortada.
+class _VisorGaleria extends StatefulWidget {
+  final List<String> urls;
+  final int indiceInicial;
+
+  const _VisorGaleria({required this.urls, required this.indiceInicial});
+
+  @override
+  State<_VisorGaleria> createState() => _VisorGaleriaState();
+}
+
+class _VisorGaleriaState extends State<_VisorGaleria> {
+  late final PageController _controller;
+  late int _indice;
+
+  @override
+  void initState() {
+    super.initState();
+    _indice = widget.indiceInicial;
+    _controller = PageController(initialPage: _indice);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _ir(int destino) {
+    if (destino < 0 || destino >= widget.urls.length) return;
+    _controller.animateToPage(
+      destino,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final variasFotos = widget.urls.length > 1;
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(12),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          PageView.builder(
+            controller: _controller,
+            itemCount: widget.urls.length,
+            onPageChanged: (i) => setState(() => _indice = i),
+            itemBuilder: (context, i) => InteractiveViewer(
+              child: Center(
+                child: CachedNetworkImage(
+                  imageUrl: widget.urls[i],
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 0,
+            right: 0,
+            child: _botonRedondo(Icons.close, () => Navigator.pop(context)),
+          ),
+          if (variasFotos) ...[
+            Positioned(
+              left: 4,
+              child: _botonRedondo(
+                  Icons.chevron_left, () => _ir(_indice - 1)),
+            ),
+            Positioned(
+              right: 4,
+              child: _botonRedondo(
+                  Icons.chevron_right, () => _ir(_indice + 1)),
+            ),
+            Positioned(
+              bottom: 8,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '${_indice + 1} / ${widget.urls.length}',
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _botonRedondo(IconData icono, VoidCallback onTap) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.5),
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Icon(icono, color: Colors.white, size: 26),
+        ),
+      ),
+    );
   }
 }

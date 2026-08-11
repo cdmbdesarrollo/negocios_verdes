@@ -57,83 +57,121 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     }
     final municipiosOrdenados = porMunicipio.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
+    final maxMunicipio = municipiosOrdenados.isEmpty
+        ? 1
+        : municipiosOrdenados.first.value;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Panel administrativo',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${negocios.length} negocios en total',
-            style: const TextStyle(color: NVColors.textoSecundario),
-          ),
-          const SizedBox(height: 20),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              _tarjetaEstadistica(
-                  'Publicados', activos, Icons.check_circle, NVColors.exito),
-              _tarjetaEstadistica('En verificación', enVerificacion,
-                  Icons.hourglass_top, NVColors.nivelEnVerificacion),
-              _tarjetaEstadistica('Sin foto de portada', sinFoto,
-                  Icons.image_not_supported, NVColors.error),
-              _tarjetaEstadistica('Municipios con negocios',
-                  porMunicipio.length, Icons.map, NVColors.primary),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Negocios por municipio',
-                  style: Theme.of(context).textTheme.titleMedium),
-              TextButton(
-                onPressed: () => context.go('/admin/negocios'),
-                child: const Text('Ver todos los negocios'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          NVCard(
-            child: Column(
+      padding: const EdgeInsets.all(24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1000),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (final entrada in municipiosOrdenados)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(entrada.key),
-                        Text('${entrada.value}',
-                            style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Hola de nuevo',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${negocios.length} negocios registrados en total',
+                        style: const TextStyle(color: NVColors.textoSecundario),
+                      ),
+                    ],
                   ),
-                if (municipiosOrdenados.isEmpty)
-                  const Text('Todavía no hay negocios registrados.'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () => context.go('/admin/negocios/nuevo'),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Nuevo negocio'),
+                ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 24),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _tarjetaEstadistica(
+                  context,
+                  etiqueta: 'Publicados',
+                  valor: activos,
+                  icono: Icons.check_circle_outline,
+                  color: NVColors.exito,
+                ),
+                _tarjetaEstadistica(
+                  context,
+                  etiqueta: 'En verificación',
+                  valor: enVerificacion,
+                  icono: Icons.hourglass_top,
+                  color: NVColors.nivelEnVerificacion,
+                ),
+                _tarjetaEstadistica(
+                  context,
+                  etiqueta: 'Sin foto de portada',
+                  valor: sinFoto,
+                  icono: Icons.image_not_supported_outlined,
+                  color: NVColors.error,
+                ),
+                _tarjetaEstadistica(
+                  context,
+                  etiqueta: 'Municipios con negocios',
+                  valor: porMunicipio.length,
+                  icono: Icons.map_outlined,
+                  color: NVColors.primary,
+                ),
+              ],
+            ),
+            const SizedBox(height: 28),
+            Text('Negocios por municipio',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+            NVCard(
+              child: municipiosOrdenados.isEmpty
+                  ? const Text('Todavía no hay negocios registrados.')
+                  : Column(
+                      children: [
+                        for (final entrada in municipiosOrdenados)
+                          _filaMunicipio(entrada.key, entrada.value, maxMunicipio),
+                      ],
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _tarjetaEstadistica(
-      String etiqueta, int valor, IconData icono, Color color) {
+    BuildContext context, {
+    required String etiqueta,
+    required int valor,
+    required IconData icono,
+    required Color color,
+  }) {
     return SizedBox(
-      width: 220,
+      width: 226,
       child: NVCard(
+        onTap: () => context.go('/admin/negocios'),
         child: Row(
           children: [
-            Icon(icono, color: color, size: 32),
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Icon(icono, color: color, size: 22),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -141,7 +179,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 children: [
                   Text('$valor',
                       style: const TextStyle(
-                          fontSize: 22, fontWeight: FontWeight.bold)),
+                          fontSize: 24, fontWeight: FontWeight.bold)),
                   Text(etiqueta,
                       style: const TextStyle(
                           color: NVColors.textoSecundario, fontSize: 12)),
@@ -150,6 +188,41 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _filaMunicipio(String municipio, int valor, int maximo) {
+    final proporcion = maximo == 0 ? 0.0 : valor / maximo;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(municipio,
+                maxLines: 1, overflow: TextOverflow.ellipsis),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: proporcion,
+                minHeight: 10,
+                backgroundColor: NVColors.fondo,
+                valueColor: const AlwaysStoppedAnimation(NVColors.primary),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 24,
+            child: Text('$valor',
+                textAlign: TextAlign.right,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }

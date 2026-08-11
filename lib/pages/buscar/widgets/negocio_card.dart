@@ -25,6 +25,8 @@ class NegocioCard extends StatelessWidget {
     final borderRadius = BorderRadius.circular(16);
     return Material(
       color: NVColors.superficie,
+      elevation: 2,
+      shadowColor: Colors.black.withValues(alpha: 0.14),
       borderRadius: borderRadius,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
