@@ -110,7 +110,7 @@ class _AdminCategoriasPageState extends State<AdminCategoriasPage> {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 90),
       itemCount: categorias.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, i) {
         final c = categorias[i];
         return NVCard(

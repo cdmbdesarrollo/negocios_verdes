@@ -38,7 +38,7 @@ class _BuscarPageState extends State<BuscarPage> {
   final _mapController = MapController();
   final Map<String, GlobalKey> _clavesPorNegocio = {};
 
-  late FiltroBusqueda _filtro;
+  FiltroBusqueda _filtro = const FiltroBusqueda();
   List<Negocio>? _negocios;
   List<CategoriaOficial> _categorias = [];
   List<Subcategoria> _subcategorias = [];
@@ -46,6 +46,7 @@ class _BuscarPageState extends State<BuscarPage> {
   bool _cargando = true;
   String? _error;
   Timer? _debounceBusqueda;
+  bool _inicializado = false;
 
   @override
   void initState() {
@@ -56,6 +57,18 @@ class _BuscarPageState extends State<BuscarPage> {
           'Encuentra negocios verdes por categoría, subcategoría o municipio '
           'en la jurisdicción de la CDMB.',
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // GoRouterState.of(context) no se puede llamar de forma segura desde
+    // initState (dispara una aserción real de Flutter: depende de
+    // inherited widgets que todavía no terminan de montarse ahí) — por eso
+    // la carga inicial se dispara aquí, protegida para correr una sola vez
+    // aunque didChangeDependencies se vuelva a llamar después.
+    if (_inicializado) return;
+    _inicializado = true;
     final params = GoRouterState.of(context).uri.queryParameters;
     _filtro = FiltroBusqueda.fromQueryParameters(params);
     _cargarCatalogosYBuscar();

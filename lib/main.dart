@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/supabase_config.dart';
@@ -33,6 +35,11 @@ Future<void> main() async {
   // URLs limpias (sin #) en Flutter Web.
   usePathUrlStrategy();
 
+  // Necesario para DateFormat(patron, 'es_CO') en admin_logs_page.dart y
+  // cualquier otro formateo de fecha en español — sin esto, DateFormat con
+  // locale explícito lanza LocaleDataException.
+  await initializeDateFormatting('es_CO');
+
   // Falla ruidoso en vez de dejar la app arrancar a medias sin backend.
   validarConfiguracion();
 
@@ -58,7 +65,10 @@ Future<void> main() async {
     );
   };
 
-  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+  // publishableKey (no anonKey, deprecado desde supabase_flutter 2.17):
+  // mismo valor, terminología nueva del SDK — sigue siendo seguro traerlo
+  // al cliente, la protección real son las políticas RLS.
+  await Supabase.initialize(url: supabaseUrl, publishableKey: supabaseAnonKey);
 
   appRouter = _construirRouter();
 

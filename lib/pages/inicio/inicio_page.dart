@@ -250,9 +250,9 @@ class _InicioPageState extends State<InicioPage> {
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          const ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: 560),
-            child: Text(
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: const Text(
               'Son emprendimientos y empresas que ofrecen bienes y servicios '
               'con impacto ambiental positivo, verificados por la CDMB en su '
               'jurisdicción. Conoce los requisitos y beneficios de hacer '

@@ -136,7 +136,7 @@ class NegocioCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }
+

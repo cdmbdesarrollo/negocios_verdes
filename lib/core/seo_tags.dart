@@ -42,7 +42,10 @@ void _upsertMeta({String? name, String? property, required String content}) {
   final existentes = web.document.querySelectorAll(selector);
   if (existentes.length > 0) {
     for (var i = 0; i < existentes.length; i++) {
-      existentes.item(i)?.setAttribute('content', content);
+      // NodeList.item() devuelve Node? (no Element?). Un cast directo
+      // alcanza: querySelectorAll('meta[...]') solo puede devolver
+      // elementos <meta>, nunca otro tipo de Node.
+      (existentes.item(i) as web.Element?)?.setAttribute('content', content);
     }
     return;
   }

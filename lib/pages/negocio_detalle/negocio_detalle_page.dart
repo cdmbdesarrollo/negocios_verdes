@@ -224,7 +224,7 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: negocio.fotos.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (context, i) => ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: CachedNetworkImage(
