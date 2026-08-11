@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../catalogos.dart';
 import '../../core/seo_tags.dart';
 import '../../core/widgets/pie_pagina.dart';
+import '../../core/widgets/redes_sociales_cdmb.dart';
 import '../../theme/nv_colors.dart';
 
-/// Nota: a propósito NO se inventaron teléfono/correo/dirección exactos de
-/// la Ventanilla de Negocios Verdes — solo se muestra lo que se pudo
-/// verificar (el sitio oficial de CDMB). Completar con los datos reales de
-/// la Ventanilla antes de lanzar.
+/// Los datos de contacto son los mismos, verificados, de la Sede
+/// Electrónica de la CDMB (micolombiadigital.gov.co) — ver constantes
+/// kCdmb* en catalogos.dart, única fuente de verdad compartida con
+/// PiePagina. No hay número/correo específico de la Ventanilla de
+/// Negocios Verdes todavía, así que se usa el conmutador institucional.
 class ContactoPage extends StatefulWidget {
   const ContactoPage({super.key});
 
@@ -53,11 +56,34 @@ class _ContactoPageState extends State<ContactoPage> {
                     ),
                     const SizedBox(height: 24),
                     _filaContacto(
+                        icono: Icons.location_on_outlined, texto: kCdmbDireccion),
+                    _filaContacto(
+                        icono: Icons.schedule_outlined, texto: kCdmbHorario),
+                    _filaContacto(
+                      icono: Icons.call_outlined,
+                      texto: 'Conmutador $kCdmbTelefonoConmutador',
+                    ),
+                    _filaContacto(
+                      icono: Icons.phone_iphone_outlined,
+                      texto: 'Celular $kCdmbTelefonoMovil',
+                    ),
+                    _filaContacto(
+                      icono: Icons.support_agent_outlined,
+                      texto: 'Línea gratuita $kCdmbLineaGratuita',
+                    ),
+                    _filaContacto(
+                      icono: Icons.email_outlined,
+                      texto: kCdmbCorreoInstitucional,
+                      onTap: () => _abrir('mailto:$kCdmbCorreoInstitucional'),
+                    ),
+                    _filaContacto(
                       icono: Icons.language,
                       texto: 'www.cdmb.gov.co',
                       onTap: () => _abrir('https://www.cdmb.gov.co'),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
+                    const RedesSocialesCdmb(color: NVColors.primary),
+                    const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -65,11 +91,10 @@ class _ContactoPageState extends State<ContactoPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Text(
-                        'Para consultar teléfono, correo y dirección exactos '
-                        'de atención, visita la página oficial de la CDMB. '
-                        'Esta ficha se completará con los datos directos de '
-                        'la Ventanilla de Negocios Verdes en cuanto estén '
-                        'confirmados.',
+                        'Estos son los canales institucionales de la CDMB. Si '
+                        'escribes por un negocio verde, menciona '
+                        '"Negocios Verdes" para que te dirijan directo a la '
+                        'Ventanilla.',
                         style: TextStyle(color: NVColors.textoPrincipal),
                       ),
                     ),
@@ -96,10 +121,11 @@ class _ContactoPageState extends State<ContactoPage> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icono, color: NVColors.primary),
+            Icon(icono, color: NVColors.primary, size: 20),
             const SizedBox(width: 12),
-            Text(texto, style: const TextStyle(fontSize: 15)),
+            Expanded(child: Text(texto, style: const TextStyle(fontSize: 15))),
           ],
         ),
       ),

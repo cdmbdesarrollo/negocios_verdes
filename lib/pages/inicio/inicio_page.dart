@@ -273,25 +273,25 @@ class _InicioPageState extends State<InicioPage> {
       borderRadius: BorderRadius.circular(16),
       onTap: () => _irA({'categoria': categoria.slug}),
       child: Container(
-        width: 160,
-        height: 132,
-        padding: const EdgeInsets.all(16),
+        width: 132,
+        height: 104,
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: NVColors.primaryLight,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(categoria.iconoOTexto, style: const TextStyle(fontSize: 28)),
-            const SizedBox(height: 8),
+            Text(categoria.iconoOTexto, style: const TextStyle(fontSize: 20)),
+            const SizedBox(height: 6),
             Expanded(
               child: Text(
                 categoria.nombre,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style:
-                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 11),
               ),
             ),
           ],
