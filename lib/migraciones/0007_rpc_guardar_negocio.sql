@@ -43,7 +43,12 @@ end;
 $$;
 
 create or replace function guardar_negocio(
-  p_id uuid,                       -- null = crear, no-null = actualizar
+  -- SIEMPRE viene con valor: el cliente genera el uuid con Uuid().v4() al
+  -- abrir el formulario (crear o editar), ANTES de llamar a esta función —
+  -- necesita ese id de antemano para las rutas de Storage de portada/
+  -- galería (ver GaleriaEditor). Por eso esta función decide crear vs.
+  -- actualizar comprobando si el id YA EXISTE, no si es nulo.
+  p_id uuid,
   p_nombre text,
   p_categoria_oficial_id uuid,
   p_municipio text,
@@ -71,9 +76,10 @@ security definer
 set search_path = public
 as $$
 declare
-  v_id uuid;
+  v_id uuid := p_id;
   v_slug text;
   v_accion text;
+  v_ya_existe boolean;
 begin
   -- Re-chequeo obligatorio: al ser SECURITY DEFINER, esta función bypassea
   -- RLS por diseño. Sin este chequeo, cualquier autenticado (o incluso
@@ -83,10 +89,11 @@ begin
     raise exception 'No autorizado: se requiere una cuenta administradora de CDMB.';
   end if;
 
-  v_slug := generar_slug_unico(p_nombre, p_id);
+  select exists(select 1 from negocios where id = v_id) into v_ya_existe;
 
-  if p_id is null then
-    v_id := gen_random_uuid();
+  v_slug := generar_slug_unico(p_nombre, v_id);
+
+  if not v_ya_existe then
     v_accion := 'crear_negocio';
 
     insert into negocios (
@@ -103,7 +110,6 @@ begin
       auth.uid()
     );
   else
-    v_id := p_id;
     v_accion := 'editar_negocio';
 
     update negocios set

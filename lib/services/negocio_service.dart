@@ -107,9 +107,16 @@ class NegocioService {
   /// Crea (id nulo) o edita (id con valor) un negocio completo, incluida la
   /// sincronización de subcategorías, vía la RPC guardar_negocio — atómico
   /// entre negocios, negocios_subcategorias y admin_logs (ver
-  /// 0007_rpc_guardar_negocio.sql). Devuelve el id del negocio.
+  /// 0007_rpc_guardar_negocio.sql). Devuelve el id del negocio (el mismo
+  /// [id] que se pasó).
+  ///
+  /// [id] es SIEMPRE requerido, incluso al crear: el formulario lo genera
+  /// con Uuid().v4() antes de abrir el editor de fotos, porque necesita ese
+  /// id de antemano para las rutas de Storage de portada/galería. La RPC
+  /// decide crear vs. actualizar comprobando si ese id ya existe, no si es
+  /// nulo — ver el comentario en la propia función SQL.
   Future<String> guardar({
-    String? id,
+    required String id,
     required String nombre,
     required String categoriaOficialId,
     required String municipio,
