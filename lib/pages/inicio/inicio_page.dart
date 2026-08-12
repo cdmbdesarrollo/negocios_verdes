@@ -101,21 +101,25 @@ class _InicioPageState extends State<InicioPage> {
     context.go(uri.toString());
   }
 
-  /// Banners reales subidos desde /admin/apariencia si existen; si la lista
-  /// todavía está vacía (recién instalado, o mientras carga), se usan las 4
-  /// diapositivas de fábrica de más abajo — nunca se muestra un carrusel
-  /// vacío.
+  /// Banners reales subidos desde /admin/apariencia, primero, seguidos de
+  /// las diapositivas de fábrica que hagan falta para completar el mismo
+  /// total que las de fábrica — así el carrusel SIEMPRE tiene con qué
+  /// rotar (flechas, puntos, auto-avance) desde el primer banner real que
+  /// se sube, en vez de quedar fijo en una sola imagen estática hasta que
+  /// haya 2 o más banners reales cargados. Antes, con exactamente 1 banner
+  /// real, el carrusel mostraba solo ese banner sin controles — un
+  /// comportamiento correcto por diseño (nada más con qué rotar) pero que
+  /// se leía como "el slider está roto".
   List<SlideInfo> get _slides {
-    if (_banners.isNotEmpty) {
-      return [
-        for (final banner in _banners)
-          SlideInfo.imagen(
-            imagenUrl: banner.imagenUrl,
-            onTap: _resolverDestino(banner.urlDestino, banner.abrirEnPestanaNueva),
-          ),
-      ];
-    }
-    return _slidesDeFabrica;
+    final reales = [
+      for (final banner in _banners)
+        SlideInfo.imagen(
+          imagenUrl: banner.imagenUrl,
+          onTap: _resolverDestino(banner.urlDestino, banner.abrirEnPestanaNueva),
+        ),
+    ];
+    if (reales.length >= _slidesDeFabrica.length) return reales;
+    return [...reales, ..._slidesDeFabrica];
   }
 
   VoidCallback? _resolverDestino(String? urlDestino, bool nuevaPestana) {
@@ -212,28 +216,56 @@ class _InicioPageState extends State<InicioPage> {
         children: [
           Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
+              constraints: const BoxConstraints(maxWidth: 580),
               child: Material(
-                elevation: 4,
-                shadowColor: Colors.black.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(30),
+                elevation: 6,
+                shadowColor: NVColors.primary.withValues(alpha: 0.25),
+                borderRadius: BorderRadius.circular(32),
                 child: TextField(
                   controller: _busquedaCtrl,
                   onSubmitted: _buscar,
+                  style: const TextStyle(fontSize: 15),
                   decoration: InputDecoration(
                     hintText: 'Busca por nombre, categoría o municipio...',
+                    hintStyle: const TextStyle(
+                        color: NVColors.textoSecundario, fontSize: 14),
                     prefixIcon:
                         const Icon(Icons.search, color: NVColors.primary),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 18),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide.none,
+                      borderRadius: BorderRadius.circular(32),
+                      borderSide: BorderSide(
+                          color: NVColors.primary.withValues(alpha: 0.15)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(32),
+                      borderSide: BorderSide(
+                          color: NVColors.primary.withValues(alpha: 0.15)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(32),
+                      borderSide:
+                          const BorderSide(color: NVColors.primary, width: 1.5),
                     ),
                     filled: true,
                     fillColor: Colors.white,
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.arrow_forward),
-                      color: NVColors.primaryDark,
-                      onPressed: () => _buscar(),
+                    suffixIconConstraints:
+                        const BoxConstraints(minWidth: 0, minHeight: 0),
+                    suffixIcon: Padding(
+                      padding: const EdgeInsets.all(6),
+                      child: Material(
+                        color: NVColors.primary,
+                        shape: const CircleBorder(),
+                        child: InkWell(
+                          onTap: () => _buscar(),
+                          customBorder: const CircleBorder(),
+                          child: const Padding(
+                            padding: EdgeInsets.all(10),
+                            child: Icon(Icons.arrow_forward,
+                                color: Colors.white, size: 20),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
