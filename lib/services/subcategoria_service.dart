@@ -77,6 +77,18 @@ class SubcategoriaService {
     }
   }
 
+  /// Ver comentario en CategoriaService.contarDependientes — mismo
+  /// criterio: avisar con un número real antes de intentar, no solo
+  /// después de que el "on delete restrict" de negocios_subcategorias
+  /// falle.
+  Future<int> contarNegocios(String subcategoriaId) async {
+    final negocios = await _supabase
+        .from('negocios_subcategorias')
+        .select('negocio_id')
+        .eq('subcategoria_id', subcategoriaId);
+    return (negocios as List).length;
+  }
+
   Future<void> eliminar(String id) async {
     try {
       await _supabase.from('subcategorias').delete().eq('id', id);

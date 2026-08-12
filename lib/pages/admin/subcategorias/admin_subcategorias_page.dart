@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/admin_guard.dart';
 import '../../../core/texto_utils.dart';
 import '../../../core/widgets/chip_filtro.dart';
+import '../../../core/widgets/confirmar_eliminar_boton.dart';
 import '../../../core/widgets/error_dialog.dart';
 import '../../../core/widgets/icono_etiqueta.dart';
 import '../../../core/widgets/nv_card.dart';
@@ -82,24 +83,20 @@ class _AdminSubcategoriasPageState extends State<AdminSubcategoriasPage> {
     }
   }
 
+  Future<String?> _validarBorrado(Subcategoria s) async {
+    try {
+      final negocios = await _subService.contarNegocios(s.id);
+      if (negocios == 0) return null;
+      final verbo = negocios == 1 ? 'usa' : 'usan';
+      return '"${s.nombre}" todavía la $verbo $negocios negocio${negocios == 1 ? '' : 's'}. '
+          'Quítala de ahí primero, o desactívala en la lista para '
+          'ocultarla sin perder esos datos.';
+    } catch (e) {
+      return 'No se pudo verificar: ${e.toString().replaceFirst('Exception: ', '')}';
+    }
+  }
+
   Future<void> _eliminar(Subcategoria s) async {
-    final confirmar = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('¿Eliminar subcategoría?'),
-        content: Text(
-            'Se eliminará "${s.nombre}". Si algún negocio todavía la usa, no se podrá eliminar.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar')),
-          TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Eliminar')),
-        ],
-      ),
-    );
-    if (confirmar != true) return;
     try {
       await _subService.eliminar(s.id);
       _cargar();
@@ -212,9 +209,9 @@ class _AdminSubcategoriasPageState extends State<AdminSubcategoriasPage> {
                             icon: const Icon(Icons.edit_outlined),
                             onPressed: () => _abrirDialogo(subcategoria: s),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline),
-                            onPressed: () => _eliminar(s),
+                          ConfirmarEliminarBoton(
+                            validarAntes: () => _validarBorrado(s),
+                            onConfirmado: () => _eliminar(s),
                           ),
                         ],
                       ),

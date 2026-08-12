@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/admin_guard.dart';
 import '../../../core/texto_utils.dart';
+import '../../../core/widgets/confirmar_eliminar_boton.dart';
 import '../../../core/widgets/error_dialog.dart';
 import '../../../core/widgets/icono_etiqueta.dart';
 import '../../../core/widgets/nv_card.dart';
@@ -56,70 +57,30 @@ class _AdminCategoriasPageState extends State<AdminCategoriasPage> {
     }
   }
 
-  Future<void> _eliminar(CategoriaOficial categoria) async {
-    // Aviso previo con números reales, no solo después de que falle: las
-    // categorías de semilla siempre traen sus propias subcategorías, así
-    // que sin este chequeo el borrado "nunca funciona" y no queda claro
-    // por qué.
-    final ({int subcategorias, int negocios}) conteo;
+  /// Corre antes de dejar pasar a modo confirmación — si devuelve texto,
+  /// ConfirmarEliminarBoton lo muestra en un SnackBar y no confirma nada.
+  /// Aviso con números reales en vez de dejar que falle a ciegas: las
+  /// categorías de semilla siempre traen sus propias subcategorías, así
+  /// que sin este chequeo el borrado "nunca funciona" sin explicación.
+  Future<String?> _validarBorrado(CategoriaOficial categoria) async {
     try {
-      conteo = await _service.contarDependientes(categoria.id);
-    } catch (e) {
-      if (mounted) mostrarErrorEliminar(context, e);
-      return;
-    }
-    if (!mounted) return;
-
-    if (conteo.subcategorias > 0 || conteo.negocios > 0) {
+      final conteo = await _service.contarDependientes(categoria.id);
+      if (conteo.subcategorias == 0 && conteo.negocios == 0) return null;
       final partes = <String>[
         if (conteo.subcategorias > 0)
           '${conteo.subcategorias} subcategoría${conteo.subcategorias == 1 ? '' : 's'}',
         if (conteo.negocios > 0)
           '${conteo.negocios} negocio${conteo.negocios == 1 ? '' : 's'}',
       ];
-      await showDialog<void>(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('No se puede eliminar todavía'),
-          content: Text(
-              '"${categoria.nombre}" todavía tiene ${partes.join(' y ')} '
-              'asociados. Quítalos o reasígnalos primero.\n\nSi solo '
-              'quieres dejar de mostrarla en el sitio sin perder esos '
-              'datos, desactívala en su lugar.'),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cerrar')),
-            if (categoria.activo)
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _alternarActivo(categoria);
-                },
-                child: const Text('Desactivar en su lugar'),
-              ),
-          ],
-        ),
-      );
-      return;
+      return '"${categoria.nombre}" todavía tiene ${partes.join(' y ')} '
+          'asociados. Quítalos primero, o desactívala en la lista para '
+          'ocultarla sin perder esos datos.';
+    } catch (e) {
+      return 'No se pudo verificar: ${e.toString().replaceFirst('Exception: ', '')}';
     }
+  }
 
-    final confirmar = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('¿Eliminar categoría?'),
-        content: Text('Se eliminará "${categoria.nombre}" permanentemente.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar')),
-          TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Eliminar')),
-        ],
-      ),
-    );
-    if (confirmar != true) return;
+  Future<void> _eliminar(CategoriaOficial categoria) async {
     try {
       await _service.eliminar(categoria.id);
       _cargar();
@@ -190,9 +151,9 @@ class _AdminCategoriasPageState extends State<AdminCategoriasPage> {
                 icon: const Icon(Icons.edit_outlined),
                 onPressed: () => _abrirDialogo(categoria: c),
               ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline),
-                onPressed: () => _eliminar(c),
+              ConfirmarEliminarBoton(
+                validarAntes: () => _validarBorrado(c),
+                onConfirmado: () => _eliminar(c),
               ),
             ],
           ),

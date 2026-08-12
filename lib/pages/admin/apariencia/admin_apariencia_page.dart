@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/admin_guard.dart';
 import '../../../core/selector_imagen.dart';
+import '../../../core/widgets/confirmar_eliminar_boton.dart';
 import '../../../core/widgets/error_dialog.dart';
 import '../../../core/widgets/nv_card.dart';
 import '../../../models/banner_sitio.dart';
@@ -153,22 +154,6 @@ class _AdminAparienciaPageState extends State<AdminAparienciaPage> {
   }
 
   Future<void> _eliminarBanner(BannerSitio banner) async {
-    final confirmar = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('¿Eliminar banner?'),
-        content: const Text('Esta acción no se puede deshacer.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar')),
-          TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Eliminar')),
-        ],
-      ),
-    );
-    if (confirmar != true) return;
     try {
       await _bannerService.eliminar(banner.id);
       // No bloquear la UI por esto (mismo motivo que en _cambiarImagen): si
@@ -425,10 +410,7 @@ class _AdminAparienciaPageState extends State<AdminAparienciaPage> {
               icon: const Icon(Icons.edit_outlined),
               onPressed: () => _editarBanner(banner),
             ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () => _eliminarBanner(banner),
-            ),
+            ConfirmarEliminarBoton(onConfirmado: () => _eliminarBanner(banner)),
           ],
         ),
       ),

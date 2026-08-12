@@ -5,6 +5,7 @@ import '../../../catalogos.dart';
 import '../../../core/admin_guard.dart';
 import '../../../core/widgets/badge_nivel.dart';
 import '../../../core/widgets/chip_filtro.dart';
+import '../../../core/widgets/confirmar_eliminar_boton.dart';
 import '../../../core/widgets/error_dialog.dart';
 import '../../../core/widgets/nv_card.dart';
 import '../../../models/negocio.dart';
@@ -77,23 +78,6 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
   }
 
   Future<void> _eliminar(Negocio n) async {
-    final confirmar = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('¿Eliminar negocio?'),
-        content: Text(
-            'Se eliminará "${n.nombre}" junto con su galería de fotos. Esta acción no se puede deshacer.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar')),
-          TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Eliminar')),
-        ],
-      ),
-    );
-    if (confirmar != true) return;
     try {
       await _service.eliminar(n.id);
       _cargar();
@@ -270,10 +254,7 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
             icon: const Icon(Icons.edit_outlined),
             onPressed: () => context.go('/admin/negocios/${n.id}/editar'),
           ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () => _eliminar(n),
-          ),
+          ConfirmarEliminarBoton(onConfirmado: () => _eliminar(n)),
         ],
       ),
     );
