@@ -73,7 +73,7 @@ class _FiltrosBarState extends State<FiltrosBar> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: NVColors.superficie,
         borderRadius: BorderRadius.circular(20),
@@ -107,7 +107,7 @@ class _FiltrosBarState extends State<FiltrosBar> {
                   : null,
               filled: true,
               fillColor: NVColors.fondo,
-              contentPadding: const EdgeInsets.symmetric(vertical: 14),
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(26),
                 borderSide: BorderSide.none,
@@ -123,12 +123,12 @@ class _FiltrosBarState extends State<FiltrosBar> {
             ),
             onChanged: (v) => widget.onCambio(widget.filtro.copyWith(query: v)),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 10),
           _etiquetaFiltro('Categoría'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 6,
+            runSpacing: 6,
             children: [
               ChipFiltro(
                 etiqueta: 'Todas las categorías',
@@ -151,9 +151,9 @@ class _FiltrosBarState extends State<FiltrosBar> {
             ],
           ),
           if (subcategoriasDisponibles.isNotEmpty) ...[
-            const SizedBox(height: 18),
+            const SizedBox(height: 10),
             _etiquetaFiltro('Subcategoría — dentro de la categoría elegida'),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -177,12 +177,12 @@ class _FiltrosBarState extends State<FiltrosBar> {
               ],
             ),
           ],
-          const SizedBox(height: 18),
+          const SizedBox(height: 10),
           _etiquetaFiltro('Municipio'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 6,
+            runSpacing: 6,
             children: [
               ChipFiltro(
                 etiqueta: 'Todos los municipios',

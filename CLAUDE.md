@@ -96,7 +96,7 @@ comprobando si ese id ya existe, no si es nulo.
 ## Deuda técnica conocida / Fase 2 (no construir sin que se pida)
 
 Sin tests todavía. Sin redimensionado/compresión automática de imágenes
-(solo se valida tamaño máximo 8 MB y se rechaza HEIC/HEIF client-side, ver
+(solo se valida tamaño máximo 1 MB y se rechaza HEIC/HEIF client-side, ver
 `galeria_editor.dart`). Sin pre-renderizado SEO por negocio (solo meta tags
 en tiempo de ejecución + defaults fuertes en `web/index.html`). Sin
 `sitemap.xml` real todavía (`web/robots.txt` ya apunta a `/sitemap.xml` —

@@ -50,8 +50,13 @@ class NegocioCard extends StatelessWidget {
               Container(
                 width: 100,
                 height: 128,
-                color: NVColors.primaryLight,
-                padding: const EdgeInsets.all(8),
+                // Blanco, no verde: la mayoría de los negocios suben su
+                // logo tal cual, que casi siempre ya trae fondo blanco
+                // propio — sobre un tinte verde se veía como un recuadro
+                // desencajado en vez de integrarse. Padding mínimo (antes
+                // 8) para que el logo ocupe casi toda la casilla.
+                color: Colors.white,
+                padding: const EdgeInsets.all(4),
                 alignment: Alignment.center,
                 child: negocio.fotoPortadaUrl != null &&
                         negocio.fotoPortadaUrl!.isNotEmpty

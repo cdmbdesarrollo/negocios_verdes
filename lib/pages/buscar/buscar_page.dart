@@ -209,13 +209,27 @@ class _BuscarPageState extends State<BuscarPage> {
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-          child: FiltrosBar(
-            categorias: _categorias,
-            subcategorias: _subcategorias,
-            filtro: _filtro,
-            onCambio: _alCambiarFiltro,
+        // Con 8 categorías + 13 municipios como chips, FiltrosBar puede
+        // crecer varias filas — sin este límite empujaba el área de
+        // resultados (el Expanded de abajo) a casi cero de alto en
+        // pantallas normales, y el "scroll" que quedaba visible era una
+        // franja tan chica que parecía que no se podía bajar. Se le pone un
+        // techo (fracción del alto REAL de pantalla, no de las
+        // constraints del Column — esas pueden llegar sin límite desde
+        // arriba según cómo esté armado el shell) y scroll propio adentro,
+        // así nunca se come el espacio de los resultados.
+        ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * 0.36,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: FiltrosBar(
+              categorias: _categorias,
+              subcategorias: _subcategorias,
+              filtro: _filtro,
+              onCambio: _alCambiarFiltro,
+            ),
           ),
         ),
         Padding(

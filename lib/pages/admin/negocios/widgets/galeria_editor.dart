@@ -21,7 +21,7 @@ class FotoLocal {
 /// necesita el resultado final al guardar, no gestiona la subida.
 ///
 /// Sin redimensionado/compresión automática en esta primera versión — solo
-/// se valida tamaño máximo (8 MB) y se rechaza HEIC/HEIF (muchos navegadores
+/// se valida tamaño máximo (1 MB) y se rechaza HEIC/HEIF (muchos navegadores
 /// no lo decodifican, típico de fotos de iPhone).
 class GaleriaEditor extends StatefulWidget {
   final String negocioId;
@@ -190,12 +190,16 @@ class _GaleriaEditorState extends State<GaleriaEditor> {
         children: [
           Container(
             decoration: BoxDecoration(
-              color: NVColors.primaryLight,
+              // Blanco: así el admin ve exactamente cómo se va a ver en el
+              // sitio público (mismo fondo que negocio_card.dart y
+              // negocio_detalle_page.dart) — la mayoría de los logos ya
+              // traen su propio fondo blanco.
+              color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: NVColors.borde),
             ),
             clipBehavior: Clip.antiAlias,
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(6),
             alignment: Alignment.center,
             child: _subiendoPortada
                 ? const Center(child: CircularProgressIndicator())

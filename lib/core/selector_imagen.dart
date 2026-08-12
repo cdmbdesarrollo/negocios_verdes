@@ -4,7 +4,7 @@ import 'package:image_picker/image_picker.dart';
 
 /// Política compartida de qué imágenes se aceptan — un solo lugar si algún
 /// día hay que subir/bajar el límite.
-const int kMaxBytesImagen = 8 * 1024 * 1024; // 8 MB
+const int kMaxBytesImagen = 1 * 1024 * 1024; // 1 MB
 const Set<String> _extensionesNoSoportadas = {'heic', 'heif'};
 
 class ImagenElegida {
@@ -37,7 +37,7 @@ Future<ImagenElegida?> elegirImagenValidada({
 
   final bytes = await archivo.readAsBytes();
   if (bytes.lengthInBytes > kMaxBytesImagen) {
-    onError('La imagen pesa demasiado (máximo 8 MB) — usa una versión más liviana.');
+    onError('La imagen pesa demasiado (máximo 1 MB) — usa una versión más liviana.');
     return null;
   }
 

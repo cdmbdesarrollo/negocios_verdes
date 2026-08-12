@@ -221,11 +221,15 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
   /// la fuerza para llenar un banner se veía borroso y mal encuadrado.
   /// Así se ve completo tanto un logo como una foto real.
   Widget _portada(Negocio negocio) {
+    // Blanco, no verde: casi todos los logos ya traen su propio fondo
+    // blanco — un tinte verde detrás se veía como un recuadro desencajado
+    // en vez de integrarse. Padding chico (antes 20) para que el logo
+    // ocupe casi todo el espacio en vez de verse pequeño en el centro.
     return Container(
       width: double.infinity,
       height: 280,
-      color: NVColors.primaryLight,
-      padding: const EdgeInsets.all(20),
+      color: Colors.white,
+      padding: const EdgeInsets.all(8),
       alignment: Alignment.center,
       child: negocio.fotoPortadaUrl != null && negocio.fotoPortadaUrl!.isNotEmpty
           ? CachedNetworkImage(
