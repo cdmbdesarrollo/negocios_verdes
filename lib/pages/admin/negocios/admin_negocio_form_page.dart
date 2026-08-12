@@ -417,7 +417,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
                 .toList(),
             actividades: _actividades,
             seleccionadas: _actividadIds,
-            onCambio: (ids) => _actividadIds = ids,
+            onCambio: (ids) => setState(() => _actividadIds = ids),
           ),
           const SizedBox(height: 20),
           _seccion('Ubicación'),
