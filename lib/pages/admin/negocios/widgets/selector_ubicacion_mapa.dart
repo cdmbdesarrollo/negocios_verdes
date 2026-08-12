@@ -67,6 +67,16 @@ class _SelectorUbicacionMapaState extends State<SelectorUbicacionMapa> {
   bool _buscando = false;
   String? _errorBusqueda;
 
+  // Muchos negocios no tienen una dirección real que Nominatim pueda
+  // encontrar (kilómetro X de la vía, finca sin nomenclatura) — para esos
+  // casos el admin copia lat/lng directo de Google Maps (clic derecho
+  // sobre el punto → clic en los números) y los pega acá. Los campos se
+  // mantienen sincronizados con el punto actual sin importar cómo se haya
+  // marcado (tocando el mapa, buscando dirección, o escribiéndolos aquí).
+  late final TextEditingController _latCtrl;
+  late final TextEditingController _lngCtrl;
+  String? _errorCoordenadas;
+
   @override
   void initState() {
     super.initState();
@@ -74,6 +84,17 @@ class _SelectorUbicacionMapaState extends State<SelectorUbicacionMapa> {
     if (widget.latitudInicial != null && widget.longitudInicial != null) {
       _punto = LatLng(widget.latitudInicial!, widget.longitudInicial!);
     }
+    _latCtrl = TextEditingController(
+        text: _punto?.latitude.toStringAsFixed(6) ?? '');
+    _lngCtrl = TextEditingController(
+        text: _punto?.longitude.toStringAsFixed(6) ?? '');
+  }
+
+  @override
+  void dispose() {
+    _latCtrl.dispose();
+    _lngCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -87,17 +108,47 @@ class _SelectorUbicacionMapaState extends State<SelectorUbicacionMapa> {
   LatLng _centroDe(String municipio) =>
       _centroidesMunicipio[municipio] ?? _centroCdmbPorDefecto;
 
+  void _actualizarCamposCoordenadas() {
+    _latCtrl.text = _punto?.latitude.toStringAsFixed(6) ?? '';
+    _lngCtrl.text = _punto?.longitude.toStringAsFixed(6) ?? '';
+  }
+
   void _alTocar(TapPosition posicionToque, LatLng punto) {
     setState(() {
       _punto = punto;
       _errorBusqueda = null;
+      _errorCoordenadas = null;
     });
+    _actualizarCamposCoordenadas();
     widget.onCambio(punto.latitude, punto.longitude);
   }
 
   void _quitarPunto() {
     setState(() => _punto = null);
+    _actualizarCamposCoordenadas();
     widget.onCambio(null, null);
+  }
+
+  void _usarCoordenadas() {
+    final lat = double.tryParse(_latCtrl.text.trim().replaceAll(',', '.'));
+    final lng = double.tryParse(_lngCtrl.text.trim().replaceAll(',', '.'));
+    if (lat == null || lng == null) {
+      setState(() => _errorCoordenadas =
+          'Escribe latitud y longitud válidas (ej. 7.119300 y -73.122700).');
+      return;
+    }
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      setState(() => _errorCoordenadas = 'Esas coordenadas no son válidas.');
+      return;
+    }
+    final punto = LatLng(lat, lng);
+    setState(() {
+      _errorCoordenadas = null;
+      _errorBusqueda = null;
+      _punto = punto;
+    });
+    _mapController.move(punto, 16);
+    widget.onCambio(lat, lng);
   }
 
   Future<void> _buscarDireccion() async {
@@ -143,6 +194,7 @@ class _SelectorUbicacionMapaState extends State<SelectorUbicacionMapa> {
       }
       final punto = LatLng(lat, lon);
       setState(() => _punto = punto);
+      _actualizarCamposCoordenadas();
       _mapController.move(punto, 16);
       widget.onCambio(lat, lon);
     } catch (e) {
@@ -186,6 +238,52 @@ class _SelectorUbicacionMapaState extends State<SelectorUbicacionMapa> {
         if (_errorBusqueda != null) ...[
           const SizedBox(height: 6),
           Text(_errorBusqueda!,
+              style: const TextStyle(color: NVColors.error, fontSize: 12)),
+        ],
+        const SizedBox(height: 14),
+        const Text(
+          '¿Sin dirección real (kilómetro de la vía, finca)? Pega las '
+          'coordenadas — en Google Maps: clic derecho sobre el punto → '
+          'clic en los números para copiarlos.',
+          style: TextStyle(color: NVColors.textoSecundario, fontSize: 12),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _latCtrl,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true, signed: true),
+                decoration: const InputDecoration(
+                  labelText: 'Latitud',
+                  isDense: true,
+                  hintText: 'ej. 7.119300',
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                controller: _lngCtrl,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true, signed: true),
+                decoration: const InputDecoration(
+                  labelText: 'Longitud',
+                  isDense: true,
+                  hintText: 'ej. -73.122700',
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            OutlinedButton(
+                onPressed: _usarCoordenadas, child: const Text('Usar')),
+          ],
+        ),
+        if (_errorCoordenadas != null) ...[
+          const SizedBox(height: 6),
+          Text(_errorCoordenadas!,
               style: const TextStyle(color: NVColors.error, fontSize: 12)),
         ],
         const SizedBox(height: 8),

@@ -102,31 +102,36 @@ class _GaleriaEditorState extends State<GaleriaEditor> {
     widget.onPortadaCambiada(null, null);
   }
 
+  /// Deja elegir hasta el espacio disponible EN UNA sola selección (antes
+  /// obligaba a repetir "agregar" una por una para completar la galería).
+  /// Sube las válidas en orden y las agrega todas juntas al final.
   Future<void> _agregarFotoGaleria() async {
-    if (_galeria.length >= _maxFotosGaleria) {
+    final espacioDisponible = _maxFotosGaleria - _galeria.length;
+    if (espacioDisponible <= 0) {
       _avisar(
           'Ya tienes $_maxFotosGaleria fotos en la galería — quita alguna para agregar otra.');
       return;
     }
-    final elegida = await elegirImagenValidada(onError: _avisar);
-    if (elegida == null) return;
+    final elegidas = await elegirImagenesValidadas(
+        onError: _avisar, maximo: espacioDisponible);
+    if (elegidas.isEmpty) return;
     setState(() => _subiendoGaleria = true);
     try {
-      final subida = await _storage.subirImagen(
-        bytes: elegida.bytes,
-        bucket: kBucketNegociosFotos,
-        carpeta: 'negocios/${widget.negocioId}/galeria',
-        extension: elegida.extension,
-      );
-      setState(() {
-        _galeria = [
-          ..._galeria,
-          FotoLocal(url: subida.url, storagePath: subida.path),
-        ];
-      });
+      final nuevas = <FotoLocal>[];
+      for (final elegida in elegidas) {
+        final subida = await _storage.subirImagen(
+          bytes: elegida.bytes,
+          bucket: kBucketNegociosFotos,
+          carpeta: 'negocios/${widget.negocioId}/galeria',
+          extension: elegida.extension,
+        );
+        nuevas.add(FotoLocal(url: subida.url, storagePath: subida.path));
+      }
+      if (!mounted) return;
+      setState(() => _galeria = [..._galeria, ...nuevas]);
       widget.onGaleriaCambiada(_galeria);
     } catch (e) {
-      _avisar(e.toString().replaceFirst('Exception: ', ''));
+      if (mounted) _avisar(e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _subiendoGaleria = false);
     }

@@ -47,6 +47,55 @@ Future<ImagenElegida?> elegirImagenValidada({
   );
 }
 
+/// Igual que [elegirImagenValidada] pero deja elegir varios archivos de una
+/// sola vez (selector nativo del navegador con selección múltiple) — para
+/// la galería del negocio, que antes obligaba a repetir la acción de subir
+/// una por una. Cada archivo se valida por separado (tamaño, formato); los
+/// que no pasan se cuentan y se avisan juntos en un solo mensaje al final
+/// en vez de interrumpir la selección de los demás. [maximo] recorta la
+/// selección si el usuario elige más de los que caben (espacio restante en
+/// la galería).
+Future<List<ImagenElegida>> elegirImagenesValidadas({
+  required void Function(String mensaje) onError,
+  int? maximo,
+}) async {
+  final picker = ImagePicker();
+  final archivos = await picker.pickMultiImage(imageQuality: 90);
+  if (archivos.isEmpty) return const [];
+
+  final excedente = maximo != null && archivos.length > maximo;
+  final seleccionados = excedente ? archivos.sublist(0, maximo) : archivos;
+
+  final validas = <ImagenElegida>[];
+  var rechazadas = 0;
+  for (final archivo in seleccionados) {
+    final extensionOriginal = archivo.name.split('.').last.toLowerCase();
+    if (_extensionesNoSoportadas.contains(extensionOriginal)) {
+      rechazadas++;
+      continue;
+    }
+    final bytes = await archivo.readAsBytes();
+    if (bytes.lengthInBytes > kMaxBytesImagen) {
+      rechazadas++;
+      continue;
+    }
+    validas.add(ImagenElegida(
+      bytes: bytes,
+      extension: _extensionFinal(bytes, extensionOriginal),
+    ));
+  }
+
+  if (excedente) {
+    onError('Solo caben $maximo más — se tomaron las primeras $maximo.');
+  }
+  if (rechazadas > 0) {
+    onError(
+        '$rechazadas imagen${rechazadas == 1 ? '' : 'es'} no se ${rechazadas == 1 ? 'subió' : 'subieron'} '
+        '(formato HEIC/HEIF o pesa más de 1 MB).');
+  }
+  return validas;
+}
+
 String _extensionFinal(Uint8List bytes, String extensionOriginal) {
   // La firma de bytes manda sobre el nombre de archivo — un PNG renombrado
   // a .jpg sigue siendo PNG.
