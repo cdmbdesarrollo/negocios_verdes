@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/hover_lift.dart';
 import '../../../models/negocio.dart';
 import '../../../theme/nv_colors.dart';
 import 'negocio_card.dart';
@@ -21,14 +22,36 @@ class ResultadosLista extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (negocios.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(32),
-          child: Text(
-            'No encontramos negocios con estos filtros. Prueba con otra '
-            'búsqueda o quita algún filtro.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: NVColors.textoSecundario),
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: const BoxDecoration(
+                  color: NVColors.primaryLight,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: const Icon(Icons.search_off,
+                    color: NVColors.primary, size: 30),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'No encontramos negocios con estos filtros',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Prueba con otra búsqueda o quita algún filtro.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: NVColors.textoSecundario, fontSize: 13),
+              ),
+            ],
           ),
         ),
       );
@@ -43,11 +66,13 @@ class ResultadosLista extends StatelessWidget {
         final clave = clavesPorNegocio.putIfAbsent(negocio.id, () => GlobalKey());
         return KeyedSubtree(
           key: clave,
-          child: NegocioCard(
-            negocio: negocio,
-            seleccionado: negocio.id == negocioSeleccionadoId,
-            onVerEnMapa:
-                onVerEnMapa != null ? () => onVerEnMapa!(negocio) : null,
+          child: HoverLift(
+            child: NegocioCard(
+              negocio: negocio,
+              seleccionado: negocio.id == negocioSeleccionadoId,
+              onVerEnMapa:
+                  onVerEnMapa != null ? () => onVerEnMapa!(negocio) : null,
+            ),
           ),
         );
       },
