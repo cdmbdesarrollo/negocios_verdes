@@ -4,7 +4,6 @@ import 'package:uuid/uuid.dart';
 
 import '../../../catalogos.dart';
 import '../../../core/admin_guard.dart';
-import '../../../core/widgets/chip_filtro.dart';
 import '../../../models/actividad_productiva.dart';
 import '../../../models/categoria_oficial.dart';
 import '../../../models/negocio_foto.dart';
@@ -16,8 +15,7 @@ import '../../../services/negocio_service.dart';
 import '../../../services/subcategoria_service.dart';
 import '../../../theme/nv_colors.dart';
 import 'widgets/galeria_editor.dart';
-import 'widgets/selector_actividades.dart';
-import 'widgets/selector_subcategorias.dart';
+import 'widgets/selector_taxonomia_negocio.dart';
 import 'widgets/selector_ubicacion_mapa.dart';
 
 /// Un solo formulario para crear y editar (negocioId nulo = crear). El id
@@ -251,51 +249,6 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
     }
   }
 
-  void _alternarCategoria(String id) {
-    setState(() {
-      if (_categoriaOficialIds.contains(id)) {
-        _categoriaOficialIds.remove(id);
-        // Poda subcategorías de la categoría que se acaba de quitar — si
-        // no, quedan seleccionadas "a escondidas" (ya no se ven en el
-        // selector de abajo, pero se seguirían guardando).
-        final idsDeEstaCategoria = _subcategorias
-            .where((s) => s.categoriaOficialId == id)
-            .map((s) => s.id)
-            .toSet();
-        _subcategoriaIds.removeWhere(idsDeEstaCategoria.contains);
-        // Cascada un nivel más abajo: las actividades productivas de esas
-        // subcategorías tampoco aplican ya.
-        final idsDeActividadesDeEstaCategoria = _actividades
-            .where((a) => idsDeEstaCategoria.contains(a.subcategoriaId))
-            .map((a) => a.id)
-            .toSet();
-        _actividadIds.removeWhere(idsDeActividadesDeEstaCategoria.contains);
-      } else {
-        if (_categoriaOficialIds.length >= 3) {
-          _avisar('Máximo 3 categorías por negocio.');
-          return;
-        }
-        _categoriaOficialIds.add(id);
-      }
-    });
-  }
-
-  /// Mismo criterio que _alternarCategoria: al quitar una subcategoría, las
-  /// actividades productivas que dependían de ella se podan también. A
-  /// diferencia de SelectorSubcategorias con las categorías (que no
-  /// necesitaba reconstruir el padre), acá sí hace falta setState porque
-  /// SelectorActividades depende de _subcategoriaIds para saber qué mostrar.
-  void _alSeleccionarSubcategorias(Set<String> ids) {
-    setState(() {
-      _subcategoriaIds = ids;
-      final idsDeActividadesValidas = _actividades
-          .where((a) => ids.contains(a.subcategoriaId))
-          .map((a) => a.id)
-          .toSet();
-      _actividadIds.removeWhere((id) => !idsDeActividadesValidas.contains(id));
-    });
-  }
-
   String? _vacioANulo(String texto) =>
       texto.trim().isEmpty ? null : texto.trim();
 
@@ -363,61 +316,23 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             validator: (v) => v == null ? 'Requerido' : null,
           ),
           const SizedBox(height: 16),
-          Text(
-            'Categorías oficiales (hasta 3 — la primera que marques queda '
-            'como principal)',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final c in _categorias)
-                ChipFiltro(
-                  etiqueta: c.nombre,
-                  icono: c.iconoOTexto,
-                  seleccionado: _categoriaOficialIds.contains(c.id),
-                  onTap: () => _alternarCategoria(c.id),
-                  variante: true,
-                ),
-            ],
-          ),
-          if (_categoriaOficialIds.isEmpty)
-            const Padding(
-              padding: EdgeInsets.only(top: 6),
-              child: Text('Selecciona al menos una.',
-                  style: TextStyle(color: NVColors.error, fontSize: 12)),
-            ),
-          const SizedBox(height: 16),
-          // Key por el conjunto de categorías elegidas: al agregar/quitar
-          // una, el selector de abajo debe volver a partir de cero de qué
-          // subcategorías mostrar, no arrastrar el estado interno de la
-          // combinación anterior.
-          SelectorSubcategorias(
-            key: ValueKey(_categoriaOficialIds.join(',')),
-            categorias: _categorias
-                .where((c) => _categoriaOficialIds.contains(c.id))
-                .toList(),
+          // Categoría → subcategoría → actividad vive en su propio widget
+          // con estado local, no acá: si estos chips dispararan el
+          // setState de esta página, cada toque reconstruiría TODO el
+          // formulario (mapa de ubicación incluido) — ver el comentario en
+          // SelectorTaxonomiaNegocio para el porqué eso importa de verdad.
+          SelectorTaxonomiaNegocio(
+            categorias: _categorias,
             subcategorias: _subcategorias,
-            seleccionadas: _subcategoriaIds,
-            onCambio: _alSeleccionarSubcategorias,
-          ),
-          const SizedBox(height: 16),
-          Text('Actividades productivas',
-              style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: 8),
-          // Mismo truco de key que SelectorSubcategorias: al cambiar qué
-          // subcategorías están elegidas, este selector debe partir de cero
-          // de qué actividades mostrar, no arrastrar el estado anterior.
-          SelectorActividades(
-            key: ValueKey(_subcategoriaIds.join(',')),
-            subcategorias: _subcategorias
-                .where((s) => _subcategoriaIds.contains(s.id))
-                .toList(),
             actividades: _actividades,
-            seleccionadas: _actividadIds,
-            onCambio: (ids) => setState(() => _actividadIds = ids),
+            categoriaIdsIniciales: _categoriaOficialIds,
+            subcategoriaIdsIniciales: _subcategoriaIds,
+            actividadIdsIniciales: _actividadIds,
+            onCambio: (categoriaIds, subcategoriaIds, actividadIds) {
+              _categoriaOficialIds = categoriaIds;
+              _subcategoriaIds = subcategoriaIds;
+              _actividadIds = actividadIds;
+            },
           ),
           const SizedBox(height: 20),
           _seccion('Ubicación'),
