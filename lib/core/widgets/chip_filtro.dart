@@ -14,6 +14,19 @@ class ChipFiltro extends StatelessWidget {
   /// vez de leerse como "más chips del mismo nivel".
   final bool variante;
 
+  /// Ancho mínimo opcional — sin esto, cada chip mide justo lo que su
+  /// etiqueta necesita, así que una lista con nombres muy dispares (p. ej.
+  /// "Biocomercio" junto a "Aprovechamiento y valorización de residuos")
+  /// se ve despareja. Es mínimo, no fijo: una etiqueta más larga que
+  /// [anchoMinimo] igual crece lo que necesite, nunca se trunca. A
+  /// propósito NO se envuelve el label en Center/Align sin widthFactor —
+  /// eso rompió esto una vez ya (Align sin widthFactor se expande a
+  /// llenar el ancho disponible en vez de solo centrar en cuanto las
+  /// constraints entrantes dejan de ser infinitas, que es siempre el caso
+  /// dentro de un Wrap). El label se queda como Text plano; es FilterChip
+  /// el que centra su contenido dentro del ancho que termine midiendo.
+  final double? anchoMinimo;
+
   const ChipFiltro({
     super.key,
     required this.etiqueta,
@@ -21,13 +34,15 @@ class ChipFiltro extends StatelessWidget {
     required this.onTap,
     this.icono,
     this.variante = false,
+    this.anchoMinimo,
   });
 
   @override
   Widget build(BuildContext context) {
     final texto = icono != null ? '$icono $etiqueta' : etiqueta;
+    Widget chip;
     if (variante) {
-      return FilterChip(
+      chip = FilterChip(
         label: Text(texto),
         selected: seleccionado,
         onSelected: (_) => onTap(),
@@ -40,19 +55,25 @@ class ChipFiltro extends StatelessWidget {
         side: const BorderSide(color: NVColors.primary),
         checkmarkColor: NVColors.primaryDark,
       );
+    } else {
+      chip = FilterChip(
+        label: Text(texto),
+        selected: seleccionado,
+        onSelected: (_) => onTap(),
+        backgroundColor: NVColors.primaryLight,
+        selectedColor: NVColors.primary,
+        labelStyle: TextStyle(
+          color: seleccionado ? Colors.white : NVColors.textoPrincipal,
+          fontWeight: seleccionado ? FontWeight.w600 : FontWeight.normal,
+        ),
+        side: BorderSide.none,
+        checkmarkColor: Colors.white,
+      );
     }
-    return FilterChip(
-      label: Text(texto),
-      selected: seleccionado,
-      onSelected: (_) => onTap(),
-      backgroundColor: NVColors.primaryLight,
-      selectedColor: NVColors.primary,
-      labelStyle: TextStyle(
-        color: seleccionado ? Colors.white : NVColors.textoPrincipal,
-        fontWeight: seleccionado ? FontWeight.w600 : FontWeight.normal,
-      ),
-      side: BorderSide.none,
-      checkmarkColor: Colors.white,
+    if (anchoMinimo == null) return chip;
+    return ConstrainedBox(
+      constraints: BoxConstraints(minWidth: anchoMinimo!),
+      child: chip,
     );
   }
 }
