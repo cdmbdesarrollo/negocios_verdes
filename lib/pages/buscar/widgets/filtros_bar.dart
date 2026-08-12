@@ -210,7 +210,6 @@ class _FiltrosBarState extends State<FiltrosBar> {
                     limpiarSubcategoria: true,
                     limpiarActividad: true,
                   )),
-                  anchoMinimo: 180,
                 ),
                 for (final s in subcategoriasDisponibles)
                   ChipFiltro(
@@ -222,7 +221,6 @@ class _FiltrosBarState extends State<FiltrosBar> {
                       subcategoriaSlug: s.slug,
                       limpiarActividad: true,
                     )),
-                    anchoMinimo: 180,
                   ),
               ],
             ),
@@ -242,7 +240,6 @@ class _FiltrosBarState extends State<FiltrosBar> {
                   seleccionado: widget.filtro.actividadSlug == null,
                   onTap: () => widget.onCambio(
                       widget.filtro.copyWith(limpiarActividad: true)),
-                  anchoMinimo: 180,
                 ),
                 for (final a in actividadesDisponibles)
                   ChipFiltro(
@@ -252,7 +249,6 @@ class _FiltrosBarState extends State<FiltrosBar> {
                     seleccionado: widget.filtro.actividadSlug == a.slug,
                     onTap: () => widget.onCambio(
                         widget.filtro.copyWith(actividadSlug: a.slug)),
-                    anchoMinimo: 180,
                   ),
               ],
             ),

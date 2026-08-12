@@ -92,7 +92,6 @@ class _SelectorActividadesState extends State<SelectorActividades> {
             variante: true,
             seleccionado: _seleccionadas.contains(actividad.id),
             onTap: () => _alternar(actividad.id),
-            anchoMinimo: 180,
           ),
       ],
     );

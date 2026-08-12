@@ -88,7 +88,6 @@ class _SelectorSubcategoriasState extends State<SelectorSubcategorias> {
             icono: sub.icono,
             seleccionado: _seleccionadas.contains(sub.id),
             onTap: () => _alternar(sub.id),
-            anchoMinimo: 180,
           ),
       ],
     );
