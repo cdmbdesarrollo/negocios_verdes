@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../catalogos.dart';
 import '../../core/seo_tags.dart';
 import '../../core/widgets/chip_filtro.dart';
+import '../../core/widgets/hover_lift.dart';
 import '../../core/widgets/icono_etiqueta.dart';
 import '../../core/widgets/logo_negocios_verdes.dart';
 import '../../core/widgets/pie_pagina.dart';
@@ -314,9 +315,12 @@ class _InicioPageState extends State<InicioPage> {
             alignment: WrapAlignment.spaceEvenly,
             runSpacing: 20,
             children: [
-              _estadistica('Municipios', kMunicipios.length),
-              _estadistica('Negocios verdes', _totalNegocios),
-              _estadistica('Categorías', _categorias.length),
+              _estadistica(
+                  Icons.location_on_outlined, 'Municipios', kMunicipios.length),
+              _estadistica(
+                  Icons.storefront_outlined, 'Negocios verdes', _totalNegocios),
+              _estadistica(
+                  Icons.category_outlined, 'Categorías', _categorias.length),
             ],
           ),
         ),
@@ -324,11 +328,13 @@ class _InicioPageState extends State<InicioPage> {
     );
   }
 
-  Widget _estadistica(String etiqueta, int valor) {
+  Widget _estadistica(IconData icono, String etiqueta, int valor) {
     return SizedBox(
       width: 160,
       child: Column(
         children: [
+          Icon(icono, color: Colors.white.withValues(alpha: 0.85), size: 22),
+          const SizedBox(height: 6),
           _NumeroAnimado(valor: valor),
           const SizedBox(height: 4),
           Text(
@@ -367,45 +373,56 @@ class _InicioPageState extends State<InicioPage> {
   }
 
   Widget _tarjetaCategoria(BuildContext context, CategoriaOficial categoria) {
-    return Material(
-      color: NVColors.primaryLight,
-      elevation: 1,
-      shadowColor: Colors.black.withValues(alpha: 0.12),
-      borderRadius: BorderRadius.circular(14),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => _irA({'categoria': categoria.slug}),
-        child: Container(
-          width: 132,
-          height: 124,
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              IconoEtiqueta(
-                  iconoUrl: categoria.iconoUrl,
-                  iconoTexto: categoria.iconoOTexto,
-                  tamano: 22),
-              const SizedBox(height: 6),
-              Expanded(
-                child: Text(
-                  categoria.nombre,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  // height (interlineado) explícito: Work Sans no tiene el
-                  // mismo alto de línea por defecto que el Roboto que se
-                  // usaba antes de agregar la tipografía de marca — con la
-                  // altura fija de la tarjeta, esa diferencia bastaba para
-                  // que la 3ra línea de nombres largos ("Aprovechamiento y
-                  // Valorización de Residuos") quedara cortada en vez de
-                  // recortada con puntos suspensivos.
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 11,
-                      height: 1.2),
+    return HoverLift(
+      child: Material(
+        color: NVColors.superficie,
+        elevation: 2,
+        shadowColor: Colors.black.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => _irA({'categoria': categoria.slug}),
+          child: Container(
+            width: 136,
+            height: 132,
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: const BoxDecoration(
+                    color: NVColors.primaryLight,
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: IconoEtiqueta(
+                      iconoUrl: categoria.iconoUrl,
+                      iconoTexto: categoria.iconoOTexto,
+                      tamano: 19),
                 ),
-              ),
-            ],
+                const SizedBox(height: 10),
+                Expanded(
+                  child: Text(
+                    categoria.nombre,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    // height (interlineado) explícito: Work Sans no tiene el
+                    // mismo alto de línea por defecto que el Roboto que se
+                    // usaba antes de agregar la tipografía de marca — con la
+                    // altura fija de la tarjeta, esa diferencia bastaba para
+                    // que la 3ra línea de nombres largos ("Aprovechamiento y
+                    // Valorización de Residuos") quedara cortada en vez de
+                    // recortada con puntos suspensivos.
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 11,
+                        height: 1.2),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -494,7 +511,7 @@ class _InicioPageState extends State<InicioPage> {
                   mainAxisSpacing: 12,
                 ),
                 itemBuilder: (context, i) =>
-                    NegocioCard(negocio: _destacados[i]),
+                    HoverLift(child: NegocioCard(negocio: _destacados[i])),
               );
             },
           ),
@@ -503,12 +520,43 @@ class _InicioPageState extends State<InicioPage> {
     );
   }
 
+  /// Antes era un párrafo centrado sin mucho más — se leía como relleno de
+  /// maqueta. 3 pilares con ícono son más escaneables y le dan al enfoque
+  /// ambiental algo concreto que mostrar (verificación real, impacto,
+  /// economía local) en vez de solo decirlo en texto corrido.
   Widget _seccionQueSon(BuildContext context) {
+    const pilares = [
+      (
+        Icons.verified_outlined,
+        'Verificados por la CDMB',
+        'Cada negocio pasa por un proceso real de verificación antes de '
+            'aparecer en el directorio, no es una simple lista abierta.',
+      ),
+      (
+        Icons.eco_outlined,
+        'Impacto ambiental positivo',
+        'Prácticas que protegen los recursos naturales y la biodiversidad '
+            'de los 13 municipios de la jurisdicción.',
+      ),
+      (
+        Icons.groups_outlined,
+        'Economía local y justa',
+        'Apoyan directamente a emprendedores y comunidades de la región, '
+            'no a cadenas externas.',
+      ),
+    ];
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(top: 32),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-      color: NVColors.primaryLight,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 44),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [NVColors.primaryLight, NVColors.fondo],
+        ),
+      ),
       child: Column(
         children: [
           Container(
@@ -525,26 +573,106 @@ class _InicioPageState extends State<InicioPage> {
           const Text(
             '¿Qué son los Negocios Verdes?',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 560),
             child: const Text(
               'Son emprendimientos y empresas que ofrecen bienes y servicios '
               'con impacto ambiental positivo, verificados por la CDMB en su '
-              'jurisdicción. Conoce los requisitos y beneficios de hacer '
-              'parte del programa.',
+              'jurisdicción.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: NVColors.textoSecundario),
+              style: TextStyle(color: NVColors.textoSecundario, fontSize: 15),
             ),
           ),
-          const SizedBox(height: 20),
-          ElevatedButton(
+          const SizedBox(height: 32),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 900),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final ancho = constraints.maxWidth >= 700;
+                  final tarjetas = [
+                    for (final p in pilares) _tarjetaPilar(p.$1, p.$2, p.$3),
+                  ];
+                  if (!ancho) {
+                    return Column(
+                      children: [
+                        for (final t in tarjetas)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: t,
+                          ),
+                      ],
+                    );
+                  }
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (final t in tarjetas)
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: t,
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 28),
+          ElevatedButton.icon(
             onPressed: () => context.go('/nosotros'),
-            child: const Text('Conocer más'),
+            icon: const Icon(Icons.arrow_forward, size: 18),
+            label: const Text('Conocer más'),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _tarjetaPilar(IconData icono, String titulo, String texto) {
+    return HoverLift(
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: NVColors.superficie,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: const BoxDecoration(
+                color: NVColors.primaryLight,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Icon(icono, color: NVColors.primary, size: 24),
+            ),
+            const SizedBox(height: 14),
+            Text(titulo,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            const SizedBox(height: 6),
+            Text(
+              texto,
+              style: const TextStyle(
+                  color: NVColors.textoSecundario, fontSize: 13, height: 1.4),
+            ),
+          ],
+        ),
       ),
     );
   }
