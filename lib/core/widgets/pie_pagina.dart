@@ -190,6 +190,7 @@ class PiePagina extends StatelessWidget {
               _enlaceFooter(context, 'Inicio', '/'),
               _enlaceFooter(context, 'Buscar negocios', '/buscar'),
               _enlaceFooter(context, 'Qué son los Negocios Verdes', '/nosotros'),
+              _enlaceFooter(context, 'Plan Nacional 2022-2030', '/plan-nacional'),
               _enlaceFooter(context, 'Contacto', '/contacto'),
             ],
           ),

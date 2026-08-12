@@ -25,6 +25,7 @@ import 'pages/buscar/buscar_page.dart';
 import 'pages/estaticas/contacto_page.dart';
 import 'pages/estaticas/no_encontrado_page.dart';
 import 'pages/estaticas/nosotros_page.dart';
+import 'pages/estaticas/plan_nacional_page.dart';
 import 'pages/inicio/inicio_page.dart';
 import 'pages/negocio_detalle/negocio_detalle_page.dart';
 import 'theme/nv_theme.dart';
@@ -139,6 +140,10 @@ GoRouter _construirRouter() {
           GoRoute(
             path: '/nosotros',
             builder: (context, state) => const NosotrosPage(),
+          ),
+          GoRoute(
+            path: '/plan-nacional',
+            builder: (context, state) => const PlanNacionalPage(),
           ),
           GoRoute(
             path: '/contacto',
