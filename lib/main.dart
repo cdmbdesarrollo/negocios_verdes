@@ -31,15 +31,6 @@ import 'theme/nv_theme.dart';
 
 late final GoRouter appRouter;
 
-// TEMPORAL: mientras se investiga la pantalla en blanco al eliminar/cargar
-// ciertas páginas. PlatformDispatcher.onError atrapa errores async no
-// capturados por ningún try/catch (fuera de la fase de build de Flutter,
-// donde ErrorWidget.builder no aplica) — antes solo se mandaban a
-// debugPrint(), que no imprime nada visible en un build de release. Este
-// notifier permite mostrarlos en pantalla de verdad. Quitar junto con el
-// resto de la instrumentación de diagnóstico una vez resuelta la causa.
-final ValueNotifier<String?> ultimoErrorGlobal = ValueNotifier(null);
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -59,34 +50,17 @@ Future<void> main() async {
   };
   PlatformDispatcher.instance.onError = (error, stack) {
     debugPrint('Error no capturado: $error\n$stack');
-    ultimoErrorGlobal.value = '$error\n\n${stack.toString().split('\n').take(6).join('\n')}';
     return true;
   };
   ErrorWidget.builder = (details) {
-    // TEMPORAL: mientras se investiga el crash al borrar un banner, esta
-    // pantalla muestra el error real en vez de un mensaje genérico — así
-    // se puede copiar el texto exacto en vez de adivinar a ciegas. Volver
-    // al mensaje genérico (sin el Text de abajo) una vez esté resuelto,
-    // nunca mostrar detalles de excepción en producción de verdad.
-    return Material(
-      color: const Color(0xFFFAF8F3),
+    return const Material(
+      color: Color(0xFFFAF8F3),
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Ocurrió un error inesperado. Por favor recarga la página.',
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              SelectableText(
-                details.exceptionAsString(),
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 12, color: Colors.black54),
-              ),
-            ],
+          padding: EdgeInsets.all(24),
+          child: Text(
+            'Ocurrió un error inesperado. Por favor recarga la página.',
+            textAlign: TextAlign.center,
           ),
         ),
       ),
@@ -120,50 +94,6 @@ class NegociosVerdesApp extends StatelessWidget {
       ],
       supportedLocales: const [Locale('es', 'CO')],
       locale: const Locale('es', 'CO'),
-      // TEMPORAL: ver comentario junto a ultimoErrorGlobal arriba.
-      builder: (context, child) {
-        return Stack(
-          children: [
-            if (child != null) child,
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: ValueListenableBuilder<String?>(
-                valueListenable: ultimoErrorGlobal,
-                builder: (context, error, _) {
-                  if (error == null) return const SizedBox.shrink();
-                  return Material(
-                    color: Colors.red.shade100,
-                    child: SafeArea(
-                      top: false,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: SelectableText(
-                                'ERROR ASYNC NO CAPTURADO:\n$error',
-                                style: const TextStyle(
-                                    fontSize: 11, color: Colors.black87),
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.close, size: 18),
-                              onPressed: () => ultimoErrorGlobal.value = null,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 }

@@ -52,3 +52,8 @@ en un Supabase nuevo:
     taxonomía vieja — no es incremental, no hay mapeo 2014→2022. Agrega
     `p_actividad_ids` a `guardar_negocio` — **correr ANTES de desplegar**,
     mismo motivo que 0015.
+17. `0017_iconos_actividades_productivas.sql` — el insert de
+    actividades_productivas en 0016 se quedó sin columna `icono` (a
+    diferencia de categorías/subcategorías, que sí la trajeron). Solo un
+    `update` por slug, sin cambios de estructura — se puede correr en
+    cualquier momento, no hace falta coordinarla con un deploy.

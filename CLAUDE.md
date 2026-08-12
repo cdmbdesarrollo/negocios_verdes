@@ -75,6 +75,15 @@ editor de fotos (lo necesita para las rutas de Storage de portada/galería
 desde el primer momento). La función decide crear vs. actualizar
 comprobando si ese id ya existe, no si es nulo.
 
+Un negocio puede tener hasta 3 categorías oficiales (`negocios_categorias`,
+la primera elegida queda también como `negocios.categoria_oficial_id`, la
+"principal" — la que usa todo lo que todavía filtra/muestra por una sola
+categoría). Categoría → subcategoría → actividad productiva es una cascada
+real de 3 niveles (cada una con FK a la anterior); `guardar_negocio`
+sincroniza las 3 tablas puente (`negocios_categorias`,
+`negocios_subcategorias`, `negocios_actividades`) con el mismo patrón de
+borrar-todo-y-reinsertar en cada guardado.
+
 ## Antes de que la app funcione de verdad
 
 1. Crear un proyecto nuevo en supabase.com (separado del de HuellaQR).
@@ -85,10 +94,14 @@ comprobando si ese id ya existe, no si es nulo.
 4. Crear `env.local.ps1` en la raíz (NO se sube a git) con `SUPABASE_URL` y
    `SUPABASE_ANON_KEY` para poder correr `build.ps1` o el launch config de
    `.claude/launch.json` con `--dart-define`.
-5. Revisar `lib/migraciones/0009_seed_categorias_subcategorias.sql` — es
-   investigación propia (negociosverdes.gov.co + Corpamag), no una
-   transcripción literal de un documento CDMB vigente. Ajustar desde
-   `/admin/categorias` si no calza con la clasificación real de CDMB.
+5. La taxonomía activa es la oficial del Plan Nacional de Negocios Verdes
+   2022-2030 (`lib/migraciones/0016_actualizacion_taxonomia_pnnv_2022_2030.sql`):
+   3 categorías, 12 subcategorías, 29 actividades productivas. Reemplazó
+   por completo la semilla de investigación propia de
+   `0009_seed_categorias_subcategorias.sql` (obsoleta — se conserva solo
+   como historial, no se ejecuta ni se referencia). Editable desde
+   `/admin/categorias`, `/admin/subcategorias` y `/admin/actividades` si
+   CDMB necesita ajustarla.
 6. Completar los datos reales de contacto de la Ventanilla de Negocios
    Verdes en `lib/pages/estaticas/contacto_page.dart` (se dejó honesto a
    propósito, sin inventar teléfono/dirección).

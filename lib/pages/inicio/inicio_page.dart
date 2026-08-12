@@ -67,8 +67,8 @@ class _InicioPageState extends State<InicioPage> {
       titulo: 'Negocios Verdes CDMB — Directorio de negocios verdes',
       descripcion:
           'Encuentra negocios verdes verificados por la CDMB en los 13 '
-          'municipios de su jurisdicción: agroturismo, apicultura, '
-          'ecoturismo y mucho más.',
+          'municipios de su jurisdicción: agricultura orgánica, turismo '
+          'sostenible, biocomercio y mucho más.',
     );
     _cargar();
   }
@@ -265,8 +265,8 @@ class _InicioPageState extends State<InicioPage> {
         ),
         SlideInfo.texto(
           titulo: 'Encuentra por categoría',
-          subtitulo: 'Agrosistemas, ecoturismo, apicultura, energías '
-              'renovables y más.',
+          subtitulo: 'Agrosistemas, turismo sostenible, biocomercio, '
+              'tecnologías verdes y más.',
           icono: Icons.category_outlined,
           fondo: NVColors.gradientOscuro,
           textoBoton: 'Ver categorías',

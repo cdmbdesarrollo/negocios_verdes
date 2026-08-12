@@ -113,7 +113,7 @@ class _FiltrosBarState extends State<FiltrosBar> {
             style: const TextStyle(fontSize: 14),
             decoration: InputDecoration(
               hintText:
-                  'Buscar negocios verdes (ej. apicultura, ecoturismo...)',
+                  'Buscar negocios verdes (ej. agricultura orgánica, turismo sostenible...)',
               hintStyle: const TextStyle(fontSize: 13.5),
               prefixIcon: const Icon(Icons.search, color: NVColors.primary),
               suffixIcon: widget.filtro.query.isNotEmpty
