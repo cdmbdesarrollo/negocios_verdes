@@ -8,10 +8,12 @@ import 'package:latlong2/latlong.dart';
 import '../../core/responsive.dart';
 import '../../core/seo_tags.dart';
 import '../../core/widgets/pie_pagina.dart';
+import '../../models/actividad_productiva.dart';
 import '../../models/categoria_oficial.dart';
 import '../../models/filtro_busqueda.dart';
 import '../../models/negocio.dart';
 import '../../models/subcategoria.dart';
+import '../../services/actividad_productiva_service.dart';
 import '../../services/categoria_service.dart';
 import '../../services/negocio_service.dart';
 import '../../services/subcategoria_service.dart';
@@ -20,11 +22,11 @@ import 'widgets/filtros_bar.dart';
 import 'widgets/resultados_lista.dart';
 import 'widgets/resultados_mapa.dart';
 
-/// El "megabuscador": una sola página con texto + categoría + subcategoría +
-/// municipio, mostrando lista y mapa sincronizados en las dos direcciones.
-/// En pantalla ancha van lado a lado (sin pestañas, a diferencia de
-/// cualquiera de las páginas de referencia); en pantalla angosta hay un
-/// toggle Lista/Mapa.
+/// El "megabuscador": una sola página con texto + municipio + categoría +
+/// subcategoría + actividad productiva, mostrando lista y mapa sincronizados
+/// en las dos direcciones. En pantalla ancha van lado a lado (sin pestañas,
+/// a diferencia de cualquiera de las páginas de referencia); en pantalla
+/// angosta hay un toggle Lista/Mapa.
 class BuscarPage extends StatefulWidget {
   const BuscarPage({super.key});
 
@@ -36,6 +38,7 @@ class _BuscarPageState extends State<BuscarPage> {
   final _negocioService = NegocioService();
   final _categoriaService = CategoriaService();
   final _subcategoriaService = SubcategoriaService();
+  final _actividadService = ActividadProductivaService();
   final _mapController = MapController();
   final Map<String, GlobalKey> _clavesPorNegocio = {};
 
@@ -43,6 +46,7 @@ class _BuscarPageState extends State<BuscarPage> {
   List<Negocio>? _negocios;
   List<CategoriaOficial> _categorias = [];
   List<Subcategoria> _subcategorias = [];
+  List<ActividadProductiva> _actividades = [];
   String? _negocioSeleccionadoId;
   bool _cargando = true;
   String? _error;
@@ -86,13 +90,15 @@ class _BuscarPageState extends State<BuscarPage> {
       final resultados = await Future.wait([
         _categoriaService.listarTodas(),
         _subcategoriaService.listarTodas(),
+        _actividadService.listarTodas(),
         _negocioService.buscar(_filtro),
       ]);
       if (!mounted) return;
       setState(() {
         _categorias = resultados[0] as List<CategoriaOficial>;
         _subcategorias = resultados[1] as List<Subcategoria>;
-        _negocios = resultados[2] as List<Negocio>;
+        _actividades = resultados[2] as List<ActividadProductiva>;
+        _negocios = resultados[3] as List<Negocio>;
         _cargando = false;
       });
     } catch (e) {
@@ -107,14 +113,16 @@ class _BuscarPageState extends State<BuscarPage> {
 
   void _alCambiarFiltro(FiltroBusqueda nuevo) {
     final cambioDatos = nuevo.query != _filtro.query ||
+        nuevo.municipio != _filtro.municipio ||
         nuevo.categoriaSlug != _filtro.categoriaSlug ||
         nuevo.subcategoriaSlug != _filtro.subcategoriaSlug ||
-        nuevo.municipio != _filtro.municipio;
+        nuevo.actividadSlug != _filtro.actividadSlug;
     final soloCambioTexto = cambioDatos &&
         nuevo.query != _filtro.query &&
+        nuevo.municipio == _filtro.municipio &&
         nuevo.categoriaSlug == _filtro.categoriaSlug &&
         nuevo.subcategoriaSlug == _filtro.subcategoriaSlug &&
-        nuevo.municipio == _filtro.municipio;
+        nuevo.actividadSlug == _filtro.actividadSlug;
 
     setState(() => _filtro = nuevo);
     _actualizarUrl();
@@ -237,6 +245,7 @@ class _BuscarPageState extends State<BuscarPage> {
             child: FiltrosBar(
               categorias: _categorias,
               subcategorias: _subcategorias,
+              actividades: _actividades,
               filtro: _filtro,
               onCambio: _alCambiarFiltro,
             ),

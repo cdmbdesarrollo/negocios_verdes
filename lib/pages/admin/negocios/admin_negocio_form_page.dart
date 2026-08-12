@@ -351,7 +351,18 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
                 (v == null || v.trim().isEmpty) ? 'Requerido' : null,
           ),
           const SizedBox(height: 20),
-          _seccion('Categoría y subcategorías'),
+          _seccion('Municipio y categorización'),
+          DropdownButtonFormField<String>(
+            initialValue: _municipio,
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Municipio'),
+            items: [
+              for (final m in kMunicipios) DropdownMenuItem(value: m, child: Text(m)),
+            ],
+            onChanged: (v) => setState(() => _municipio = v),
+            validator: (v) => v == null ? 'Requerido' : null,
+          ),
+          const SizedBox(height: 16),
           Text(
             'Categorías oficiales (hasta 3 — la primera que marques queda '
             'como principal)',
@@ -410,17 +421,6 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           ),
           const SizedBox(height: 20),
           _seccion('Ubicación'),
-          DropdownButtonFormField<String>(
-            initialValue: _municipio,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Municipio'),
-            items: [
-              for (final m in kMunicipios) DropdownMenuItem(value: m, child: Text(m)),
-            ],
-            onChanged: (v) => setState(() => _municipio = v),
-            validator: (v) => v == null ? 'Requerido' : null,
-          ),
-          const SizedBox(height: 12),
           TextFormField(
             controller: _direccionCtrl,
             decoration: const InputDecoration(labelText: 'Dirección (opcional)'),

@@ -23,7 +23,13 @@ class NegocioService {
 
   /// Buscador público — solo negocios activos. Aplica los filtros de
   /// [FiltroBusqueda] como AND: texto (full-text en español, sin tildes en
-  /// ambos lados), categoría, subcategoría y municipio.
+  /// ambos lados), municipio, categoría, subcategoría y actividad
+  /// productiva. Categoría/subcategoría/actividad se resuelven vía sus
+  /// tablas puente (negocios_categorias/negocios_subcategorias/
+  /// negocios_actividades), no contra la columna categoria_oficial_id de
+  /// negocios (esa solo guarda la categoría PRINCIPAL — la 1ª de hasta 3 —
+  /// así que filtrar directo contra ella dejaría afuera negocios donde la
+  /// categoría buscada es la 2ª o 3ª).
   Future<List<Negocio>> buscar(FiltroBusqueda filtro) async {
     try {
       var query =
@@ -37,14 +43,28 @@ class NegocioService {
         final categoriaId =
             await _idPorSlug('categorias_oficiales', filtro.categoriaSlug!);
         if (categoriaId == null) return [];
-        query = query.eq('categoria_oficial_id', categoriaId);
+        final negocioIds = await _negocioIdsPorTablaPuente(
+            'negocios_categorias', 'categoria_oficial_id', categoriaId);
+        if (negocioIds.isEmpty) return [];
+        query = query.inFilter('id', negocioIds);
       }
 
       if (filtro.subcategoriaSlug != null) {
         final subcategoriaId =
             await _idPorSlug('subcategorias', filtro.subcategoriaSlug!);
         if (subcategoriaId == null) return [];
-        final negocioIds = await _negocioIdsPorSubcategoria(subcategoriaId);
+        final negocioIds = await _negocioIdsPorTablaPuente(
+            'negocios_subcategorias', 'subcategoria_id', subcategoriaId);
+        if (negocioIds.isEmpty) return [];
+        query = query.inFilter('id', negocioIds);
+      }
+
+      if (filtro.actividadSlug != null) {
+        final actividadId =
+            await _idPorSlug('actividades_productivas', filtro.actividadSlug!);
+        if (actividadId == null) return [];
+        final negocioIds = await _negocioIdsPorTablaPuente(
+            'negocios_actividades', 'actividad_productiva_id', actividadId);
         if (negocioIds.isEmpty) return [];
         query = query.inFilter('id', negocioIds);
       }
@@ -216,11 +236,13 @@ class NegocioService {
     return data?['id']?.toString();
   }
 
-  Future<List<String>> _negocioIdsPorSubcategoria(String subcategoriaId) async {
-    final data = await _supabase
-        .from('negocios_subcategorias')
-        .select('negocio_id')
-        .eq('subcategoria_id', subcategoriaId);
+  /// Ids de negocio que tienen [valorId] en una tabla puente
+  /// (negocios_categorias/negocios_subcategorias/negocios_actividades) —
+  /// mismo shape en las 3, solo cambia el nombre de tabla y de columna.
+  Future<List<String>> _negocioIdsPorTablaPuente(
+      String tabla, String columna, String valorId) async {
+    final data =
+        await _supabase.from(tabla).select('negocio_id').eq(columna, valorId);
     return (data as List)
         .map((e) => (e as Map<String, dynamic>)['negocio_id'].toString())
         .toList();

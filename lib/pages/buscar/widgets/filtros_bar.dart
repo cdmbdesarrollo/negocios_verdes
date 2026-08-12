@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../catalogos.dart';
 import '../../../core/widgets/chip_filtro.dart';
+import '../../../models/actividad_productiva.dart';
 import '../../../models/categoria_oficial.dart';
 import '../../../models/filtro_busqueda.dart';
 import '../../../models/subcategoria.dart';
@@ -10,6 +11,7 @@ import '../../../theme/nv_colors.dart';
 class FiltrosBar extends StatefulWidget {
   final List<CategoriaOficial> categorias;
   final List<Subcategoria> subcategorias;
+  final List<ActividadProductiva> actividades;
   final FiltroBusqueda filtro;
   final ValueChanged<FiltroBusqueda> onCambio;
 
@@ -17,6 +19,7 @@ class FiltrosBar extends StatefulWidget {
     super.key,
     required this.categorias,
     required this.subcategorias,
+    required this.actividades,
     required this.filtro,
     required this.onCambio,
   });
@@ -59,6 +62,14 @@ class _FiltrosBarState extends State<FiltrosBar> {
     return null;
   }
 
+  Subcategoria? _subcategoriaPorSlug(String? slug) {
+    if (slug == null) return null;
+    for (final s in widget.subcategorias) {
+      if (s.slug == slug) return s;
+    }
+    return null;
+  }
+
   List<Subcategoria> get _subcategoriasDeCategoriaActual {
     final categoria = _categoriaPorSlug(widget.filtro.categoriaSlug);
     if (categoria == null) return const [];
@@ -67,9 +78,18 @@ class _FiltrosBarState extends State<FiltrosBar> {
         .toList();
   }
 
+  List<ActividadProductiva> get _actividadesDeSubcategoriaActual {
+    final subcategoria = _subcategoriaPorSlug(widget.filtro.subcategoriaSlug);
+    if (subcategoria == null) return const [];
+    return widget.actividades
+        .where((a) => a.subcategoriaId == subcategoria.id)
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final subcategoriasDisponibles = _subcategoriasDeCategoriaActual;
+    final actividadesDisponibles = _actividadesDeSubcategoriaActual;
 
     return Container(
       width: double.infinity,
@@ -124,60 +144,6 @@ class _FiltrosBarState extends State<FiltrosBar> {
             onChanged: (v) => widget.onCambio(widget.filtro.copyWith(query: v)),
           ),
           const SizedBox(height: 10),
-          _etiquetaFiltro('Categoría'),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              ChipFiltro(
-                etiqueta: 'Todas las categorías',
-                seleccionado: widget.filtro.categoriaSlug == null,
-                onTap: () => widget.onCambio(widget.filtro.copyWith(
-                  limpiarCategoria: true,
-                  limpiarSubcategoria: true,
-                )),
-              ),
-              for (final c in widget.categorias)
-                ChipFiltro(
-                  etiqueta: c.nombre,
-                  icono: c.icono,
-                  seleccionado: widget.filtro.categoriaSlug == c.slug,
-                  onTap: () => widget.onCambio(widget.filtro.copyWith(
-                    categoriaSlug: c.slug,
-                    limpiarSubcategoria: true,
-                  )),
-                ),
-            ],
-          ),
-          if (subcategoriasDisponibles.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            _etiquetaFiltro('Subcategoría — dentro de la categoría elegida'),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ChipFiltro(
-                  etiqueta: 'Todas',
-                  variante: true,
-                  seleccionado: widget.filtro.subcategoriaSlug == null,
-                  onTap: () => widget.onCambio(
-                      widget.filtro.copyWith(limpiarSubcategoria: true)),
-                ),
-                for (final s in subcategoriasDisponibles)
-                  ChipFiltro(
-                    etiqueta: s.nombre,
-                    icono: s.icono,
-                    variante: true,
-                    seleccionado: widget.filtro.subcategoriaSlug == s.slug,
-                    onTap: () => widget.onCambio(
-                        widget.filtro.copyWith(subcategoriaSlug: s.slug)),
-                  ),
-              ],
-            ),
-          ],
-          const SizedBox(height: 10),
           _etiquetaFiltro('Municipio'),
           const SizedBox(height: 6),
           Wrap(
@@ -199,6 +165,94 @@ class _FiltrosBarState extends State<FiltrosBar> {
                 ),
             ],
           ),
+          const SizedBox(height: 10),
+          _etiquetaFiltro('Categoría'),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              ChipFiltro(
+                etiqueta: 'Todas las categorías',
+                seleccionado: widget.filtro.categoriaSlug == null,
+                onTap: () => widget.onCambio(widget.filtro.copyWith(
+                  limpiarCategoria: true,
+                  limpiarSubcategoria: true,
+                  limpiarActividad: true,
+                )),
+              ),
+              for (final c in widget.categorias)
+                ChipFiltro(
+                  etiqueta: c.nombre,
+                  icono: c.icono,
+                  seleccionado: widget.filtro.categoriaSlug == c.slug,
+                  onTap: () => widget.onCambio(widget.filtro.copyWith(
+                    categoriaSlug: c.slug,
+                    limpiarSubcategoria: true,
+                    limpiarActividad: true,
+                  )),
+                ),
+            ],
+          ),
+          if (subcategoriasDisponibles.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _etiquetaFiltro('Subcategoría — dentro de la categoría elegida'),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ChipFiltro(
+                  etiqueta: 'Todas',
+                  variante: true,
+                  seleccionado: widget.filtro.subcategoriaSlug == null,
+                  onTap: () => widget.onCambio(widget.filtro.copyWith(
+                    limpiarSubcategoria: true,
+                    limpiarActividad: true,
+                  )),
+                ),
+                for (final s in subcategoriasDisponibles)
+                  ChipFiltro(
+                    etiqueta: s.nombre,
+                    icono: s.icono,
+                    variante: true,
+                    seleccionado: widget.filtro.subcategoriaSlug == s.slug,
+                    onTap: () => widget.onCambio(widget.filtro.copyWith(
+                      subcategoriaSlug: s.slug,
+                      limpiarActividad: true,
+                    )),
+                  ),
+              ],
+            ),
+          ],
+          if (actividadesDisponibles.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _etiquetaFiltro(
+                'Actividad productiva — dentro de la subcategoría elegida'),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ChipFiltro(
+                  etiqueta: 'Todas',
+                  variante: true,
+                  seleccionado: widget.filtro.actividadSlug == null,
+                  onTap: () => widget.onCambio(
+                      widget.filtro.copyWith(limpiarActividad: true)),
+                ),
+                for (final a in actividadesDisponibles)
+                  ChipFiltro(
+                    etiqueta: a.nombre,
+                    icono: a.icono,
+                    variante: true,
+                    seleccionado: widget.filtro.actividadSlug == a.slug,
+                    onTap: () => widget.onCambio(
+                        widget.filtro.copyWith(actividadSlug: a.slug)),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );
