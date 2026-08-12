@@ -33,6 +33,7 @@ class NegocioCard extends StatelessWidget {
         onTap: () => context.go('/negocio/${negocio.slug}'),
         child: Container(
           decoration: BoxDecoration(
+            color: Colors.white,
             borderRadius: borderRadius,
             border: Border.all(
               color: seleccionado ? NVColors.accent : NVColors.borde,

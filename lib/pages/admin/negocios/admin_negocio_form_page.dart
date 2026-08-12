@@ -130,6 +130,17 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
         _activo = existente.activo;
         _subcategoriaIds = existente.subcategorias.map((s) => s.id).toSet();
         _galeriaInicial = existente.fotos;
+        // Crítico: _galeriaActual es lo que _sincronizarGaleria() vuelve a
+        // insertar al guardar (borra todo _galeriaInicial primero). Si el
+        // admin guarda SIN tocar la galería, GaleriaEditor nunca dispara
+        // onGaleriaCambiada (solo lo hace al agregar/quitar/reordenar), así
+        // que sin esta línea _galeriaActual se quedaba en su valor por
+        // defecto (lista vacía) y el guardado borraba las fotos existentes
+        // sin volver a insertar ninguna — las fotos "desaparecían solas"
+        // en una edición posterior que no tocaba la galería para nada.
+        _galeriaActual = existente.fotos
+            .map((f) => FotoLocal(url: f.url, storagePath: f.storagePath))
+            .toList();
       }
 
       if (!mounted) return;
