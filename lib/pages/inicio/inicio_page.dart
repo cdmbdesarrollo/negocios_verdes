@@ -12,11 +12,13 @@ import '../../core/widgets/logo_negocios_verdes.dart';
 import '../../core/widgets/onda_divisora.dart';
 import '../../core/widgets/pie_pagina.dart';
 import '../../core/widgets/section_header.dart';
+import '../../models/actividad_productiva.dart';
 import '../../models/banner_sitio.dart';
 import '../../models/categoria_oficial.dart';
 import '../../models/filtro_busqueda.dart';
 import '../../models/negocio.dart';
 import '../../models/subcategoria.dart';
+import '../../services/actividad_productiva_service.dart';
 import '../../services/banner_service.dart';
 import '../../services/categoria_service.dart';
 import '../../services/negocio_service.dart';
@@ -36,15 +38,27 @@ class _InicioPageState extends State<InicioPage> {
   final _negocioService = NegocioService();
   final _categoriaService = CategoriaService();
   final _subcategoriaService = SubcategoriaService();
+  final _actividadService = ActividadProductivaService();
   final _bannerService = BannerService();
   final _busquedaCtrl = TextEditingController();
 
   List<CategoriaOficial> _categorias = [];
   List<Subcategoria> _subcategorias = [];
+  List<ActividadProductiva> _actividades = [];
   List<Negocio> _destacados = [];
   List<BannerSitio> _banners = [];
   int _totalNegocios = 0;
   bool _cargando = true;
+
+  // Selección acumulada de los 4 filtros del home (municipio, categoría,
+  // subcategoría, actividad) — a diferencia de antes, tocar un chip aquí ya
+  // NO navega de inmediato a /buscar: solo marca/desmarca, para poder armar
+  // una búsqueda con varios criterios combinados antes de ir al buscador.
+  // Se guardan slugs (no ids) porque son lo que espera FiltroBusqueda.
+  String? _municipioSel;
+  String? _categoriaSel;
+  String? _subcategoriaSel;
+  String? _actividadSel;
 
   @override
   void initState() {
@@ -70,17 +84,20 @@ class _InicioPageState extends State<InicioPage> {
       final resultados = await Future.wait([
         _categoriaService.listarTodas(),
         _subcategoriaService.listarTodas(),
+        _actividadService.listarTodas(),
         _negocioService.buscar(const FiltroBusqueda()),
         _bannerService.listarActivos(),
       ]);
       if (!mounted) return;
       final categorias = resultados[0] as List<CategoriaOficial>;
       final subcategorias = resultados[1] as List<Subcategoria>;
-      final todos = resultados[2] as List<Negocio>;
-      final banners = resultados[3] as List<BannerSitio>;
+      final actividades = resultados[2] as List<ActividadProductiva>;
+      final todos = resultados[3] as List<Negocio>;
+      final banners = resultados[4] as List<BannerSitio>;
       setState(() {
         _categorias = categorias.where((c) => c.activo).toList();
         _subcategorias = subcategorias.where((s) => s.activo).toList();
+        _actividades = actividades.where((a) => a.activo).toList();
         _destacados = todos.where((n) => n.destacado).take(6).toList();
         _banners = banners;
         _totalNegocios = todos.length;
@@ -102,6 +119,91 @@ class _InicioPageState extends State<InicioPage> {
       queryParameters: parametros.isEmpty ? null : parametros,
     );
     context.go(uri.toString());
+  }
+
+  CategoriaOficial? _categoriaPorSlug(String? slug) {
+    if (slug == null) return null;
+    for (final c in _categorias) {
+      if (c.slug == slug) return c;
+    }
+    return null;
+  }
+
+  Subcategoria? _subcategoriaPorSlug(String? slug) {
+    if (slug == null) return null;
+    for (final s in _subcategorias) {
+      if (s.slug == slug) return s;
+    }
+    return null;
+  }
+
+  ActividadProductiva? _actividadPorSlug(String? slug) {
+    if (slug == null) return null;
+    for (final a in _actividades) {
+      if (a.slug == slug) return a;
+    }
+    return null;
+  }
+
+  /// Subcategorías de la categoría elegida — mismo criterio que
+  /// FiltrosBar en /buscar, para que el home cascada exactamente igual.
+  List<Subcategoria> get _subcategoriasFiltradas {
+    final categoria = _categoriaPorSlug(_categoriaSel);
+    if (categoria == null) return const [];
+    return _subcategorias
+        .where((s) => s.categoriaOficialId == categoria.id)
+        .toList();
+  }
+
+  List<ActividadProductiva> get _actividadesFiltradas {
+    final subcategoria = _subcategoriaPorSlug(_subcategoriaSel);
+    if (subcategoria == null) return const [];
+    return _actividades
+        .where((a) => a.subcategoriaId == subcategoria.id)
+        .toList();
+  }
+
+  /// Tocar un chip ya elegido lo desmarca (toggle); tocar uno distinto
+  /// cambia la selección y poda los niveles hijos, que ya no aplican a la
+  /// nueva elección — mismo criterio de cascada que el selector del admin.
+  void _alTocarMunicipio(String municipio) {
+    setState(() {
+      _municipioSel = _municipioSel == municipio ? null : municipio;
+    });
+  }
+
+  void _alTocarCategoria(String slug) {
+    setState(() {
+      _categoriaSel = _categoriaSel == slug ? null : slug;
+      _subcategoriaSel = null;
+      _actividadSel = null;
+    });
+  }
+
+  void _alTocarSubcategoria(String slug) {
+    setState(() {
+      _subcategoriaSel = _subcategoriaSel == slug ? null : slug;
+      _actividadSel = null;
+    });
+  }
+
+  void _alTocarActividad(String slug) {
+    setState(() {
+      _actividadSel = _actividadSel == slug ? null : slug;
+    });
+  }
+
+  /// El botón "Buscar" del home: junta lo que el visitante haya marcado en
+  /// las 4 secciones (puede ser nada, uno, o los 4) y recién ahí navega a
+  /// /buscar — a diferencia de antes, donde cada chip navegaba solo con su
+  /// propio filtro y perdía cualquier otra selección hecha en el home.
+  void _buscarConFiltrosAcumulados() {
+    _irA({
+      if (_municipioSel != null) 'municipio': _municipioSel!,
+      if (_categoriaSel != null) 'categoria': _categoriaSel!,
+      if (_subcategoriaSel != null) 'subcategoria': _subcategoriaSel!,
+      if (_actividadSel != null) 'actividad': _actividadSel!,
+    });
   }
 
   /// Banners reales subidos desde /admin/apariencia, primero, seguidos de
@@ -198,9 +300,13 @@ class _InicioPageState extends State<InicioPage> {
           HeroSlider(slides: _slides),
           entrada(_buscadorPersistente(context)),
           if (_destacados.isNotEmpty) entrada(_seccionDestacados(context)),
-          if (_categorias.isNotEmpty) entrada(_seccionCategorias(context)),
-          if (_subcategorias.isNotEmpty) entrada(_seccionSubcategorias(context)),
           entrada(_seccionMunicipios(context)),
+          if (_categorias.isNotEmpty) entrada(_seccionCategorias(context)),
+          if (_categoriaSel != null && _subcategoriasFiltradas.isNotEmpty)
+            entrada(_seccionSubcategorias(context)),
+          if (_subcategoriaSel != null && _actividadesFiltradas.isNotEmpty)
+            entrada(_seccionActividades(context)),
+          entrada(_botonBuscarFiltros(context)),
           const OndaDivisora(
               colorFondo: NVColors.fondo, colorOnda: NVColors.primary),
           entrada(_seccionEstadisticas(context)),
@@ -379,7 +485,8 @@ class _InicioPageState extends State<InicioPage> {
             runSpacing: 12,
             children: [
               for (final (i, categoria) in _categorias.indexed)
-                _tarjetaCategoria(context, categoria, i),
+                _tarjetaCategoria(context, categoria, i,
+                    seleccionado: _categoriaSel == categoria.slug),
             ],
           ),
         ],
@@ -403,7 +510,8 @@ class _InicioPageState extends State<InicioPage> {
   ];
 
   Widget _tarjetaCategoria(
-      BuildContext context, CategoriaOficial categoria, int indice) {
+      BuildContext context, CategoriaOficial categoria, int indice,
+      {required bool seleccionado}) {
     final colorFondo =
         _paletaCategorias[indice % _paletaCategorias.length];
     return HoverLift(
@@ -411,10 +519,16 @@ class _InicioPageState extends State<InicioPage> {
         color: NVColors.superficie,
         elevation: 2,
         shadowColor: Colors.black.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: seleccionado ? NVColors.primary : Colors.transparent,
+            width: 2,
+          ),
+        ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: () => _irA({'categoria': categoria.slug}),
+          onTap: () => _alTocarCategoria(categoria.slug),
           child: Container(
             width: 136,
             height: 132,
@@ -468,18 +582,49 @@ class _InicioPageState extends State<InicioPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader(titulo: 'Buscar por subcategoría'),
+          SectionHeader(
+              titulo: 'Subcategorías',
+              subtitulo: 'Dentro de ${_categoriaPorSlug(_categoriaSel)?.nombre ?? ''}'),
           const SizedBox(height: 16),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final sub in _subcategorias)
+              for (final sub in _subcategoriasFiltradas)
                 ChipFiltro(
                   etiqueta: sub.nombre,
                   icono: sub.icono,
-                  seleccionado: false,
-                  onTap: () => _irA({'subcategoria': sub.slug}),
+                  seleccionado: _subcategoriaSel == sub.slug,
+                  onTap: () => _alTocarSubcategoria(sub.slug),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _seccionActividades(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 32, 20, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionHeader(
+              titulo: 'Actividades productivas',
+              subtitulo:
+                  'Dentro de ${_subcategoriaPorSlug(_subcategoriaSel)?.nombre ?? ''}'),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final actividad in _actividadesFiltradas)
+                ChipFiltro(
+                  etiqueta: actividad.nombre,
+                  icono: actividad.icono,
+                  seleccionado: _actividadSel == actividad.slug,
+                  onTap: () => _alTocarActividad(actividad.slug),
                 ),
             ],
           ),
@@ -494,7 +639,7 @@ class _InicioPageState extends State<InicioPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader(titulo: 'Buscar por municipio'),
+          const SectionHeader(titulo: 'Municipios'),
           const SizedBox(height: 16),
           Wrap(
             spacing: 8,
@@ -504,12 +649,54 @@ class _InicioPageState extends State<InicioPage> {
                 ChipFiltro(
                   etiqueta: municipio,
                   icono: '📍',
-                  seleccionado: false,
-                  onTap: () => _irA({'municipio': municipio}),
+                  seleccionado: _municipioSel == municipio,
+                  onTap: () => _alTocarMunicipio(municipio),
                 ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  /// Cierra las 4 secciones de filtro de arriba: junta lo marcado (puede
+  /// ser nada) y recién ahí navega a /buscar — visible siempre, no hace
+  /// falta completar los 4 niveles para poder buscar.
+  Widget _botonBuscarFiltros(BuildContext context) {
+    final resumen = [
+      _municipioSel,
+      _categoriaPorSlug(_categoriaSel)?.nombre,
+      _subcategoriaPorSlug(_subcategoriaSel)?.nombre,
+      _actividadPorSlug(_actividadSel)?.nombre,
+    ].whereType<String>().join(' · ');
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Column(
+            children: [
+              if (resumen.isNotEmpty) ...[
+                Text(
+                  'Buscando: $resumen',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      color: NVColors.textoSecundario, fontSize: 12.5),
+                ),
+                const SizedBox(height: 10),
+              ],
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _buscarConFiltrosAcumulados,
+                  icon: const Icon(Icons.search, size: 20),
+                  label: const Text('Buscar negocios verdes'),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
