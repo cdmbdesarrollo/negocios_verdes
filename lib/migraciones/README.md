@@ -42,3 +42,13 @@ en un Supabase nuevo:
     que la usa**, o el buscador público completo (no solo el admin) deja de
     cargar negocios, porque el SELECT público ya pediría el embed de
     `negocios_categorias`, que no existiría todavía.
+16. `0016_actualizacion_taxonomia_pnnv_2022_2030.sql` — **reemplazo
+    completo** de categorías/subcategorías (investigación propia, ver 0009)
+    por la taxonomía oficial del Plan Nacional de Negocios Verdes
+    2022-2030: 3 categorías, 12 subcategorías, y un nivel nuevo,
+    `actividades_productivas` (29 filas), verificado contra los diagramas
+    oficiales del documento (no solo el texto). Borra los negocios
+    existentes (eran de prueba, confirmado con el usuario) y toda la
+    taxonomía vieja — no es incremental, no hay mapeo 2014→2022. Agrega
+    `p_actividad_ids` a `guardar_negocio` — **correr ANTES de desplegar**,
+    mismo motivo que 0015.

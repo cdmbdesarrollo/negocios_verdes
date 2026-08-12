@@ -1,3 +1,4 @@
+import 'actividad_productiva.dart';
 import 'categoria_oficial.dart';
 import 'negocio_foto.dart';
 import 'subcategoria.dart';
@@ -33,6 +34,7 @@ class Negocio {
   /// verdad completa, viene de negocios_categorias.
   final List<CategoriaOficial> categoriasOficiales;
   final List<Subcategoria> subcategorias;
+  final List<ActividadProductiva> actividadesProductivas;
   final String municipio;
   final String? direccion;
   final double? latitud;
@@ -62,6 +64,7 @@ class Negocio {
     this.categoriaOficial,
     this.categoriasOficiales = const [],
     this.subcategorias = const [],
+    this.actividadesProductivas = const [],
     required this.municipio,
     this.direccion,
     this.latitud,
@@ -91,6 +94,7 @@ class Negocio {
     final fotosJson = _desenvolverLista(json['negocio_fotos']);
     final subcategoriasJoin = _desenvolverLista(json['negocios_subcategorias']);
     final categoriasJoin = _desenvolverLista(json['negocios_categorias']);
+    final actividadesJoin = _desenvolverLista(json['negocios_actividades']);
 
     return Negocio(
       id: json['id']?.toString() ?? '',
@@ -108,6 +112,11 @@ class Negocio {
           .map((e) => _desenvolverUno(e['subcategorias']))
           .whereType<Map<String, dynamic>>()
           .map(Subcategoria.fromJson)
+          .toList(),
+      actividadesProductivas: actividadesJoin
+          .map((e) => _desenvolverUno(e['actividades_productivas']))
+          .whereType<Map<String, dynamic>>()
+          .map(ActividadProductiva.fromJson)
           .toList(),
       municipio: json['municipio']?.toString() ?? '',
       direccion: json['direccion']?.toString(),
@@ -146,6 +155,7 @@ class Negocio {
       categoriaOficial: categoriaOficial,
       categoriasOficiales: categoriasOficiales,
       subcategorias: subcategorias,
+      actividadesProductivas: actividadesProductivas,
       municipio: municipio,
       direccion: direccion,
       latitud: latitud,

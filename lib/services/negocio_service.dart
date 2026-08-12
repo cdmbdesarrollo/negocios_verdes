@@ -15,7 +15,8 @@ const String _selectConEmbeds =
     '*, categorias_oficiales!negocios_categoria_oficial_id_fkey(*), '
     'negocio_fotos(*), '
     'negocios_subcategorias(subcategorias(*)), '
-    'negocios_categorias(categorias_oficiales(*))';
+    'negocios_categorias(categorias_oficiales(*)), '
+    'negocios_actividades(actividades_productivas(*))';
 
 class NegocioService {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -147,6 +148,7 @@ class NegocioService {
     required bool destacado,
     required bool activo,
     required List<String> subcategoriaIds,
+    required List<String> actividadIds,
   }) async {
     try {
       final resultado = await _supabase.rpc('guardar_negocio', params: {
@@ -171,6 +173,7 @@ class NegocioService {
         'p_destacado': destacado,
         'p_activo': activo,
         'p_subcategoria_ids': subcategoriaIds,
+        'p_actividad_ids': actividadIds,
       });
       return resultado.toString();
     } catch (e) {

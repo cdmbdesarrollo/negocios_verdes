@@ -5,15 +5,18 @@ import 'package:uuid/uuid.dart';
 import '../../../catalogos.dart';
 import '../../../core/admin_guard.dart';
 import '../../../core/widgets/chip_filtro.dart';
+import '../../../models/actividad_productiva.dart';
 import '../../../models/categoria_oficial.dart';
 import '../../../models/negocio_foto.dart';
 import '../../../models/subcategoria.dart';
+import '../../../services/actividad_productiva_service.dart';
 import '../../../services/categoria_service.dart';
 import '../../../services/negocio_foto_service.dart';
 import '../../../services/negocio_service.dart';
 import '../../../services/subcategoria_service.dart';
 import '../../../theme/nv_colors.dart';
 import 'widgets/galeria_editor.dart';
+import 'widgets/selector_actividades.dart';
 import 'widgets/selector_subcategorias.dart';
 import 'widgets/selector_ubicacion_mapa.dart';
 
@@ -34,6 +37,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
   final _formKey = GlobalKey<FormState>();
   final _categoriaService = CategoriaService();
   final _subcategoriaService = SubcategoriaService();
+  final _actividadService = ActividadProductivaService();
   final _negocioService = NegocioService();
   final _negocioFotoService = NegocioFotoService();
 
@@ -57,12 +61,14 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
 
   List<CategoriaOficial> _categorias = [];
   List<Subcategoria> _subcategorias = [];
+  List<ActividadProductiva> _actividades = [];
   /// Hasta 3 — orden de selección, la primera es la "principal" (la que
   /// queda en negocios.categoria_oficial_id para todo lo que ya filtra o
   /// muestra por una sola categoría). Lista, no Set, para que ese orden sea
   /// predecible.
   List<String> _categoriaOficialIds = [];
   Set<String> _subcategoriaIds = {};
+  Set<String> _actividadIds = {};
   String? _municipio;
   double? _latitud;
   double? _longitud;
@@ -101,6 +107,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
     try {
       final categorias = await _categoriaService.listarTodas();
       final subcategorias = await _subcategoriaService.listarTodas();
+      final actividades = await _actividadService.listarTodas();
 
       if (_esEdicion) {
         final existente = await _negocioService.obtenerPorId(_negocioId);
@@ -129,6 +136,8 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
         _destacado = existente.destacado;
         _activo = existente.activo;
         _subcategoriaIds = existente.subcategorias.map((s) => s.id).toSet();
+        _actividadIds =
+            existente.actividadesProductivas.map((a) => a.id).toSet();
         _galeriaInicial = existente.fotos;
         // Crítico: _galeriaActual es lo que _sincronizarGaleria() vuelve a
         // insertar al guardar (borra todo _galeriaInicial primero). Si el
@@ -147,6 +156,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
       setState(() {
         _categorias = categorias;
         _subcategorias = subcategorias;
+        _actividades = actividades;
         _cargando = false;
       });
     } catch (e) {
@@ -202,6 +212,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
         destacado: _destacado,
         activo: _activo,
         subcategoriaIds: _subcategoriaIds.toList(),
+        actividadIds: _actividadIds.toList(),
       );
 
       await _sincronizarGaleria();
@@ -252,6 +263,13 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             .map((s) => s.id)
             .toSet();
         _subcategoriaIds.removeWhere(idsDeEstaCategoria.contains);
+        // Cascada un nivel más abajo: las actividades productivas de esas
+        // subcategorías tampoco aplican ya.
+        final idsDeActividadesDeEstaCategoria = _actividades
+            .where((a) => idsDeEstaCategoria.contains(a.subcategoriaId))
+            .map((a) => a.id)
+            .toSet();
+        _actividadIds.removeWhere(idsDeActividadesDeEstaCategoria.contains);
       } else {
         if (_categoriaOficialIds.length >= 3) {
           _avisar('Máximo 3 categorías por negocio.');
@@ -259,6 +277,22 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
         }
         _categoriaOficialIds.add(id);
       }
+    });
+  }
+
+  /// Mismo criterio que _alternarCategoria: al quitar una subcategoría, las
+  /// actividades productivas que dependían de ella se podan también. A
+  /// diferencia de SelectorSubcategorias con las categorías (que no
+  /// necesitaba reconstruir el padre), acá sí hace falta setState porque
+  /// SelectorActividades depende de _subcategoriaIds para saber qué mostrar.
+  void _alSeleccionarSubcategorias(Set<String> ids) {
+    setState(() {
+      _subcategoriaIds = ids;
+      final idsDeActividadesValidas = _actividades
+          .where((a) => ids.contains(a.subcategoriaId))
+          .map((a) => a.id)
+          .toSet();
+      _actividadIds.removeWhere((id) => !idsDeActividadesValidas.contains(id));
     });
   }
 
@@ -356,7 +390,23 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
                 .toList(),
             subcategorias: _subcategorias,
             seleccionadas: _subcategoriaIds,
-            onCambio: (ids) => _subcategoriaIds = ids,
+            onCambio: _alSeleccionarSubcategorias,
+          ),
+          const SizedBox(height: 16),
+          Text('Actividades productivas',
+              style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 8),
+          // Mismo truco de key que SelectorSubcategorias: al cambiar qué
+          // subcategorías están elegidas, este selector debe partir de cero
+          // de qué actividades mostrar, no arrastrar el estado anterior.
+          SelectorActividades(
+            key: ValueKey(_subcategoriaIds.join(',')),
+            subcategorias: _subcategorias
+                .where((s) => _subcategoriaIds.contains(s.id))
+                .toList(),
+            actividades: _actividades,
+            seleccionadas: _actividadIds,
+            onCambio: (ids) => _actividadIds = ids,
           ),
           const SizedBox(height: 20),
           _seccion('Ubicación'),

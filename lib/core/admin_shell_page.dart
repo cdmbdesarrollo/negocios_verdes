@@ -19,6 +19,7 @@ const List<EnlaceAdmin> enlacesAdmin = [
   EnlaceAdmin('Negocios', '/admin/negocios', Icons.storefront_outlined),
   EnlaceAdmin('Categorías', '/admin/categorias', Icons.category_outlined),
   EnlaceAdmin('Subcategorías', '/admin/subcategorias', Icons.label_outline),
+  EnlaceAdmin('Actividades productivas', '/admin/actividades', Icons.eco_outlined),
   EnlaceAdmin('Apariencia', '/admin/apariencia', Icons.palette_outlined),
   EnlaceAdmin('Auditoría', '/admin/logs', Icons.history),
 ];

@@ -12,6 +12,7 @@ import 'config/supabase_config.dart';
 import 'core/admin_shell_page.dart';
 import 'core/base_page.dart';
 import 'core/site_shell.dart';
+import 'pages/admin/actividades/admin_actividades_page.dart';
 import 'pages/admin/apariencia/admin_apariencia_page.dart';
 import 'pages/admin/categorias/admin_categorias_page.dart';
 import 'pages/admin/dashboard/admin_dashboard_page.dart';
@@ -250,6 +251,10 @@ GoRouter _construirRouter() {
           GoRoute(
             path: '/admin/subcategorias',
             builder: (context, state) => const AdminSubcategoriasPage(),
+          ),
+          GoRoute(
+            path: '/admin/actividades',
+            builder: (context, state) => const AdminActividadesPage(),
           ),
           GoRoute(
             path: '/admin/apariencia',
