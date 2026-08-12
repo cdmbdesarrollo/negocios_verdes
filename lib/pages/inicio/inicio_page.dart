@@ -10,6 +10,7 @@ import '../../core/widgets/entrada_animada.dart';
 import '../../core/widgets/hover_lift.dart';
 import '../../core/widgets/icono_etiqueta.dart';
 import '../../core/widgets/logo_negocios_verdes.dart';
+import '../../core/widgets/onda_divisora.dart';
 import '../../core/widgets/pie_pagina.dart';
 import '../../core/widgets/section_header.dart';
 import '../../models/banner_sitio.dart';
@@ -200,7 +201,11 @@ class _InicioPageState extends State<InicioPage> {
           if (_categorias.isNotEmpty) entrada(_seccionCategorias(context)),
           if (_subcategorias.isNotEmpty) entrada(_seccionSubcategorias(context)),
           entrada(_seccionMunicipios(context)),
+          const OndaDivisora(
+              colorFondo: NVColors.fondo, colorOnda: NVColors.primary),
           entrada(_seccionEstadisticas(context)),
+          const OndaDivisora(
+              colorFondo: NVColors.primary, colorOnda: NVColors.primaryLight),
           entrada(_seccionQueSon(context)),
           const PiePagina(),
         ],
@@ -373,8 +378,8 @@ class _InicioPageState extends State<InicioPage> {
             spacing: 12,
             runSpacing: 12,
             children: [
-              for (final categoria in _categorias)
-                _tarjetaCategoria(context, categoria),
+              for (final (i, categoria) in _categorias.indexed)
+                _tarjetaCategoria(context, categoria, i),
             ],
           ),
         ],
@@ -382,7 +387,25 @@ class _InicioPageState extends State<InicioPage> {
     );
   }
 
-  Widget _tarjetaCategoria(BuildContext context, CategoriaOficial categoria) {
+  /// Paleta curada (no genérica, tonos tierra/agua/bosque) para que el
+  /// círculo de ícono no se vea igual en las 8 categorías — antes todas
+  /// compartían el mismo verde claro y el bloque se leía monótono. Se
+  /// repite si hay más categorías que colores.
+  static const List<Color> _paletaCategorias = [
+    Color(0xFFDCEEE6), // verde bosque
+    Color(0xFFFBE7D3), // durazno/tierra
+    Color(0xFFDCEAF7), // azul cielo
+    Color(0xFFF3E1E8), // rosa tierra
+    Color(0xFFEFEAD6), // arena
+    Color(0xFFDCF0EC), // turquesa agua
+    Color(0xFFE9E0F5), // lavanda
+    Color(0xFFE9F0DA), // lima
+  ];
+
+  Widget _tarjetaCategoria(
+      BuildContext context, CategoriaOficial categoria, int indice) {
+    final colorFondo =
+        _paletaCategorias[indice % _paletaCategorias.length];
     return HoverLift(
       child: Material(
         color: NVColors.superficie,
@@ -402,8 +425,8 @@ class _InicioPageState extends State<InicioPage> {
                 Container(
                   width: 38,
                   height: 38,
-                  decoration: const BoxDecoration(
-                    color: NVColors.primaryLight,
+                  decoration: BoxDecoration(
+                    color: colorFondo,
                     shape: BoxShape.circle,
                   ),
                   alignment: Alignment.center,
