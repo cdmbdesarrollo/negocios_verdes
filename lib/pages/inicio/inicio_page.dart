@@ -781,7 +781,12 @@ class _InicioPageState extends State<InicioPage> {
 
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(top: 32),
+      // Antes tenía margin: top 32 — dejaba una franja del fondo crema del
+      // Column entre el final de OndaDivisora (que ya termina en este
+      // mismo primaryLight) y el inicio de este degradado, un salto de
+      // color real y recto, no un artefacto de renderizado. Sin margen,
+      // el degradado arranca justo donde la onda termina, mismo color a
+      // ambos lados de la unión.
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 44),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
