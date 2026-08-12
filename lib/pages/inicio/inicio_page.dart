@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -5,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../catalogos.dart';
 import '../../core/seo_tags.dart';
 import '../../core/widgets/chip_filtro.dart';
+import '../../core/widgets/entrada_animada.dart';
 import '../../core/widgets/hover_lift.dart';
 import '../../core/widgets/icono_etiqueta.dart';
 import '../../core/widgets/logo_negocios_verdes.dart';
@@ -20,7 +22,6 @@ import '../../services/categoria_service.dart';
 import '../../services/negocio_service.dart';
 import '../../services/subcategoria_service.dart';
 import '../../theme/nv_colors.dart';
-import '../buscar/widgets/negocio_card.dart';
 import 'widgets/hero_slider.dart';
 
 class InicioPage extends StatefulWidget {
@@ -181,17 +182,26 @@ class _InicioPageState extends State<InicioPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Retraso creciente por sección: entran en cascada en vez de golpe
+    // único, sensación mucho más "producto premium" que "página estática".
+    var indiceEntrada = 0;
+    Widget entrada(Widget child) {
+      final retraso = Duration(milliseconds: 70 * indiceEntrada);
+      indiceEntrada++;
+      return EntradaAnimada(retraso: retraso, child: child);
+    }
+
     return SingleChildScrollView(
       child: Column(
         children: [
           HeroSlider(slides: _slides),
-          _buscadorPersistente(context),
-          if (_destacados.isNotEmpty) _seccionDestacados(context),
-          if (_categorias.isNotEmpty) _seccionCategorias(context),
-          if (_subcategorias.isNotEmpty) _seccionSubcategorias(context),
-          _seccionMunicipios(context),
-          _seccionEstadisticas(context),
-          _seccionQueSon(context),
+          entrada(_buscadorPersistente(context)),
+          if (_destacados.isNotEmpty) entrada(_seccionDestacados(context)),
+          if (_categorias.isNotEmpty) entrada(_seccionCategorias(context)),
+          if (_subcategorias.isNotEmpty) entrada(_seccionSubcategorias(context)),
+          entrada(_seccionMunicipios(context)),
+          entrada(_seccionEstadisticas(context)),
+          entrada(_seccionQueSon(context)),
           const PiePagina(),
         ],
       ),
@@ -506,16 +516,116 @@ class _InicioPageState extends State<InicioPage> {
                 itemCount: _destacados.length,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: columnas,
-                  mainAxisExtent: 150,
+                  mainAxisExtent: 210,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
                 ),
                 itemBuilder: (context, i) =>
-                    HoverLift(child: NegocioCard(negocio: _destacados[i])),
+                    HoverLift(child: _tarjetaDestacado(_destacados[i])),
               );
             },
           ),
         ],
+      ),
+    );
+  }
+
+  /// Estilo editorial (foto de fondo + degradado + texto encima) en vez de
+  /// foto-a-la-izquierda-texto-a-la-derecha de NegocioCard — esa sigue
+  /// usándose tal cual en /buscar (lista densa de resultados, ahí sí
+  /// importa la compacidad), pero "destacados" es la vitrina del inicio,
+  /// se justifica una tarjeta más grande y fotográfica.
+  Widget _tarjetaDestacado(Negocio negocio) {
+    final tieneFoto =
+        negocio.fotoPortadaUrl != null && negocio.fotoPortadaUrl!.isNotEmpty;
+    return Material(
+      color: NVColors.primaryDark,
+      borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.go('/negocio/${negocio.slug}'),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (tieneFoto)
+              CachedNetworkImage(
+                  imageUrl: negocio.fotoPortadaUrl!, fit: BoxFit.cover)
+            else
+              const ColoredBox(color: NVColors.primaryLight),
+            // Degradado solo para que el texto de abajo se lea encima de
+            // cualquier foto, sin importar qué tan clara u oscura sea.
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: const [0.35, 1.0],
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.78),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              left: 14,
+              right: 14,
+              bottom: 14,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (negocio.categoriaOficial != null)
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.92),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${negocio.categoriaOficial!.iconoOTexto} '
+                        '${negocio.categoriaOficial!.nombre}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: NVColors.primaryDark),
+                      ),
+                    ),
+                  const SizedBox(height: 6),
+                  Text(
+                    negocio.nombre,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.place, color: Colors.white70, size: 12),
+                      const SizedBox(width: 2),
+                      Flexible(
+                        child: Text(
+                          negocio.municipio,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              const TextStyle(color: Colors.white70, fontSize: 11),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
