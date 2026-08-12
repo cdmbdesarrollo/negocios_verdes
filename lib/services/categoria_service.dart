@@ -84,6 +84,28 @@ class CategoriaService {
     }
   }
 
+  /// Cuenta subcategorías y negocios que todavía referencian esta
+  /// categoría — ambos bloquean el borrado vía "on delete restrict" en
+  /// SQL. Se usa para avisar ANTES de intentar eliminar, con números
+  /// reales, en vez de que el admin se entere solo cuando ya falló (las 8
+  /// categorías de semilla siempre tienen subcategorías propias, así que
+  /// sin este aviso previo el borrado parece "no funciona nunca").
+  Future<({int subcategorias, int negocios})> contarDependientes(
+      String categoriaId) async {
+    final subs = await _supabase
+        .from('subcategorias')
+        .select('id')
+        .eq('categoria_oficial_id', categoriaId);
+    final negocios = await _supabase
+        .from('negocios_categorias')
+        .select('negocio_id')
+        .eq('categoria_oficial_id', categoriaId);
+    return (
+      subcategorias: (subs as List).length,
+      negocios: (negocios as List).length,
+    );
+  }
+
   /// Falla con el mensaje del FK "on delete restrict" si algún negocio
   /// todavía usa esta categoría — mensaje se deja pasar tal cual, ya es
   /// suficientemente claro ("violates foreign key constraint").

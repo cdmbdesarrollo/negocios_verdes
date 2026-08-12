@@ -57,12 +57,58 @@ class _AdminCategoriasPageState extends State<AdminCategoriasPage> {
   }
 
   Future<void> _eliminar(CategoriaOficial categoria) async {
+    // Aviso previo con números reales, no solo después de que falle: las
+    // categorías de semilla siempre traen sus propias subcategorías, así
+    // que sin este chequeo el borrado "nunca funciona" y no queda claro
+    // por qué.
+    final ({int subcategorias, int negocios}) conteo;
+    try {
+      conteo = await _service.contarDependientes(categoria.id);
+    } catch (e) {
+      if (mounted) mostrarErrorEliminar(context, e);
+      return;
+    }
+    if (!mounted) return;
+
+    if (conteo.subcategorias > 0 || conteo.negocios > 0) {
+      final partes = <String>[
+        if (conteo.subcategorias > 0)
+          '${conteo.subcategorias} subcategoría${conteo.subcategorias == 1 ? '' : 's'}',
+        if (conteo.negocios > 0)
+          '${conteo.negocios} negocio${conteo.negocios == 1 ? '' : 's'}',
+      ];
+      await showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('No se puede eliminar todavía'),
+          content: Text(
+              '"${categoria.nombre}" todavía tiene ${partes.join(' y ')} '
+              'asociados. Quítalos o reasígnalos primero.\n\nSi solo '
+              'quieres dejar de mostrarla en el sitio sin perder esos '
+              'datos, desactívala en su lugar.'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cerrar')),
+            if (categoria.activo)
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _alternarActivo(categoria);
+                },
+                child: const Text('Desactivar en su lugar'),
+              ),
+          ],
+        ),
+      );
+      return;
+    }
+
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('¿Eliminar categoría?'),
-        content: Text(
-            'Se eliminará "${categoria.nombre}". Si algún negocio o subcategoría todavía la usa, no se podrá eliminar.'),
+        content: Text('Se eliminará "${categoria.nombre}" permanentemente.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
