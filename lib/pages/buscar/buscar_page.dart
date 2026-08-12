@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../../core/responsive.dart';
 import '../../core/seo_tags.dart';
+import '../../core/widgets/pie_pagina.dart';
 import '../../models/categoria_oficial.dart';
 import '../../models/filtro_busqueda.dart';
 import '../../models/negocio.dart';
@@ -207,8 +208,17 @@ class _BuscarPageState extends State<BuscarPage> {
     final conUbicacion = negocios.where((n) => n.tieneUbicacion).length;
     final ancha = esPantallaAncha(context);
 
-    return Column(
-      children: [
+    // Antes esta página no tenía scroll propio (filtros + contador fijos
+    // arriba, lista/mapa en un Expanded ocupando justo lo que quedaba de
+    // viewport) — era la ÚNICA página del sitio sin pie de página, y sin
+    // ese cierre el mapa se sentía "cortado" en vez de completo. Ahora es
+    // una página normal como el resto (scroll + PiePagina al final);
+    // lista/mapa pasan de Expanded a una altura fija generosa en vez de
+    // "lo que sobre", así se ven completos sin importar cuánto midan los
+    // filtros arriba.
+    return SingleChildScrollView(
+      child: Column(
+        children: [
         // Con 8 categorías + 13 municipios como chips, FiltrosBar puede
         // crecer varias filas — sin este límite empujaba el área de
         // resultados (el Expanded de abajo) a casi cero de alto en
@@ -264,7 +274,8 @@ class _BuscarPageState extends State<BuscarPage> {
           ),
         ),
         const SizedBox(height: 8),
-        Expanded(
+        SizedBox(
+          height: 600,
           child: ancha
               ? Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -303,7 +314,9 @@ class _BuscarPageState extends State<BuscarPage> {
                       onMarcadorTocado: _alTocarMarcador,
                     )),
         ),
-      ],
+          const PiePagina(),
+        ],
+      ),
     );
   }
 }
