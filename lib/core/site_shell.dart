@@ -18,6 +18,7 @@ const List<EnlaceNav> enlacesNavPublicos = [
   EnlaceNav('Inicio', '/'),
   EnlaceNav('Buscar', '/buscar'),
   EnlaceNav('¿Qué son los Negocios Verdes?', '/nosotros'),
+  EnlaceNav('Plan Nacional', '/plan-nacional'),
   EnlaceNav('Contacto', '/contacto'),
 ];
 
@@ -124,11 +125,18 @@ class _SiteShellState extends State<SiteShell> {
           ),
           if (ancha) ...[
             const SizedBox(height: 4),
-            Row(
-              children: [
-                for (final enlace in enlacesNavPublicos)
-                  _itemNav(context, enlace, rutaActual == enlace.ruta),
-              ],
+            // Scroll horizontal como red de seguridad: con 5 enlaces (uno
+            // largo, "¿Qué son los Negocios Verdes?") la fila puede no
+            // caber justo cerca del punto de quiebre de 900px — así nunca
+            // se desborda, en vez de recortarse en silencio.
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (final enlace in enlacesNavPublicos)
+                    _itemNav(context, enlace, rutaActual == enlace.ruta),
+                ],
+              ),
             ),
           ],
         ],

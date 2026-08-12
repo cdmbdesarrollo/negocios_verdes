@@ -4,6 +4,12 @@ import 'package:go_router/go_router.dart';
 import '../../core/seo_tags.dart';
 import '../../core/widgets/logo_negocios_verdes.dart';
 import '../../core/widgets/pie_pagina.dart';
+import '../../models/actividad_productiva.dart';
+import '../../models/categoria_oficial.dart';
+import '../../models/subcategoria.dart';
+import '../../services/actividad_productiva_service.dart';
+import '../../services/categoria_service.dart';
+import '../../services/subcategoria_service.dart';
 import '../../theme/nv_colors.dart';
 
 class NosotrosPage extends StatefulWidget {
@@ -14,6 +20,14 @@ class NosotrosPage extends StatefulWidget {
 }
 
 class _NosotrosPageState extends State<NosotrosPage> {
+  final _categoriaService = CategoriaService();
+  final _subcategoriaService = SubcategoriaService();
+  final _actividadService = ActividadProductivaService();
+
+  List<CategoriaOficial> _categorias = [];
+  List<Subcategoria> _subcategorias = [];
+  List<ActividadProductiva> _actividades = [];
+
   @override
   void initState() {
     super.initState();
@@ -22,8 +36,35 @@ class _NosotrosPageState extends State<NosotrosPage> {
       descripcion:
           'La definición oficial de Negocios Verdes, sus 3 categorías y '
           'cómo la Ventanilla de Negocios Verdes de la CDMB acompaña a los '
-          'negocios de los 13 municipios de su jurisdicción.',
+          'negocios de los 13 municipios de nuestra jurisdicción.',
     );
+    _cargarTaxonomia();
+  }
+
+  /// Solo para el árbol expandible de categoría→subcategoría→actividad —
+  /// el resto de esta página es contenido estático que no depende de la
+  /// base de datos, por eso no hay pantalla de carga: el árbol simplemente
+  /// aparece cuando estos 3 listados terminan de llegar.
+  Future<void> _cargarTaxonomia() async {
+    try {
+      final resultados = await Future.wait([
+        _categoriaService.listarTodas(),
+        _subcategoriaService.listarTodas(),
+        _actividadService.listarTodas(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _categorias =
+            (resultados[0] as List<CategoriaOficial>).where((c) => c.activo).toList();
+        _subcategorias =
+            (resultados[1] as List<Subcategoria>).where((s) => s.activo).toList();
+        _actividades =
+            (resultados[2] as List<ActividadProductiva>).where((a) => a.activo).toList();
+      });
+    } catch (_) {
+      // Silencioso a propósito: el árbol es un complemento, no bloquea el
+      // resto de la página si el listado no carga.
+    }
   }
 
   @override
@@ -118,13 +159,23 @@ class _NosotrosPageState extends State<NosotrosPage> {
                           'restauración de ecosistemas.',
                       'calidad-ambiental',
                     ),
-                    const SizedBox(height: 8),
-                    _parrafo(
-                      'Cada categoría se divide en subcategorías y, dentro de '
-                      'ellas, en actividades productivas específicas — puedes '
-                      'explorarlas todas desde el buscador.',
-                    ),
-                    const SizedBox(height: 4),
+                    if (_categorias.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Estructura completa de la clasificación',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 18),
+                      ),
+                      const SizedBox(height: 4),
+                      _parrafo(
+                        'Toca una categoría para ver sus subcategorías, y '
+                        'una subcategoría para ver sus actividades '
+                        'productivas — cada actividad lleva directo a los '
+                        'negocios verdes que la practican.',
+                      ),
+                      _arbolTaxonomia(context),
+                      const SizedBox(height: 12),
+                    ],
                     const Text(
                       '¿Qué es la Ventanilla de Negocios Verdes?',
                       style:
@@ -139,8 +190,9 @@ class _NosotrosPageState extends State<NosotrosPage> {
                       'actores regionales, hacen seguimiento a los negocios '
                       'verdes de la zona y generan las estadísticas que '
                       'miden su aporte al desarrollo económico y a la '
-                      'conservación de los recursos naturales. La CDMB tiene '
-                      'la suya para los 13 municipios de su jurisdicción.',
+                      'conservación de los recursos naturales. Nosotros '
+                      'tenemos la nuestra para los 13 municipios de nuestra '
+                      'jurisdicción.',
                     ),
                     const SizedBox(height: 4),
                     const Text(
@@ -163,6 +215,45 @@ class _NosotrosPageState extends State<NosotrosPage> {
                       '🏆 Negocio ancla',
                       'Negocios verdes consolidados, referentes en su '
                           'categoría y en su municipio.',
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: NVColors.fondo,
+                        border: Border.all(color: NVColors.borde),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '🎖️ Sello Marca de Negocios Verdes',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w600, fontSize: 15),
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Es un reconocimiento adicional al de '
+                            '"verificado", respaldado por Marca País '
+                            '(acuerdo entre el Ministerio de Ambiente y '
+                            'Procolombia, 2021). Lo otorgan directamente '
+                            'las ventanillas de negocios verdes — como la '
+                            'nuestra — a los negocios que superan el 71 % de '
+                            'cumplimiento en la evaluación de criterios, '
+                            'mediante un contrato de un año que autoriza el '
+                            'uso de la marca en productos específicos. El '
+                            'negocio debe solicitarlo directamente ante la '
+                            'autoridad ambiental; no es automático al '
+                            'quedar verificado.',
+                            style: TextStyle(
+                                color: NVColors.textoSecundario,
+                                fontSize: 13,
+                                height: 1.4),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 20),
                     Container(
@@ -282,6 +373,89 @@ class _NosotrosPageState extends State<NosotrosPage> {
                   fontSize: 13,
                   fontWeight: FontWeight.w600),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Árbol expandible categoría → subcategoría → actividad. ExpansionTile
+  /// (Material estándar) en vez de algo hecho a mano — con 29 actividades
+  /// mostrarlas todas de una sería una pared de texto; colapsado por
+  /// defecto se navega mucho mejor.
+  Widget _arbolTaxonomia(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: NVColors.superficie,
+        border: Border.all(color: NVColors.borde),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: Column(
+          children: [
+            for (final categoria in _categorias) _nodoCategoria(context, categoria),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _nodoCategoria(BuildContext context, CategoriaOficial categoria) {
+    final subs = _subcategorias
+        .where((s) => s.categoriaOficialId == categoria.id)
+        .toList();
+    return ExpansionTile(
+      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+      title: Text('${categoria.iconoOTexto} ${categoria.nombre}',
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14.5)),
+      children: [
+        for (final sub in subs) _nodoSubcategoria(context, categoria, sub),
+      ],
+    );
+  }
+
+  Widget _nodoSubcategoria(
+      BuildContext context, CategoriaOficial categoria, Subcategoria sub) {
+    final actividades =
+        _actividades.where((a) => a.subcategoriaId == sub.id).toList();
+    return Padding(
+      padding: const EdgeInsets.only(left: 12),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+        title: Text('${sub.iconoOTexto} ${sub.nombre}',
+            style: const TextStyle(fontSize: 13.5)),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+            child: actividades.isEmpty
+                ? const Text('Sin actividades productivas todavía.',
+                    style: TextStyle(
+                        color: NVColors.textoSecundario, fontSize: 12))
+                : Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final actividad in actividades)
+                        ActionChip(
+                          label: Text(
+                            '${actividad.iconoOTexto} ${actividad.nombre}',
+                            style: const TextStyle(fontSize: 12.5),
+                          ),
+                          backgroundColor: NVColors.primaryLight,
+                          // Los 3 niveles en el link (no solo actividad):
+                          // así el buscador llega con la cascada completa
+                          // resaltada, no solo con el resultado ya filtrado
+                          // pero los chips de categoría/subcategoría en
+                          // blanco.
+                          onPressed: () => context.go(
+                              '/buscar?categoria=${categoria.slug}&subcategoria=${sub.slug}&actividad=${actividad.slug}'),
+                        ),
+                    ],
+                  ),
           ),
         ],
       ),

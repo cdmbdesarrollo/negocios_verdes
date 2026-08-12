@@ -67,7 +67,7 @@ class _InicioPageState extends State<InicioPage> {
       titulo: 'Negocios Verdes CDMB — Directorio de negocios verdes',
       descripcion:
           'Encuentra negocios verdes verificados por la CDMB en los 13 '
-          'municipios de su jurisdicción: agricultura orgánica, turismo '
+          'municipios de nuestra jurisdicción: agricultura orgánica, turismo '
           'sostenible, biocomercio y mucho más.',
     );
     _cargar();
