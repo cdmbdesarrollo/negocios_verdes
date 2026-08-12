@@ -78,6 +78,12 @@ class _SiteShellState extends State<SiteShell> {
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
       child: Column(
+        // Explícito porque el default de Column es center: el Row de
+        // logo/buscador no lo notaba (tiene un Expanded que lo fuerza a
+        // ancho completo igual), pero el SingleChildScrollView de los
+        // enlaces de navegación sí — sin esto quedaba centrado en vez de
+        // pegado al borde izquierdo como el resto del sitio.
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [

@@ -307,11 +307,22 @@ class _InicioPageState extends State<InicioPage> {
           if (_subcategoriaSel != null && _actividadesFiltradas.isNotEmpty)
             entrada(_seccionActividades(context)),
           entrada(_botonBuscarFiltros(context)),
-          const OndaDivisora(
-              colorFondo: NVColors.fondo, colorOnda: NVColors.primary),
+          // Margen inferior negativo: CanvasKit a veces deja una línea de
+          // un subpíxel entre dos capas adyacentes del mismo color exacto
+          // (la onda y la sección sólida que sigue) — el solape la tapa
+          // sin recortar la curva, que ya es sólida (colorOnda liso) en
+          // ese margen inferior de la onda.
+          Container(
+            margin: const EdgeInsets.only(bottom: -2),
+            child: const OndaDivisora(
+                colorFondo: NVColors.fondo, colorOnda: NVColors.primary),
+          ),
           entrada(_seccionEstadisticas(context)),
-          const OndaDivisora(
-              colorFondo: NVColors.primary, colorOnda: NVColors.primaryLight),
+          Container(
+            margin: const EdgeInsets.only(bottom: -2),
+            child: const OndaDivisora(
+                colorFondo: NVColors.primary, colorOnda: NVColors.primaryLight),
+          ),
           entrada(_seccionQueSon(context)),
           const PiePagina(),
         ],
