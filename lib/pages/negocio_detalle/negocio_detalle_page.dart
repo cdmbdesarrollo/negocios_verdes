@@ -9,6 +9,7 @@ import '../../core/seo_tags.dart';
 import '../../core/widgets/badge_nivel.dart';
 import '../../core/widgets/boton_whatsapp.dart';
 import '../../core/widgets/pie_pagina.dart';
+import '../../core/widgets/pin_negocio_mapa.dart';
 import '../../models/negocio.dart';
 import '../../services/negocio_service.dart';
 import '../../theme/nv_colors.dart';
@@ -291,10 +292,13 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
             MarkerLayer(markers: [
               Marker(
                 point: LatLng(negocio.latitud!, negocio.longitud!),
-                width: 40,
-                height: 40,
-                child: const Icon(Icons.location_pin,
-                    color: NVColors.accent, size: 40),
+                width: 46,
+                height: 46,
+                child: PinNegocioMapa(
+                  fotoPortadaUrl: negocio.fotoPortadaUrl,
+                  destacado: true,
+                  tamano: 44,
+                ),
               ),
             ]),
           ],

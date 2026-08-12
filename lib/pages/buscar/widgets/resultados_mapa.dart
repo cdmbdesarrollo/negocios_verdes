@@ -1,9 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../core/widgets/pin_negocio_mapa.dart';
 import '../../../models/negocio.dart';
 import '../../../theme/nv_colors.dart';
 
@@ -55,9 +55,10 @@ class ResultadosMapa extends StatelessWidget {
                   point: LatLng(negocio.latitud!, negocio.longitud!),
                   width: 48,
                   height: 48,
-                  child: _PinNegocio(
-                    negocio: negocio,
-                    seleccionado: negocio.id == negocioSeleccionadoId,
+                  child: PinNegocioMapa(
+                    fotoPortadaUrl: negocio.fotoPortadaUrl,
+                    destacado: negocio.id == negocioSeleccionadoId,
+                    tamano: negocio.id == negocioSeleccionadoId ? 46 : 36,
                   ),
                 ),
             ],
@@ -85,52 +86,6 @@ class ResultadosMapa extends StatelessWidget {
     final lng = conUbicacion.map((n) => n.longitud!).reduce((a, b) => a + b) /
         conUbicacion.length;
     return LatLng(lat, lng);
-  }
-}
-
-/// Muestra la foto/logo del negocio en un pin circular en vez de un ícono
-/// de ubicación genérico — así el mapa se identifica por negocio de un
-/// vistazo, igual que HuellaQR muestra la foto de la mascota en su mapa.
-/// Cae de vuelta a un ícono de tienda si el negocio todavía no tiene foto
-/// de portada cargada.
-class _PinNegocio extends StatelessWidget {
-  final Negocio negocio;
-  final bool seleccionado;
-
-  const _PinNegocio({required this.negocio, required this.seleccionado});
-
-  @override
-  Widget build(BuildContext context) {
-    final tamano = seleccionado ? 46.0 : 36.0;
-    final color = seleccionado ? NVColors.accent : NVColors.primary;
-    final fotoUrl = negocio.fotoPortadaUrl;
-    return Container(
-      width: tamano,
-      height: tamano,
-      padding: const EdgeInsets.all(2.5),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white,
-        border: Border.all(color: color, width: 2.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ClipOval(
-        child: fotoUrl != null && fotoUrl.isNotEmpty
-            ? CachedNetworkImage(imageUrl: fotoUrl, fit: BoxFit.cover)
-            : Container(
-                color: NVColors.primaryLight,
-                alignment: Alignment.center,
-                child: Icon(Icons.storefront,
-                    size: tamano * 0.5, color: NVColors.primary),
-              ),
-      ),
-    );
   }
 }
 
