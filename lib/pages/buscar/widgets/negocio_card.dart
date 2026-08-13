@@ -24,7 +24,7 @@ class NegocioCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderRadius = BorderRadius.circular(16);
+    final borderRadius = BorderRadius.circular(12);
     return Material(
       color: NVColors.superficie,
       elevation: 2,
@@ -138,7 +138,7 @@ class NegocioCard extends StatelessWidget {
                                     horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(
                                   color: NVColors.borde,
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Text(
                                   'Sin ubicación en el mapa',
@@ -165,7 +165,7 @@ class NegocioCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: NVColors.primaryLight,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

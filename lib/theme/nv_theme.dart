@@ -50,7 +50,7 @@ abstract final class NVTheme {
         color: NVColors.superficie,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           side: const BorderSide(color: NVColors.borde),
         ),
         margin: EdgeInsets.zero,
@@ -58,15 +58,21 @@ abstract final class NVTheme {
       dialogTheme: const DialogThemeData(
         backgroundColor: NVColors.superficie,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(16)),
+          borderRadius: BorderRadius.all(Radius.circular(12)),
         ),
       ),
+      // Radio propio (8/12, chips en rectángulo redondeado, no pastilla
+      // completa) — antes calcaba exactamente la escala 12/16/20 de
+      // HuellaQR (mismo patrón "tarjeta con borde + sombra sutil" también).
+      // Verde y Work Sans SÍ son intencionales y se quedan (colores reales
+      // de la Sede Electrónica de la CDMB, no copiados); lo que cambia es
+      // el lenguaje de forma, para que no se lean como el mismo producto.
       chipTheme: ChipThemeData(
         backgroundColor: NVColors.primaryLight,
         selectedColor: NVColors.primary,
         labelStyle: GoogleFonts.workSans(color: NVColors.textoPrincipal),
         side: BorderSide.none,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -78,7 +84,7 @@ abstract final class NVTheme {
               fontWeight: FontWeight.w600, fontSize: 14.5),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
           ),
         ),
       ),
@@ -90,7 +96,7 @@ abstract final class NVTheme {
               fontWeight: FontWeight.w600, fontSize: 14.5),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
           ),
         ),
       ),
@@ -110,15 +116,15 @@ abstract final class NVTheme {
         // formato" (una caja sin contorno) hasta que se enfocaba. Un poco
         // más oscuro y de 1.4px en vez de 1px, solo para esta situación.
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: Color(0xFFC7CEC5), width: 1.4),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: Color(0xFFC7CEC5), width: 1.4),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: NVColors.primary, width: 2),
         ),
       ),
@@ -131,7 +137,7 @@ abstract final class NVTheme {
         contentTextStyle: GoogleFonts.workSans(color: Colors.white),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
         ),
       ),
     );

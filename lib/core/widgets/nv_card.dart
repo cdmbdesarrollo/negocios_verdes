@@ -28,7 +28,7 @@ class NVCard extends StatelessWidget {
       elevation: 2,
       shadowColor: Colors.black.withValues(alpha: 0.14),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         side: const BorderSide(color: NVColors.borde),
       ),
       clipBehavior: Clip.antiAlias,

@@ -227,28 +227,23 @@ class _BuscarPageState extends State<BuscarPage> {
     return SingleChildScrollView(
       child: Column(
         children: [
-        // Con 8 categorías + 13 municipios como chips, FiltrosBar puede
-        // crecer varias filas — sin este límite empujaba el área de
-        // resultados (el Expanded de abajo) a casi cero de alto en
-        // pantallas normales, y el "scroll" que quedaba visible era una
-        // franja tan chica que parecía que no se podía bajar. Se le pone un
-        // techo (fracción del alto REAL de pantalla, no de las
-        // constraints del Column — esas pueden llegar sin límite desde
-        // arriba según cómo esté armado el shell) y scroll propio adentro,
-        // así nunca se come el espacio de los resultados.
-        ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * 0.36,
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-            child: FiltrosBar(
-              categorias: _categorias,
-              subcategorias: _subcategorias,
-              actividades: _actividades,
-              filtro: _filtro,
-              onCambio: _alCambiarFiltro,
-            ),
+        // Antes tenía un ConstrainedBox(maxHeight: 36% de pantalla) +
+        // scroll propio — de cuando los resultados de abajo eran un
+        // Expanded y competían por alto con FiltrosBar. Ya no: los
+        // resultados miden 600 fijo (ver más abajo) sin importar cuánto
+        // crezca este bloque, así que ese límite quedó sin ningún
+        // propósito real y solo cortaba la fila de Subcategoría/Actividad
+        // cuando la categoría elegida tenía muchas — la página entera ya
+        // tiene su propio scroll (el SingleChildScrollView de más arriba),
+        // no hace falta anidar un segundo scroll adentro.
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+          child: FiltrosBar(
+            categorias: _categorias,
+            subcategorias: _subcategorias,
+            actividades: _actividades,
+            filtro: _filtro,
+            onCambio: _alCambiarFiltro,
           ),
         ),
         Padding(
