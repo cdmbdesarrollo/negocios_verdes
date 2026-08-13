@@ -70,10 +70,30 @@ class ChipFiltro extends StatelessWidget {
         checkmarkColor: Colors.white,
       );
     }
-    if (anchoMinimo == null) return chip;
-    return ConstrainedBox(
-      constraints: BoxConstraints(minWidth: anchoMinimo!),
+    // Alto MÍNIMO siempre (no solo cuando hay anchoMinimo), nunca fijo —
+    // sin esto cada chip mide lo que su CONTENIDO necesite, y el contenido
+    // varía de formas que no tienen que ver con el criterio real de
+    // "seleccionado o no": un emoji tiene una altura de línea distinta a
+    // la del texto latino de Work Sans (Skia calcula el alto de línea por
+    // el glifo más alto de la línea), así que los chips con ícono salían
+    // más altos que "Todas"/"Todos los municipios" (sin ícono). Primer
+    // intento usó SizedBox(height: fijo) — se veía parejo en el caso
+    // común, pero un chip con el emoji ♻️ (trae selector de variación,
+    // más alto que el resto) necesitaba más que ese fijo y su contenido
+    // terminaba amontonado/cortado. minHeight en vez de un alto fijo: es
+    // un piso, nunca fuerza a nada a encogerse por debajo de lo que
+    // necesita — un chip más exigente simplemente mide un poco más que
+    // sus vecinos en vez de recortarse.
+    Widget resultado = ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 40),
       child: chip,
     );
+    if (anchoMinimo != null) {
+      resultado = ConstrainedBox(
+        constraints: BoxConstraints(minWidth: anchoMinimo!),
+        child: resultado,
+      );
+    }
+    return resultado;
   }
 }
