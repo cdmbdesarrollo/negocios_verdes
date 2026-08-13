@@ -53,6 +53,12 @@ abstract final class NVColors {
   static const Color nivelVerificado = primary;
   static const Color nivelAncla = Color(0xFFB8860B);
 
+  /// Reservado únicamente para el Sello Marca de Negocios Verdes (ver
+  /// SelloMarcaBadge) — un reconocimiento aparte de nivel_desarrollo, por
+  /// eso necesita su propio color y no reusa nivelAncla ni accent (ese
+  /// sigue solo para CTAs de conversión).
+  static const Color selloMarcaDorado = Color(0xFFC9A227);
+
   static const LinearGradient gradientHero = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,

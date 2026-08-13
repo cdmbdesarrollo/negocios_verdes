@@ -57,3 +57,9 @@ en un Supabase nuevo:
     diferencia de categorías/subcategorías, que sí la trajeron). Solo un
     `update` por slug, sin cambios de estructura — se puede correr en
     cualquier momento, no hace falta coordinarla con un deploy.
+18. `0018_sello_marca_negocios_verdes.sql` — columna `negocios.sello_marca`
+    (booleana, independiente de `nivel_desarrollo`): un negocio puede ser
+    verificado o ancla Y tener el Sello Marca de Negocios Verdes a la vez,
+    no es un cuarto nivel excluyente. Agrega `p_sello_marca` a
+    `guardar_negocio` — **correr ANTES de desplegar**, mismo motivo que
+    0015/0016.

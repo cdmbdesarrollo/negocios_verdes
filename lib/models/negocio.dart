@@ -52,6 +52,11 @@ class Negocio {
   final String nivelDesarrollo;
   final bool destacado;
   final bool activo;
+  /// Reconocimiento adicional e independiente de [nivelDesarrollo] — un
+  /// negocio puede ser verificado o ancla Y tener el Sello Marca de
+  /// Negocios Verdes a la vez, no es un cuarto nivel excluyente (ver
+  /// 0018_sello_marca_negocios_verdes.sql).
+  final bool selloMarca;
   final List<NegocioFoto> fotos;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -82,6 +87,7 @@ class Negocio {
     this.nivelDesarrollo = 'en_verificacion',
     this.destacado = false,
     this.activo = false,
+    this.selloMarca = false,
     this.fotos = const [],
     this.createdAt,
     this.updatedAt,
@@ -135,6 +141,7 @@ class Negocio {
       nivelDesarrollo: json['nivel_desarrollo']?.toString() ?? 'en_verificacion',
       destacado: json['destacado'] as bool? ?? false,
       activo: json['activo'] as bool? ?? false,
+      selloMarca: json['sello_marca'] as bool? ?? false,
       fotos: fotosJson.map(NegocioFoto.fromJson).toList()
         ..sort((a, b) => a.orden.compareTo(b.orden)),
       createdAt: DateTime.tryParse(json['created_at']?.toString() ?? ''),
@@ -173,6 +180,7 @@ class Negocio {
       nivelDesarrollo: nivelDesarrollo,
       destacado: destacado ?? this.destacado,
       activo: activo ?? this.activo,
+      selloMarca: selloMarca,
       fotos: fotos,
       createdAt: createdAt,
       updatedAt: updatedAt,

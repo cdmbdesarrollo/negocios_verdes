@@ -8,6 +8,7 @@ import '../../../core/widgets/chip_filtro.dart';
 import '../../../core/widgets/confirmar_eliminar_boton.dart';
 import '../../../core/widgets/error_dialog.dart';
 import '../../../core/widgets/nv_card.dart';
+import '../../../core/widgets/sello_marca_badge.dart';
 import '../../../models/negocio.dart';
 import '../../../services/negocio_service.dart';
 import '../../../theme/nv_colors.dart';
@@ -224,6 +225,7 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
                   runSpacing: 6,
                   children: [
                     BadgeNivel(nivel: n.nivelDesarrollo, tamanoFuente: 11),
+                    if (n.selloMarca) const SelloMarcaBadge(tamanoFuente: 10),
                     if (n.destacado)
                       const Icon(Icons.star, color: NVColors.accent, size: 18),
                   ],

@@ -169,6 +169,7 @@ class NegocioService {
     required bool activo,
     required List<String> subcategoriaIds,
     required List<String> actividadIds,
+    required bool selloMarca,
   }) async {
     try {
       final resultado = await _supabase.rpc('guardar_negocio', params: {
@@ -194,6 +195,7 @@ class NegocioService {
         'p_activo': activo,
         'p_subcategoria_ids': subcategoriaIds,
         'p_actividad_ids': actividadIds,
+        'p_sello_marca': selloMarca,
       });
       return resultado.toString();
     } catch (e) {

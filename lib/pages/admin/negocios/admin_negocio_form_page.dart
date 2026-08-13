@@ -73,6 +73,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
   String _nivelDesarrollo = 'en_verificacion';
   bool _destacado = false;
   bool _activo = false;
+  bool _selloMarca = false;
   String? _fotoPortadaUrl;
   String? _fotoPortadaPath;
   List<NegocioFoto> _galeriaInicial = [];
@@ -133,6 +134,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
         _nivelDesarrollo = existente.nivelDesarrollo;
         _destacado = existente.destacado;
         _activo = existente.activo;
+        _selloMarca = existente.selloMarca;
         _subcategoriaIds = existente.subcategorias.map((s) => s.id).toSet();
         _actividadIds =
             existente.actividadesProductivas.map((a) => a.id).toSet();
@@ -211,6 +213,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
         activo: _activo,
         subcategoriaIds: _subcategoriaIds.toList(),
         actividadIds: _actividadIds.toList(),
+        selloMarca: _selloMarca,
       );
 
       await _sincronizarGaleria();
@@ -437,6 +440,17 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             subtitle: const Text('Aparece en la portada del sitio público.'),
             value: _destacado,
             onChanged: (v) => setState(() => _destacado = v),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('🎖️ Sello Marca de Negocios Verdes'),
+            subtitle: const Text(
+              'Reconocimiento adicional respaldado por Marca País — '
+              'independiente del nivel de desarrollo, se otorga aparte '
+              '(más de 71 % de cumplimiento, contrato de un año).',
+            ),
+            value: _selloMarca,
+            onChanged: (v) => setState(() => _selloMarca = v),
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
