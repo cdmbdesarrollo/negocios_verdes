@@ -57,6 +57,12 @@ class Negocio {
   /// Negocios Verdes a la vez, no es un cuarto nivel excluyente (ver
   /// 0018_sello_marca_negocios_verdes.sql).
   final bool selloMarca;
+  /// Igual de independiente que [selloMarca] — CDMB usa "Aval de
+  /// Confianza" en sus propios comunicados de prensa para el
+  /// reconocimiento base, no confirmado todavía si es sinónimo exacto de
+  /// "Verificado" ([nivelDesarrollo]). Campo aparte a propósito (ver
+  /// 0019_aval_confianza_negocios_verdes.sql).
+  final bool avalConfianza;
   final List<NegocioFoto> fotos;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -88,6 +94,7 @@ class Negocio {
     this.destacado = false,
     this.activo = false,
     this.selloMarca = false,
+    this.avalConfianza = false,
     this.fotos = const [],
     this.createdAt,
     this.updatedAt,
@@ -142,6 +149,7 @@ class Negocio {
       destacado: json['destacado'] as bool? ?? false,
       activo: json['activo'] as bool? ?? false,
       selloMarca: json['sello_marca'] as bool? ?? false,
+      avalConfianza: json['aval_confianza'] as bool? ?? false,
       fotos: fotosJson.map(NegocioFoto.fromJson).toList()
         ..sort((a, b) => a.orden.compareTo(b.orden)),
       createdAt: DateTime.tryParse(json['created_at']?.toString() ?? ''),
@@ -181,6 +189,7 @@ class Negocio {
       destacado: destacado ?? this.destacado,
       activo: activo ?? this.activo,
       selloMarca: selloMarca,
+      avalConfianza: avalConfianza,
       fotos: fotos,
       createdAt: createdAt,
       updatedAt: updatedAt,

@@ -59,6 +59,14 @@ abstract final class NVColors {
   /// sigue solo para CTAs de conversión).
   static const Color selloMarcaDorado = Color(0xFFC9A227);
 
+  /// Reservado únicamente para el Aval de Confianza (ver
+  /// AvalConfianzaBadge) — mismo criterio que selloMarcaDorado: un
+  /// reconocimiento aparte, necesita su propio color. Deliberadamente
+  /// distinto de govCoAzul (esa es la franja institucional obligatoria,
+  /// nunca se reusa) y de selloMarcaDorado (para no verse como "el mismo
+  /// tipo de insignia" cuando son dos reconocimientos independientes).
+  static const Color avalConfianzaAzul = Color(0xFF2A6F97);
+
   static const LinearGradient gradientHero = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,

@@ -9,6 +9,7 @@ import '../../core/seo_tags.dart';
 import '../../core/widgets/badge_nivel.dart';
 import '../../core/widgets/boton_whatsapp.dart';
 import '../../core/widgets/pie_pagina.dart';
+import '../../core/widgets/aval_confianza_badge.dart';
 import '../../core/widgets/pin_negocio_mapa.dart';
 import '../../core/widgets/sello_marca_badge.dart';
 import '../../models/negocio.dart';
@@ -112,6 +113,7 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
                       children: [
                         BadgeNivel(nivel: negocio.nivelDesarrollo),
                         if (negocio.selloMarca) const SelloMarcaBadge(),
+                        if (negocio.avalConfianza) const AvalConfianzaBadge(),
                         if (negocio.categoriasOficiales.isNotEmpty)
                           for (final cat in negocio.categoriasOficiales)
                             _chip('${cat.iconoOTexto} ${cat.nombre}')

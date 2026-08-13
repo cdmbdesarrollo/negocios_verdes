@@ -63,3 +63,12 @@ en un Supabase nuevo:
     no es un cuarto nivel excluyente. Agrega `p_sello_marca` a
     `guardar_negocio` — **correr ANTES de desplegar**, mismo motivo que
     0015/0016.
+19. `0019_aval_confianza_negocios_verdes.sql` — columna
+    `negocios.aval_confianza` (booleana, independiente de
+    `nivel_desarrollo`, mismo patrón que `sello_marca`): CDMB usa este
+    término en sus propios comunicados de prensa para el reconocimiento
+    base, no confirmado todavía si es sinónimo exacto de "Verificado" — se
+    deja como campo aparte a propósito, más fácil de borrar después si
+    resulta redundante que deshacer un cambio al enum central. Agrega
+    `p_aval_confianza` a `guardar_negocio` — **correr ANTES de
+    desplegar**, mismo motivo que 0015/0016/0018.

@@ -74,6 +74,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
   bool _destacado = false;
   bool _activo = false;
   bool _selloMarca = false;
+  bool _avalConfianza = false;
   String? _fotoPortadaUrl;
   String? _fotoPortadaPath;
   List<NegocioFoto> _galeriaInicial = [];
@@ -135,6 +136,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
         _destacado = existente.destacado;
         _activo = existente.activo;
         _selloMarca = existente.selloMarca;
+        _avalConfianza = existente.avalConfianza;
         _subcategoriaIds = existente.subcategorias.map((s) => s.id).toSet();
         _actividadIds =
             existente.actividadesProductivas.map((a) => a.id).toSet();
@@ -214,6 +216,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
         subcategoriaIds: _subcategoriaIds.toList(),
         actividadIds: _actividadIds.toList(),
         selloMarca: _selloMarca,
+        avalConfianza: _avalConfianza,
       );
 
       await _sincronizarGaleria();
@@ -451,6 +454,17 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             ),
             value: _selloMarca,
             onChanged: (v) => setState(() => _selloMarca = v),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('🛡️ Aval de Confianza'),
+            subtitle: const Text(
+              'Término que usa la CDMB en sus comunicados de prensa para '
+              'el reconocimiento base — independiente de todo lo demás, '
+              'no reemplaza el nivel de desarrollo ni el Sello Marca.',
+            ),
+            value: _avalConfianza,
+            onChanged: (v) => setState(() => _avalConfianza = v),
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,

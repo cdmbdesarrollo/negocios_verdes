@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/widgets/aval_confianza_badge.dart';
 import '../../../core/widgets/badge_nivel.dart';
 import '../../../core/widgets/sello_marca_badge.dart';
 import '../../../models/negocio.dart';
@@ -123,6 +124,8 @@ class NegocioCard extends StatelessWidget {
                                 nivel: negocio.nivelDesarrollo, tamanoFuente: 10),
                             if (negocio.selloMarca)
                               const SelloMarcaBadge(tamanoFuente: 10),
+                            if (negocio.avalConfianza)
+                              const AvalConfianzaBadge(tamanoFuente: 10),
                             // Municipio y subcategoría como tags aparte del
                             // nombre de categoría de arriba — de un vistazo,
                             // sin tener que abrir la ficha del negocio.
