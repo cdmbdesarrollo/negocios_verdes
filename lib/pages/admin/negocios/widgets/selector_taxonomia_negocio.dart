@@ -177,6 +177,18 @@ class _SelectorTaxonomiaNegocioState extends State<SelectorTaxonomiaNegocio> {
             padding: EdgeInsets.only(top: 6),
             child: Text('Selecciona al menos una.',
                 style: TextStyle(color: NVColors.error, fontSize: 12)),
+          )
+        else if (_categoriaIds.length < 3)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              _categoriaIds.length == 1
+                  ? 'Podés agregar una segunda y hasta una tercera — no es '
+                      'obligatorio.'
+                  : 'Podés agregar una tercera — no es obligatorio.',
+              style:
+                  const TextStyle(color: NVColors.textoSecundario, fontSize: 12),
+            ),
           ),
         const SizedBox(height: 12),
         for (final (indice, categoriaId) in _categoriaIds.indexed)
