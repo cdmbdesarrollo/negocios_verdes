@@ -49,7 +49,14 @@ class HeroSlider extends StatefulWidget {
   const HeroSlider({
     super.key,
     required this.slides,
-    this.altura = 300,
+    // Los banners reales que sube CDMB suelen venir panorámicos y bastante
+    // más anchos que altos (ej. una diapositiva de una feria a 10000x2639px,
+    // relación ~3.8:1) — a 300 fijo el recorte de BoxFit.cover (arriba y
+    // abajo por igual) se comía contenido cerca del borde inferior de la
+    // imagen. 420 no elimina el recorte en pantallas muy anchas (ninguna
+    // altura fija lo hace si el ancho de viewport varía), pero lo reduce a
+    // la mitad aproximadamente en desktop típico.
+    this.altura = 420,
     this.intervalo = const Duration(seconds: 6),
   });
 
