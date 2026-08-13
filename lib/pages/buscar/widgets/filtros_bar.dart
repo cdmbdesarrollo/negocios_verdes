@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../catalogos.dart';
-import '../../../core/texto_utils.dart';
+import '../../../core/widgets/autocompletado_busqueda.dart';
 import '../../../core/widgets/chip_filtro.dart';
 import '../../../models/actividad_productiva.dart';
 import '../../../models/categoria_oficial.dart';
@@ -111,59 +111,6 @@ class _FiltrosBarState extends State<FiltrosBar> {
         .toList();
   }
 
-  /// Negocios primero (lo más probable que alguien esté buscando por
-  /// nombre exacto, como en el pedido original — "bucarr" → Bucarretes),
-  /// después municipio/categoría/subcategoría/actividad. Tope de 8 en
-  /// total para que el dropdown no se vuelva una pared de opciones.
-  Iterable<SugerenciaBusqueda> _construirSugerencias(TextEditingValue valor) {
-    final texto = valor.text.trim();
-    if (texto.isEmpty) return const [];
-    final normalizado = quitarTildes(texto.toLowerCase());
-    bool contiene(String s) => quitarTildes(s.toLowerCase()).contains(normalizado);
-
-    final resultados = <SugerenciaBusqueda>[];
-    for (final (nombre, slug) in widget.negocios) {
-      if (contiene(nombre)) {
-        resultados.add(SugerenciaBusqueda(
-            tipo: TipoSugerencia.negocio, etiqueta: nombre, valor: slug));
-      }
-    }
-    for (final m in kMunicipios) {
-      if (contiene(m)) {
-        resultados.add(
-            SugerenciaBusqueda(tipo: TipoSugerencia.municipio, etiqueta: m, valor: m));
-      }
-    }
-    for (final c in widget.categorias) {
-      if (contiene(c.nombre)) {
-        resultados.add(SugerenciaBusqueda(
-            tipo: TipoSugerencia.categoria,
-            etiqueta: c.nombre,
-            valor: c.slug,
-            icono: c.icono));
-      }
-    }
-    for (final s in widget.subcategorias) {
-      if (contiene(s.nombre)) {
-        resultados.add(SugerenciaBusqueda(
-            tipo: TipoSugerencia.subcategoria,
-            etiqueta: s.nombre,
-            valor: s.slug,
-            icono: s.icono));
-      }
-    }
-    for (final a in widget.actividades) {
-      if (contiene(a.nombre)) {
-        resultados.add(SugerenciaBusqueda(
-            tipo: TipoSugerencia.actividad,
-            etiqueta: a.nombre,
-            valor: a.slug,
-            icono: a.icono));
-      }
-    }
-    return resultados.take(8);
-  }
-
   /// Negocio: navega directo a la ficha (mismo criterio que un resultado
   /// de búsqueda cualquiera). Categoría/subcategoría/actividad: se
   /// resuelven los padres necesarios (subcategoría necesita su categoría,
@@ -242,7 +189,13 @@ class _FiltrosBarState extends State<FiltrosBar> {
           RawAutocomplete<SugerenciaBusqueda>(
             textEditingController: _busquedaCtrl,
             focusNode: _busquedaFocus,
-            optionsBuilder: _construirSugerencias,
+            optionsBuilder: (valor) => construirSugerenciasBusqueda(
+              texto: valor.text,
+              categorias: widget.categorias,
+              subcategorias: widget.subcategorias,
+              actividades: widget.actividades,
+              negocios: widget.negocios,
+            ),
             displayStringForOption: (s) => s.etiqueta,
             onSelected: _alSeleccionarSugerencia,
             fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
@@ -286,82 +239,7 @@ class _FiltrosBarState extends State<FiltrosBar> {
                     widget.onCambio(widget.filtro.copyWith(query: v)),
               );
             },
-            optionsViewBuilder: (context, onSelected, opciones) {
-              final lista = opciones.toList();
-              return Align(
-                alignment: Alignment.topLeft,
-                child: Material(
-                  elevation: 4,
-                  borderRadius: BorderRadius.circular(12),
-                  child: ConstrainedBox(
-                    constraints:
-                        const BoxConstraints(maxHeight: 320, minWidth: 280),
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      shrinkWrap: true,
-                      itemCount: lista.length,
-                      itemBuilder: (context, i) {
-                        final sugerencia = lista[i];
-                        final esNuevoGrupo =
-                            i == 0 || lista[i - 1].tipo != sugerencia.tipo;
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (esNuevoGrupo)
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
-                                child: Text(
-                                  sugerencia.etiquetaGrupo.toUpperCase(),
-                                  style: const TextStyle(
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.4,
-                                    color: NVColors.textoSecundario,
-                                  ),
-                                ),
-                              ),
-                            InkWell(
-                              onTap: () => onSelected(sugerencia),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 8),
-                                child: Row(
-                                  children: [
-                                    if (sugerencia.icono != null) ...[
-                                      Text(sugerencia.icono!,
-                                          style: const TextStyle(fontSize: 15)),
-                                      const SizedBox(width: 8),
-                                    ] else if (sugerencia.tipo ==
-                                        TipoSugerencia.negocio) ...[
-                                      const Icon(Icons.storefront_outlined,
-                                          size: 16, color: NVColors.primary),
-                                      const SizedBox(width: 8),
-                                    ] else if (sugerencia.tipo ==
-                                        TipoSugerencia.municipio) ...[
-                                      const Icon(Icons.place_outlined,
-                                          size: 16, color: NVColors.primary),
-                                      const SizedBox(width: 8),
-                                    ],
-                                    Expanded(
-                                      child: Text(
-                                        sugerencia.etiqueta,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(fontSize: 13.5),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              );
-            },
+            optionsViewBuilder: vistaOpcionesBusqueda,
           ),
           const SizedBox(height: 10),
           _etiquetaFiltro('Municipio'),

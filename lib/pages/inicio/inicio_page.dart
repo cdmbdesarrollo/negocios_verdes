@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../catalogos.dart';
 import '../../core/seo_tags.dart';
+import '../../core/widgets/autocompletado_busqueda.dart';
 import '../../core/widgets/chip_filtro.dart';
 import '../../core/widgets/entrada_animada.dart';
 import '../../core/widgets/hover_lift.dart';
@@ -18,6 +19,7 @@ import '../../models/categoria_oficial.dart';
 import '../../models/filtro_busqueda.dart';
 import '../../models/negocio.dart';
 import '../../models/subcategoria.dart';
+import '../../models/sugerencia_busqueda.dart';
 import '../../services/actividad_productiva_service.dart';
 import '../../services/banner_service.dart';
 import '../../services/categoria_service.dart';
@@ -41,12 +43,14 @@ class _InicioPageState extends State<InicioPage> {
   final _actividadService = ActividadProductivaService();
   final _bannerService = BannerService();
   final _busquedaCtrl = TextEditingController();
+  final _busquedaFocus = FocusNode();
 
   List<CategoriaOficial> _categorias = [];
   List<Subcategoria> _subcategorias = [];
   List<ActividadProductiva> _actividades = [];
   List<Negocio> _destacados = [];
   List<BannerSitio> _banners = [];
+  List<(String nombre, String slug)> _nombresNegocios = [];
   int _totalNegocios = 0;
   bool _cargando = true;
 
@@ -76,6 +80,7 @@ class _InicioPageState extends State<InicioPage> {
   @override
   void dispose() {
     _busquedaCtrl.dispose();
+    _busquedaFocus.dispose();
     super.dispose();
   }
 
@@ -101,6 +106,10 @@ class _InicioPageState extends State<InicioPage> {
         _destacados = todos.where((n) => n.destacado).take(6).toList();
         _banners = banners;
         _totalNegocios = todos.length;
+        // "todos" ya trae cada negocio completo (para destacados/conteo) —
+        // el autocompletado del buscador solo necesita nombre+slug de cada
+        // uno, no hace falta una consulta aparte.
+        _nombresNegocios = todos.map((n) => (n.nombre, n.slug)).toList();
         _cargando = false;
       });
     } catch (_) {
@@ -135,6 +144,61 @@ class _InicioPageState extends State<InicioPage> {
       if (s.slug == slug) return s;
     }
     return null;
+  }
+
+  CategoriaOficial? _categoriaPorId(String id) {
+    for (final c in _categorias) {
+      if (c.id == id) return c;
+    }
+    return null;
+  }
+
+  Subcategoria? _subcategoriaPorId(String id) {
+    for (final s in _subcategorias) {
+      if (s.id == id) return s;
+    }
+    return null;
+  }
+
+  /// Negocio: navega directo a la ficha. Categoría/subcategoría/actividad:
+  /// se navega a /buscar con el filtro correspondiente en la URL,
+  /// resolviendo los padres necesarios (mismo criterio que FiltrosBar en
+  /// /buscar) para que esa página abra con los chips ya marcados, no solo
+  /// el resultado filtrado "a ciegas". Municipio: directo, no tiene padres.
+  void _alSeleccionarSugerenciaBusqueda(SugerenciaBusqueda sugerencia) {
+    switch (sugerencia.tipo) {
+      case TipoSugerencia.negocio:
+        context.go('/negocio/${sugerencia.valor}');
+      case TipoSugerencia.municipio:
+        _irA({'municipio': sugerencia.valor});
+      case TipoSugerencia.categoria:
+        _irA({'categoria': sugerencia.valor});
+      case TipoSugerencia.subcategoria:
+        final sub = _subcategoriaPorSlug(sugerencia.valor);
+        final categoriaPadre =
+            sub == null ? null : _categoriaPorId(sub.categoriaOficialId);
+        _irA({
+          if (categoriaPadre != null) 'categoria': categoriaPadre.slug,
+          'subcategoria': sugerencia.valor,
+        });
+      case TipoSugerencia.actividad:
+        ActividadProductiva? actividad;
+        for (final a in _actividades) {
+          if (a.slug == sugerencia.valor) {
+            actividad = a;
+            break;
+          }
+        }
+        final subPadre =
+            actividad == null ? null : _subcategoriaPorId(actividad.subcategoriaId);
+        final categoriaPadre =
+            subPadre == null ? null : _categoriaPorId(subPadre.categoriaOficialId);
+        _irA({
+          if (categoriaPadre != null) 'categoria': categoriaPadre.slug,
+          if (subPadre != null) 'subcategoria': subPadre.slug,
+          'actividad': sugerencia.valor,
+        });
+    }
   }
 
   ActividadProductiva? _actividadPorSlug(String? slug) {
@@ -363,57 +427,74 @@ class _InicioPageState extends State<InicioPage> {
                 elevation: 6,
                 shadowColor: NVColors.primary.withValues(alpha: 0.25),
                 borderRadius: BorderRadius.circular(32),
-                child: TextField(
-                  controller: _busquedaCtrl,
-                  onSubmitted: _buscar,
-                  style: const TextStyle(fontSize: 15),
-                  decoration: InputDecoration(
-                    hintText: 'Busca por nombre, categoría o municipio...',
-                    hintStyle: const TextStyle(
-                        color: NVColors.textoSecundario, fontSize: 14),
-                    prefixIcon:
-                        const Icon(Icons.search, color: NVColors.primary),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 18),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(32),
-                      borderSide: BorderSide(
-                          color: NVColors.primary.withValues(alpha: 0.15)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(32),
-                      borderSide: BorderSide(
-                          color: NVColors.primary.withValues(alpha: 0.15)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(32),
-                      borderSide:
-                          const BorderSide(color: NVColors.primary, width: 1.5),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    suffixIconConstraints:
-                        const BoxConstraints(minWidth: 0, minHeight: 0),
-                    suffixIcon: Padding(
-                      padding: const EdgeInsets.all(6),
-                      child: Material(
-                        color: NVColors.primary,
-                        shape: const CircleBorder(),
-                        child: InkWell(
-                          onTap: () => _buscar(),
-                          customBorder: const CircleBorder(),
-                          child: Semantics(
-                            button: true,
-                            label: 'Buscar',
-                            child: const Padding(
-                              padding: EdgeInsets.all(10),
-                              child: Icon(Icons.arrow_forward,
-                                  color: Colors.white, size: 20),
+                child: RawAutocomplete<SugerenciaBusqueda>(
+                  textEditingController: _busquedaCtrl,
+                  focusNode: _busquedaFocus,
+                  optionsBuilder: (valor) => construirSugerenciasBusqueda(
+                    texto: valor.text,
+                    categorias: _categorias,
+                    subcategorias: _subcategorias,
+                    actividades: _actividades,
+                    negocios: _nombresNegocios,
+                  ),
+                  displayStringForOption: (s) => s.etiqueta,
+                  onSelected: _alSeleccionarSugerenciaBusqueda,
+                  optionsViewBuilder: vistaOpcionesBusqueda,
+                  fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+                    return TextField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      onSubmitted: _buscar,
+                      style: const TextStyle(fontSize: 15),
+                      decoration: InputDecoration(
+                        hintText: 'Busca por nombre, categoría o municipio...',
+                        hintStyle: const TextStyle(
+                            color: NVColors.textoSecundario, fontSize: 14),
+                        prefixIcon:
+                            const Icon(Icons.search, color: NVColors.primary),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 18),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(32),
+                          borderSide: BorderSide(
+                              color: NVColors.primary.withValues(alpha: 0.15)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(32),
+                          borderSide: BorderSide(
+                              color: NVColors.primary.withValues(alpha: 0.15)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(32),
+                          borderSide: const BorderSide(
+                              color: NVColors.primary, width: 1.5),
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        suffixIconConstraints:
+                            const BoxConstraints(minWidth: 0, minHeight: 0),
+                        suffixIcon: Padding(
+                          padding: const EdgeInsets.all(6),
+                          child: Material(
+                            color: NVColors.primary,
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              onTap: () => _buscar(),
+                              customBorder: const CircleBorder(),
+                              child: Semantics(
+                                button: true,
+                                label: 'Buscar',
+                                child: const Padding(
+                                  padding: EdgeInsets.all(10),
+                                  child: Icon(Icons.arrow_forward,
+                                      color: Colors.white, size: 20),
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ),
             ),
