@@ -70,12 +70,25 @@ class NegocioService {
       }
 
       if (filtro.query.trim().isNotEmpty) {
-        query = query.textSearch(
-          'busqueda',
-          quitarTildes(filtro.query.trim()),
-          config: 'spanish',
-          type: TextSearchType.websearch,
-        );
+        // "busqueda" es una columna generada SOLO a partir de nombre +
+        // descripciones del propio negocio (0004_negocios.sql) — Postgres
+        // no deja que una columna generada haga JOIN a otras tablas, así
+        // que nunca va a "saber" que un negocio pertenece a la actividad
+        // "Agricultura orgánica" con solo indexar su fila. Antes de esto,
+        // escribir el nombre exacto de una categoría/subcategoría/
+        // actividad (justo lo que sugiere el hint del buscador) devolvía
+        // 0 resultados aunque sí hubiera negocios en esa clasificación —
+        // reportado con un caso real. Se combinan las dos vías: texto
+        // libre de siempre + negocios cuya categoría/subcategoría/
+        // actividad tenga un nombre que contenga lo escrito.
+        final textoNormalizado =
+            quitarTildes(filtro.query.trim().toLowerCase());
+        final idsPorTexto = await _idsPorTexto(filtro.query.trim());
+        final idsPorTaxonomia =
+            await _idsPorNombreDeTaxonomia(textoNormalizado);
+        final idsCombinados = {...idsPorTexto, ...idsPorTaxonomia};
+        if (idsCombinados.isEmpty) return [];
+        query = query.inFilter('id', idsCombinados.toList());
       }
 
       final data = await query
@@ -250,5 +263,48 @@ class NegocioService {
     return (data as List)
         .map((e) => (e as Map<String, dynamic>)['negocio_id'].toString())
         .toList();
+  }
+
+  /// Solo ids (no filas completas) que matchean la búsqueda de texto libre
+  /// — consulta separada de la principal para poder combinarla con
+  /// [_idsPorNombreDeTaxonomia] antes de aplicar el resto de filtros
+  /// (municipio, activo, etc.) una sola vez al final.
+  Future<List<String>> _idsPorTexto(String texto) async {
+    final data = await _supabase
+        .from('negocios')
+        .select('id')
+        .textSearch('busqueda', quitarTildes(texto),
+            config: 'spanish', type: TextSearchType.websearch);
+    return (data as List)
+        .map((e) => (e as Map<String, dynamic>)['id'].toString())
+        .toList();
+  }
+
+  /// Negocios cuya categoría, subcategoría o actividad productiva tiene un
+  /// nombre que CONTIENE [textoNormalizado] (ya sin tildes y en
+  /// minúsculas) — comparación en Dart, no en SQL: las 3 tablas de
+  /// catálogo son chicas (3+12+29 filas hoy), traerlas enteras es más
+  /// simple que pelear con unaccent()/ilike combinados en PostgREST, y
+  /// evita tener que des-tildar una columna que hoy no lo está.
+  Future<List<String>> _idsPorNombreDeTaxonomia(String textoNormalizado) async {
+    const tablasPuente = [
+      ('categorias_oficiales', 'negocios_categorias', 'categoria_oficial_id'),
+      ('subcategorias', 'negocios_subcategorias', 'subcategoria_id'),
+      ('actividades_productivas', 'negocios_actividades',
+          'actividad_productiva_id'),
+    ];
+    final ids = <String>{};
+    for (final (tabla, tablaPuente, columna) in tablasPuente) {
+      final filas = await _supabase.from(tabla).select('id, nombre');
+      for (final fila in filas as List) {
+        final mapa = fila as Map<String, dynamic>;
+        final nombre = quitarTildes((mapa['nombre'] as String).toLowerCase());
+        if (nombre.contains(textoNormalizado)) {
+          ids.addAll(await _negocioIdsPorTablaPuente(
+              tablaPuente, columna, mapa['id'].toString()));
+        }
+      }
+    }
+    return ids.toList();
   }
 }
