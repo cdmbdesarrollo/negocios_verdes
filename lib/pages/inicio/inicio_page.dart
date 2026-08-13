@@ -307,19 +307,28 @@ class _InicioPageState extends State<InicioPage> {
           if (_subcategoriaSel != null && _actividadesFiltradas.isNotEmpty)
             entrada(_seccionActividades(context)),
           entrada(_botonBuscarFiltros(context)),
-          // Margen inferior negativo: CanvasKit a veces deja una línea de
-          // un subpíxel entre dos capas adyacentes del mismo color exacto
-          // (la onda y la sección sólida que sigue) — el solape la tapa
-          // sin recortar la curva, que ya es sólida (colorOnda liso) en
-          // ese margen inferior de la onda.
-          Container(
-            margin: const EdgeInsets.only(bottom: -2),
+          // CanvasKit a veces deja una línea de un subpíxel entre dos capas
+          // adyacentes del mismo color exacto (la onda y la sección sólida
+          // que sigue). Un Container/Padding con margen negativo pareció
+          // funcionar visualmente pero dispara
+          // "margin.isNonNegative"/"padding.isNonNegative" — ambos widgets
+          // lo prohíben en el propio RenderObject (verificado en el SDK),
+          // solo no se nota en release porque los asserts se compilan
+          // fuera; en debug tumba la página. Transform.scale anclado
+          // arriba sí es válido: no toca el layout (Column no recorta el
+          // desborde de sus hijos por defecto), solo estira 2-3px la
+          // pintura hacia abajo —zona que ya es sólida (colorOnda liso) en
+          // la onda— tapando la costura sin mover nada más.
+          Transform.scale(
+            scaleY: 1.1,
+            alignment: Alignment.topCenter,
             child: const OndaDivisora(
                 colorFondo: NVColors.fondo, colorOnda: NVColors.primary),
           ),
           entrada(_seccionEstadisticas(context)),
-          Container(
-            margin: const EdgeInsets.only(bottom: -2),
+          Transform.scale(
+            scaleY: 1.1,
+            alignment: Alignment.topCenter,
             child: const OndaDivisora(
                 colorFondo: NVColors.primary, colorOnda: NVColors.primaryLight),
           ),
@@ -446,7 +455,7 @@ class _InicioPageState extends State<InicioPage> {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 640),
+          constraints: const BoxConstraints(maxWidth: 820),
           child: Wrap(
             alignment: WrapAlignment.spaceEvenly,
             runSpacing: 20,
@@ -454,9 +463,13 @@ class _InicioPageState extends State<InicioPage> {
               _estadistica(
                   Icons.location_on_outlined, 'Municipios', kMunicipios.length),
               _estadistica(
-                  Icons.storefront_outlined, 'Negocios verdes', _totalNegocios),
-              _estadistica(
                   Icons.category_outlined, 'Categorías', _categorias.length),
+              _estadistica(
+                  Icons.label_outline, 'Subcategorías', _subcategorias.length),
+              _estadistica(Icons.workspaces_outlined, 'Actividades productivas',
+                  _actividades.length),
+              _estadistica(
+                  Icons.storefront_outlined, 'Negocios verdes', _totalNegocios),
             ],
           ),
         ),
@@ -466,7 +479,7 @@ class _InicioPageState extends State<InicioPage> {
 
   Widget _estadistica(IconData icono, String etiqueta, int valor) {
     return SizedBox(
-      width: 160,
+      width: 140,
       child: Column(
         children: [
           Icon(icono, color: Colors.white.withValues(alpha: 0.85), size: 22),
@@ -758,28 +771,33 @@ class _InicioPageState extends State<InicioPage> {
   }
 
   /// Antes era un párrafo centrado sin mucho más — se leía como relleno de
-  /// maqueta. 3 pilares con ícono son más escaneables y le dan al enfoque
-  /// ambiental algo concreto que mostrar (verificación real, impacto,
-  /// economía local) en vez de solo decirlo en texto corrido.
+  /// maqueta. 3 pilares con ícono son más escaneables. El 3er pilar ya no
+  /// es "economía local y justa / comunidades de la región / cadenas
+  /// externas" — genérico, sonaba a relleno de IA y no citaba nada
+  /// verificable. Se reemplazó por la clasificación oficial (mismos datos
+  /// que /nosotros: 3 categorías, 12 subcategorías, 29 actividades del
+  /// PNNV 2022-2030), consistente con el resto del sitio.
   Widget _seccionQueSon(BuildContext context) {
     const pilares = [
       (
         Icons.verified_outlined,
         'Verificados por la CDMB',
-        'Cada negocio pasa por un proceso real de verificación antes de '
-            'aparecer en el directorio, no es una simple lista abierta.',
+        'Cada negocio pasa por un proceso real de verificación de la '
+            'Ventanilla de Negocios Verdes antes de aparecer en este '
+            'directorio.',
       ),
       (
         Icons.eco_outlined,
         'Impacto ambiental positivo',
         'Prácticas que protegen los recursos naturales y la biodiversidad '
-            'de los 13 municipios de la jurisdicción.',
+            'en los 13 municipios de la jurisdicción de la CDMB.',
       ),
       (
-        Icons.groups_outlined,
-        'Economía local y justa',
-        'Apoyan directamente a emprendedores y comunidades de la región, '
-            'no a cadenas externas.',
+        Icons.account_tree_outlined,
+        'Parte del Plan Nacional',
+        'Cada negocio queda clasificado bajo las 3 categorías, 12 '
+            'subcategorías y 29 actividades productivas oficiales del Plan '
+            'Nacional de Negocios Verdes 2022-2030.',
       ),
     ];
 
@@ -822,8 +840,9 @@ class _InicioPageState extends State<InicioPage> {
             constraints: const BoxConstraints(maxWidth: 560),
             child: const Text(
               'Son emprendimientos y empresas que ofrecen bienes y servicios '
-              'con impacto ambiental positivo, verificados por la CDMB en su '
-              'jurisdicción.',
+              'con impacto ambiental positivo, verificados por la '
+              'Ventanilla de Negocios Verdes en los 13 municipios de la '
+              'jurisdicción de la CDMB.',
               textAlign: TextAlign.center,
               style: TextStyle(color: NVColors.textoSecundario, fontSize: 15),
             ),
