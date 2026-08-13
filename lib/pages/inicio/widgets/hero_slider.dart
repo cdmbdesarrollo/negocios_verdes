@@ -50,14 +50,14 @@ class HeroSlider extends StatefulWidget {
     super.key,
     required this.slides,
     // 420 se sentía "gigante" y 300 recortaba de más (el texto pegado al
-    // borde inferior de las imágenes tipo banner quedaba cortado) — 350 es
-    // un punto medio explícitamente aceptado como mejora parcial, no como
-    // solución completa: reduce el recorte pero no lo elimina. 1200x300
-    // (4:1) sigue siendo el tamaño de banner acordado con CDMB; topar el
-    // ancho del slider para calzar con esa proporción se probó y se
-    // descartó (quedaba flotando con márgenes a los lados, "no queda
+    // borde inferior de las imágenes tipo banner quedaba cortado) — 360 es
+    // un punto medio ajustado a mano, aceptado como mejora parcial, no
+    // como solución completa: reduce el recorte pero no lo elimina.
+    // 1200x300 (4:1) sigue siendo el tamaño de banner acordado con CDMB;
+    // topar el ancho del slider para calzar con esa proporción se probó y
+    // se descartó (quedaba flotando con márgenes a los lados, "no queda
     // bien").
-    this.altura = 350,
+    this.altura = 360,
     this.intervalo = const Duration(seconds: 6),
   });
 
