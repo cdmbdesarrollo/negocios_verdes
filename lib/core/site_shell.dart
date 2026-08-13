@@ -117,6 +117,7 @@ class _SiteShellState extends State<SiteShell> {
               ),
               if (!ancha)
                 IconButton(
+                  tooltip: 'Abrir menú',
                   icon: const Icon(Icons.menu, color: NVColors.textoPrincipal),
                   onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
                 )
@@ -151,22 +152,29 @@ class _SiteShellState extends State<SiteShell> {
   }
 
   Widget _itemNav(BuildContext context, EnlaceNav enlace, bool activo) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 4, bottom: 6),
-      child: Material(
-        color: activo ? NVColors.primary : Colors.transparent,
-        borderRadius: BorderRadius.circular(6),
-        child: InkWell(
+    // Semantics(selected:) además del color: sin esto, un lector de
+    // pantalla no tiene forma de saber cuál de los enlaces es la página
+    // actual — el color de fondo solo lo comunica visualmente.
+    return Semantics(
+      selected: activo,
+      button: true,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 4, bottom: 6),
+        child: Material(
+          color: activo ? NVColors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
-          onTap: () => context.go(enlace.ruta),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: Text(
-              enlace.titulo,
-              style: TextStyle(
-                color: activo ? Colors.white : NVColors.textoPrincipal,
-                fontWeight: activo ? FontWeight.w600 : FontWeight.normal,
-                fontSize: 13,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(6),
+            onTap: () => context.go(enlace.ruta),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              child: Text(
+                enlace.titulo,
+                style: TextStyle(
+                  color: activo ? Colors.white : NVColors.textoPrincipal,
+                  fontWeight: activo ? FontWeight.w600 : FontWeight.normal,
+                  fontSize: 13,
+                ),
               ),
             ),
           ),

@@ -392,10 +392,14 @@ class _InicioPageState extends State<InicioPage> {
                         child: InkWell(
                           onTap: () => _buscar(),
                           customBorder: const CircleBorder(),
-                          child: const Padding(
-                            padding: EdgeInsets.all(10),
-                            child: Icon(Icons.arrow_forward,
-                                color: Colors.white, size: 20),
+                          child: Semantics(
+                            button: true,
+                            label: 'Buscar',
+                            child: const Padding(
+                              padding: EdgeInsets.all(10),
+                              child: Icon(Icons.arrow_forward,
+                                  color: Colors.white, size: 20),
+                            ),
                           ),
                         ),
                       ),

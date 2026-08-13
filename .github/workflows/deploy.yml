@@ -24,6 +24,17 @@ jobs:
       - name: flutter pub get
         run: flutter pub get
 
+      # Compuerta de calidad: antes solo corria a mano despues de cada
+      # cambio, sin nada que lo exigiera en el pipeline. flutter analyze
+      # falla el paso (y el job) ante errores/warnings reales; los "info"
+      # de estilo ya existentes no lo hacen fallar, asi que esto no bloquea
+      # deploys por lints cosmeticos ya aceptados.
+      - name: flutter analyze
+        run: flutter analyze
+
+      - name: flutter test
+        run: flutter test
+
       - name: Build Flutter Web
         run: flutter build web --release --source-maps -t lib/main.dart --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
 

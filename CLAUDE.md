@@ -27,8 +27,11 @@ Flutter Web (CanvasKit) · `supabase_flutter` (DB + Storage) · `go_router` ·
 `image_picker` + `cached_network_image` · `intl` · `url_launcher` · `uuid` ·
 sdk: `^3.12.0`. Sin Provider/Riverpod/Bloc — estado local en cada
 `StatefulWidget`, a propósito (nunca hizo falta más).
-Deploy: `build.ps1` (PowerShell) → git push → Vercel (git-connected, no
-compila, solo sirve `build/web`).
+Deploy: `git push` a `master` → GitHub Actions compila (`flutter analyze` +
+`flutter build web --release`) y corre `vercel deploy --prod` directo — no
+es el modelo git-connected de Vercel (Vercel no mira el repo, solo recibe
+el build ya armado). `build.ps1` quedó solo para compilar local y revisar
+el build de producción antes de un push, no toca git.
 
 ## Estructura
 

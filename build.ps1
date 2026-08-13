@@ -1,5 +1,14 @@
-# build.ps1 - build de produccion y deploy a Vercel (git-connected, igual
-# que HuellaQR: Vercel no compila, solo sirve build/web ya compilado).
+# build.ps1 - build de produccion LOCAL, solo para probar antes de un push.
+#
+# El deploy real ya no lo hace este script: desde que existe
+# .github/workflows/deploy.yml, cada push a master dispara un build +
+# "vercel deploy --prod" propios en GitHub Actions (ver ese archivo). Este
+# script quedo desactualizado un tiempo despues de esa migracion - todavia
+# comiteaba build/web a git y hacia push, redundante con el workflow y
+# encima forzaba (git add -f) un directorio que .gitignore excluye a
+# proposito. Ahora solo compila local para que puedas revisar el build de
+# produccion con tus propios ojos antes de confiar en que el CI lo haga
+# bien - no toca git para nada.
 #
 # Requiere un archivo local "env.local.ps1" (NO se sube a git - ver
 # .gitignore) con:
@@ -23,21 +32,13 @@ if (-not $env:SUPABASE_URL -or -not $env:SUPABASE_ANON_KEY) {
   exit 1
 }
 
-Write-Host "Compilando Flutter Web (release, WebAssembly)..." -ForegroundColor Cyan
-# --wasm: pipeline de renderizado distinto al CanvasKit-JS de siempre.
-# Probado como posible causa de la pantalla en blanco al cerrar el dialogo
-# de confirmacion de borrado. Si no lo resuelve, se puede quitar el flag.
-flutter build web --release --wasm --dart-define=SUPABASE_URL=$env:SUPABASE_URL --dart-define=SUPABASE_ANON_KEY=$env:SUPABASE_ANON_KEY
+Write-Host "Compilando Flutter Web (release)..." -ForegroundColor Cyan
+flutter build web --release --dart-define=SUPABASE_URL=$env:SUPABASE_URL --dart-define=SUPABASE_ANON_KEY=$env:SUPABASE_ANON_KEY
 
 if ($LASTEXITCODE -ne 0) {
   Write-Error "flutter build web fallo - revisa el error de arriba."
   exit 1
 }
 
-Write-Host "Publicando en git (Vercel despliega automaticamente al hacer push)..." -ForegroundColor Cyan
-git add .
-git add -f build/web
-git commit -m "Deploy: $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
-git push
-
-Write-Host "Listo. Revisa el progreso del deploy en el dashboard de Vercel." -ForegroundColor Green
+Write-Host "Build listo en build/web. Para probarlo local: 'python -m http.server 8080 --directory build/web' (o cualquier servidor estatico)." -ForegroundColor Green
+Write-Host "El deploy real pasa solo con 'git push' a master - GitHub Actions se encarga del resto." -ForegroundColor Green

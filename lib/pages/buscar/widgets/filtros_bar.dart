@@ -118,6 +118,7 @@ class _FiltrosBarState extends State<FiltrosBar> {
               prefixIcon: const Icon(Icons.search, color: NVColors.primary),
               suffixIcon: widget.filtro.query.isNotEmpty
                   ? IconButton(
+                      tooltip: 'Borrar búsqueda',
                       icon: const Icon(Icons.close),
                       onPressed: () {
                         _busquedaCtrl.clear();
