@@ -235,18 +235,45 @@ class _NosotrosPageState extends State<NosotrosPage> {
                           ),
                           const SizedBox(height: 6),
                           const Text(
-                            'Es un reconocimiento adicional al de '
-                            '"verificado", respaldado por Marca País '
-                            '(acuerdo entre el Ministerio de Ambiente y '
-                            'Procolombia, 2021). Lo otorgan directamente '
-                            'las ventanillas de negocios verdes — como la '
-                            'nuestra — a los negocios que superan el 71 % de '
-                            'cumplimiento en la evaluación de criterios, '
-                            'mediante un contrato de un año que autoriza el '
-                            'uso de la marca en productos específicos. El '
-                            'negocio debe solicitarlo directamente ante la '
-                            'autoridad ambiental; no es automático al '
-                            'quedar verificado.',
+                            'Certificación oficial que reconoce a las '
+                            'empresas y emprendimientos que generan un '
+                            'impacto ambiental positivo, garantizan buenas '
+                            'prácticas sociales y económicas, y protegen '
+                            'los recursos naturales. Se otorga a los '
+                            'negocios que superan el 71 % de cumplimiento '
+                            'en la evaluación de criterios.',
+                            style: TextStyle(
+                                color: NVColors.textoSecundario,
+                                fontSize: 13,
+                                height: 1.4),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: NVColors.fondo,
+                        border: Border.all(color: NVColors.borde),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '🛡️ Aval de Confianza',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w600, fontSize: 15),
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Reconocimiento oficial otorgado por la '
+                            'Ventanilla de Negocios Verdes a las empresas y '
+                            'emprendimientos que cumplen los requisitos '
+                            'mínimos y superan el 51 % de avance en '
+                            'criterios ambientales, sociales y económicos.',
                             style: TextStyle(
                                 color: NVColors.textoSecundario,
                                 fontSize: 13,

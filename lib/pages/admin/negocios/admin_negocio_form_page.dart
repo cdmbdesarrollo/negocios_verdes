@@ -448,9 +448,10 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             contentPadding: EdgeInsets.zero,
             title: const Text('🎖️ Sello Marca de Negocios Verdes'),
             subtitle: const Text(
-              'Reconocimiento adicional respaldado por Marca País — '
-              'independiente del nivel de desarrollo, se otorga aparte '
-              '(más de 71 % de cumplimiento, contrato de un año).',
+              'Certificación oficial que reconoce impacto ambiental '
+              'positivo, buenas prácticas sociales y económicas, y '
+              'protección de los recursos naturales. Más de 71 % de '
+              'cumplimiento.',
             ),
             value: _selloMarca,
             onChanged: (v) => setState(() => _selloMarca = v),
@@ -459,9 +460,9 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             contentPadding: EdgeInsets.zero,
             title: const Text('🛡️ Aval de Confianza'),
             subtitle: const Text(
-              'Término que usa la CDMB en sus comunicados de prensa para '
-              'el reconocimiento base — independiente de todo lo demás, '
-              'no reemplaza el nivel de desarrollo ni el Sello Marca.',
+              'Reconocimiento oficial de la Ventanilla de Negocios Verdes: '
+              'cumple los requisitos mínimos y supera el 51 % de avance en '
+              'criterios ambientales, sociales y económicos.',
             ),
             value: _avalConfianza,
             onChanged: (v) => setState(() => _avalConfianza = v),
