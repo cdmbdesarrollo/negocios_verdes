@@ -646,27 +646,39 @@ class _DialogoBannerState extends State<_DialogoBanner> {
     );
   }
 
+  /// Antes esta preview era una caja fija de 120px de alto — a lo ancho
+  /// del diálogo (~420px) eso da una relación ~3.5:1, casi idéntica a la
+  /// de una foto panorámica típica, así que el recorte real casi no se
+  /// notaba acá aunque en el sitio publicado sí fuera fuerte ("se ve
+  /// perfecto al subir, mal en el banner", reportado con capturas). El
+  /// HeroSlider real es ancho completo de pantalla x 300px fijo — 1920x300
+  /// (~6.4:1) representa un escritorio típico, no el ancho exacto de cada
+  /// visitante, pero acerca mucho más la preview a lo que se va a publicar
+  /// que una caja arbitraria.
   Widget _slotImagen() {
     return InkWell(
       onTap: _subiendoImagen ? null : _elegirImagen,
       borderRadius: BorderRadius.circular(12),
-      child: Container(
-        width: double.infinity,
-        height: 120,
-        decoration: BoxDecoration(
-          color: NVColors.primaryLight,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: NVColors.borde),
+      child: AspectRatio(
+        aspectRatio: 1920 / 300,
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: NVColors.primaryLight,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: NVColors.borde),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: _subiendoImagen
+              ? const Center(child: CircularProgressIndicator())
+              : (_imagenUrl != null
+                  ? CachedNetworkImage(
+                      imageUrl: _imagenUrl!, fit: BoxFit.cover)
+                  : const Center(
+                      child: Icon(Icons.add_photo_alternate_outlined,
+                          size: 32, color: NVColors.primary),
+                    )),
         ),
-        clipBehavior: Clip.antiAlias,
-        child: _subiendoImagen
-            ? const Center(child: CircularProgressIndicator())
-            : (_imagenUrl != null
-                ? CachedNetworkImage(imageUrl: _imagenUrl!, fit: BoxFit.cover)
-                : const Center(
-                    child: Icon(Icons.add_photo_alternate_outlined,
-                        size: 32, color: NVColors.primary),
-                  )),
       ),
     );
   }
