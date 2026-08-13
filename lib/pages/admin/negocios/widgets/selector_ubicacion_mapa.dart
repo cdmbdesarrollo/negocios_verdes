@@ -151,6 +151,30 @@ class _SelectorUbicacionMapaState extends State<SelectorUbicacionMapa> {
     widget.onCambio(lat, lng);
   }
 
+  /// Reportado: un admin pegó lat/lng en los campos pero nunca tocó "Usar"
+  /// antes de guardar el formulario completo — onCambio nunca se disparó,
+  /// así que quedó guardado sin ubicación aunque los campos SE VEÍAN
+  /// llenos. Sin mensaje de error (a diferencia de _usarCoordenadas): acá
+  /// se llama en cada tecla, y mientras se escribe un número la mayoría de
+  /// los estados intermedios son inválidos a propósito (ej. "7." o "-7"),
+  /// no tiene sentido gritarle error al usuario por eso. Silenciosamente
+  /// no hace nada hasta que ambos campos parsean a un punto válido — ahí
+  /// sí actualiza el mapa y notifica al padre, sin esperar un clic aparte.
+  void _aplicarCoordenadasSiValidas() {
+    final lat = double.tryParse(_latCtrl.text.trim().replaceAll(',', '.'));
+    final lng = double.tryParse(_lngCtrl.text.trim().replaceAll(',', '.'));
+    if (lat == null || lng == null) return;
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return;
+    final punto = LatLng(lat, lng);
+    if (_punto == punto) return;
+    setState(() {
+      _errorCoordenadas = null;
+      _errorBusqueda = null;
+      _punto = punto;
+    });
+    widget.onCambio(lat, lng);
+  }
+
   Future<void> _buscarDireccion() async {
     final direccion = widget.direccionController.text.trim();
     if (direccion.isEmpty) {
@@ -261,6 +285,7 @@ class _SelectorUbicacionMapaState extends State<SelectorUbicacionMapa> {
                   isDense: true,
                   hintText: 'ej. 7.119300',
                 ),
+                onChanged: (_) => _aplicarCoordenadasSiValidas(),
               ),
             ),
             const SizedBox(width: 8),
@@ -274,6 +299,7 @@ class _SelectorUbicacionMapaState extends State<SelectorUbicacionMapa> {
                   isDense: true,
                   hintText: 'ej. -73.122700',
                 ),
+                onChanged: (_) => _aplicarCoordenadasSiValidas(),
               ),
             ),
             const SizedBox(width: 8),
