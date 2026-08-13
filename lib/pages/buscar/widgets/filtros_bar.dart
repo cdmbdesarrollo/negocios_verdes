@@ -8,12 +8,7 @@ import '../../../models/filtro_busqueda.dart';
 import '../../../models/subcategoria.dart';
 import '../../../theme/nv_colors.dart';
 
-/// Solo los 4 niveles de chips (Municipio→Categoría→Subcategoría→
-/// Actividad) — la caja de texto vive aparte en BarraBusquedaTexto desde
-/// que este bloque pasó a poder ubicarse en una columna lateral angosta
-/// en escritorio (ver BuscarPage): la caja de búsqueda necesita todo el
-/// ancho de la página arriba, no el ancho angosto de la barra lateral.
-class FiltrosBar extends StatelessWidget {
+class FiltrosBar extends StatefulWidget {
   final List<CategoriaOficial> categorias;
   final List<Subcategoria> subcategorias;
   final List<ActividadProductiva> actividades;
@@ -29,9 +24,39 @@ class FiltrosBar extends StatelessWidget {
     required this.onCambio,
   });
 
+  @override
+  State<FiltrosBar> createState() => _FiltrosBarState();
+}
+
+class _FiltrosBarState extends State<FiltrosBar> {
+  late final TextEditingController _busquedaCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _busquedaCtrl = TextEditingController(text: widget.filtro.query);
+  }
+
+  @override
+  void didUpdateWidget(covariant FiltrosBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Solo sincroniza si el cambio vino de afuera (ej. se limpió desde otro
+    // lado) — si viniera de este mismo TextField perdería el cursor.
+    if (widget.filtro.query != _busquedaCtrl.text &&
+        widget.filtro.query != oldWidget.filtro.query) {
+      _busquedaCtrl.text = widget.filtro.query;
+    }
+  }
+
+  @override
+  void dispose() {
+    _busquedaCtrl.dispose();
+    super.dispose();
+  }
+
   CategoriaOficial? _categoriaPorSlug(String? slug) {
     if (slug == null) return null;
-    for (final c in categorias) {
+    for (final c in widget.categorias) {
       if (c.slug == slug) return c;
     }
     return null;
@@ -39,24 +64,24 @@ class FiltrosBar extends StatelessWidget {
 
   Subcategoria? _subcategoriaPorSlug(String? slug) {
     if (slug == null) return null;
-    for (final s in subcategorias) {
+    for (final s in widget.subcategorias) {
       if (s.slug == slug) return s;
     }
     return null;
   }
 
   List<Subcategoria> get _subcategoriasDeCategoriaActual {
-    final categoria = _categoriaPorSlug(filtro.categoriaSlug);
+    final categoria = _categoriaPorSlug(widget.filtro.categoriaSlug);
     if (categoria == null) return const [];
-    return subcategorias
+    return widget.subcategorias
         .where((s) => s.categoriaOficialId == categoria.id)
         .toList();
   }
 
   List<ActividadProductiva> get _actividadesDeSubcategoriaActual {
-    final subcategoria = _subcategoriaPorSlug(filtro.subcategoriaSlug);
+    final subcategoria = _subcategoriaPorSlug(widget.filtro.subcategoriaSlug);
     if (subcategoria == null) return const [];
-    return actividades
+    return widget.actividades
         .where((a) => a.subcategoriaId == subcategoria.id)
         .toList();
   }
@@ -71,7 +96,7 @@ class FiltrosBar extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: NVColors.superficie,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.06),
@@ -83,6 +108,43 @@ class FiltrosBar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          TextField(
+            controller: _busquedaCtrl,
+            style: const TextStyle(fontSize: 14),
+            decoration: InputDecoration(
+              hintText:
+                  'Buscar negocios verdes (ej. agricultura orgánica, turismo sostenible...)',
+              hintStyle: const TextStyle(fontSize: 13.5),
+              prefixIcon: const Icon(Icons.search, color: NVColors.primary),
+              suffixIcon: widget.filtro.query.isNotEmpty
+                  ? IconButton(
+                      tooltip: 'Borrar búsqueda',
+                      icon: const Icon(Icons.close),
+                      onPressed: () {
+                        _busquedaCtrl.clear();
+                        widget.onCambio(widget.filtro.copyWith(query: ''));
+                      },
+                    )
+                  : null,
+              filled: true,
+              fillColor: NVColors.fondo,
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(26),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(26),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(26),
+                borderSide: const BorderSide(color: NVColors.primary, width: 1.5),
+              ),
+            ),
+            onChanged: (v) => widget.onCambio(widget.filtro.copyWith(query: v)),
+          ),
+          const SizedBox(height: 10),
           _etiquetaFiltro('Municipio'),
           const SizedBox(height: 6),
           Wrap(
@@ -91,15 +153,16 @@ class FiltrosBar extends StatelessWidget {
             children: [
               ChipFiltro(
                 etiqueta: 'Todos los municipios',
-                seleccionado: filtro.municipio == null,
-                onTap: () =>
-                    onCambio(filtro.copyWith(limpiarMunicipio: true)),
+                seleccionado: widget.filtro.municipio == null,
+                onTap: () => widget.onCambio(
+                    widget.filtro.copyWith(limpiarMunicipio: true)),
               ),
               for (final m in kMunicipios)
                 ChipFiltro(
                   etiqueta: m,
-                  seleccionado: filtro.municipio == m,
-                  onTap: () => onCambio(filtro.copyWith(municipio: m)),
+                  seleccionado: widget.filtro.municipio == m,
+                  onTap: () =>
+                      widget.onCambio(widget.filtro.copyWith(municipio: m)),
                 ),
             ],
           ),
@@ -112,19 +175,19 @@ class FiltrosBar extends StatelessWidget {
             children: [
               ChipFiltro(
                 etiqueta: 'Todas las categorías',
-                seleccionado: filtro.categoriaSlug == null,
-                onTap: () => onCambio(filtro.copyWith(
+                seleccionado: widget.filtro.categoriaSlug == null,
+                onTap: () => widget.onCambio(widget.filtro.copyWith(
                   limpiarCategoria: true,
                   limpiarSubcategoria: true,
                   limpiarActividad: true,
                 )),
               ),
-              for (final c in categorias)
+              for (final c in widget.categorias)
                 ChipFiltro(
                   etiqueta: c.nombre,
                   icono: c.icono,
-                  seleccionado: filtro.categoriaSlug == c.slug,
-                  onTap: () => onCambio(filtro.copyWith(
+                  seleccionado: widget.filtro.categoriaSlug == c.slug,
+                  onTap: () => widget.onCambio(widget.filtro.copyWith(
                     categoriaSlug: c.slug,
                     limpiarSubcategoria: true,
                     limpiarActividad: true,
@@ -143,8 +206,8 @@ class FiltrosBar extends StatelessWidget {
                 ChipFiltro(
                   etiqueta: 'Todas',
                   variante: true,
-                  seleccionado: filtro.subcategoriaSlug == null,
-                  onTap: () => onCambio(filtro.copyWith(
+                  seleccionado: widget.filtro.subcategoriaSlug == null,
+                  onTap: () => widget.onCambio(widget.filtro.copyWith(
                     limpiarSubcategoria: true,
                     limpiarActividad: true,
                   )),
@@ -155,8 +218,8 @@ class FiltrosBar extends StatelessWidget {
                     etiqueta: s.nombre,
                     icono: s.icono,
                     variante: true,
-                    seleccionado: filtro.subcategoriaSlug == s.slug,
-                    onTap: () => onCambio(filtro.copyWith(
+                    seleccionado: widget.filtro.subcategoriaSlug == s.slug,
+                    onTap: () => widget.onCambio(widget.filtro.copyWith(
                       subcategoriaSlug: s.slug,
                       limpiarActividad: true,
                     )),
@@ -177,9 +240,9 @@ class FiltrosBar extends StatelessWidget {
                 ChipFiltro(
                   etiqueta: 'Todas',
                   variante: true,
-                  seleccionado: filtro.actividadSlug == null,
-                  onTap: () =>
-                      onCambio(filtro.copyWith(limpiarActividad: true)),
+                  seleccionado: widget.filtro.actividadSlug == null,
+                  onTap: () => widget.onCambio(
+                      widget.filtro.copyWith(limpiarActividad: true)),
                   anchoMinimo: 180,
                 ),
                 for (final a in actividadesDisponibles)
@@ -187,9 +250,9 @@ class FiltrosBar extends StatelessWidget {
                     etiqueta: a.nombre,
                     icono: a.icono,
                     variante: true,
-                    seleccionado: filtro.actividadSlug == a.slug,
-                    onTap: () =>
-                        onCambio(filtro.copyWith(actividadSlug: a.slug)),
+                    seleccionado: widget.filtro.actividadSlug == a.slug,
+                    onTap: () => widget.onCambio(
+                        widget.filtro.copyWith(actividadSlug: a.slug)),
                     anchoMinimo: 180,
                   ),
               ],

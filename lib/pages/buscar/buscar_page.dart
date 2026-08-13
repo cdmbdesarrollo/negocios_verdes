@@ -18,7 +18,6 @@ import '../../services/categoria_service.dart';
 import '../../services/negocio_service.dart';
 import '../../services/subcategoria_service.dart';
 import '../../theme/nv_colors.dart';
-import 'widgets/barra_busqueda_texto.dart';
 import 'widgets/filtros_bar.dart';
 import 'widgets/resultados_lista.dart';
 import 'widgets/resultados_mapa.dart';
@@ -217,30 +216,6 @@ class _BuscarPageState extends State<BuscarPage> {
     final conUbicacion = negocios.where((n) => n.tieneUbicacion).length;
     final ancha = esPantallaAncha(context);
 
-    final textoConteo =
-        '${negocios.length} ${negocios.length == 1 ? 'negocio encontrado' : 'negocios encontrados'}'
-        '${conUbicacion != negocios.length && negocios.isNotEmpty ? ' · Mostrando $conUbicacion de ${negocios.length} en el mapa' : ''}';
-
-    final filtrosBar = FiltrosBar(
-      categorias: _categorias,
-      subcategorias: _subcategorias,
-      actividades: _actividades,
-      filtro: _filtro,
-      onCambio: _alCambiarFiltro,
-    );
-    final resultadosLista = ResultadosLista(
-      negocios: negocios,
-      clavesPorNegocio: _clavesPorNegocio,
-      negocioSeleccionadoId: _negocioSeleccionadoId,
-      onVerEnMapa: _verEnMapa,
-    );
-    final resultadosMapa = ResultadosMapa(
-      negocios: negocios,
-      mapController: _mapController,
-      negocioSeleccionadoId: _negocioSeleccionadoId,
-      onMarcadorTocado: _alTocarMarcador,
-    );
-
     // Antes esta página no tenía scroll propio (filtros + contador fijos
     // arriba, lista/mapa en un Expanded ocupando justo lo que quedaba de
     // viewport) — era la ÚNICA página del sitio sin pie de página, y sin
@@ -252,103 +227,97 @@ class _BuscarPageState extends State<BuscarPage> {
     return SingleChildScrollView(
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-            child: BarraBusquedaTexto(
-              query: _filtro.query,
-              onCambio: (v) =>
-                  _alCambiarFiltro(_filtro.copyWith(query: v)),
-            ),
+        // Antes tenía un ConstrainedBox(maxHeight: 36% de pantalla) +
+        // scroll propio — de cuando los resultados de abajo eran un
+        // Expanded y competían por alto con FiltrosBar. Ya no: los
+        // resultados miden 600 fijo (ver más abajo) sin importar cuánto
+        // crezca este bloque, así que ese límite quedó sin ningún
+        // propósito real y solo cortaba la fila de Subcategoría/Actividad
+        // cuando la categoría elegida tenía muchas — la página entera ya
+        // tiene su propio scroll (el SingleChildScrollView de más arriba),
+        // no hace falta anidar un segundo scroll adentro.
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+          child: FiltrosBar(
+            categorias: _categorias,
+            subcategorias: _subcategorias,
+            actividades: _actividades,
+            filtro: _filtro,
+            onCambio: _alCambiarFiltro,
           ),
-          const SizedBox(height: 12),
-          // Los filtros pasaron de apilarse ARRIBA de los resultados a ir
-          // en una barra lateral angosta en escritorio — pedido explícito:
-          // 4 niveles de chips siempre expandidos empujaban los resultados
-          // varios cientos de px hacia abajo, "le quitaba importancia" al
-          // resultado real de la búsqueda. En pantalla angosta se queda el
-          // orden de siempre (filtros arriba, apilados) porque no hay
-          // ancho para una columna lateral sin angostar los chips al punto
-          // de romper el ancho mínimo que ya tienen (anchoMinimo: 180).
-          if (ancha)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(width: 260, child: filtrosBar),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          textoConteo,
-                          style: const TextStyle(
-                              color: NVColors.textoSecundario, fontSize: 12),
-                        ),
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          height: 600,
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Expanded(flex: 4, child: resultadosLista),
-                              Expanded(flex: 6, child: resultadosMapa),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${negocios.length} ${negocios.length == 1 ? 'negocio encontrado' : 'negocios encontrados'}'
+                  '${conUbicacion != negocios.length && negocios.isNotEmpty ? ' · Mostrando $conUbicacion de ${negocios.length} en el mapa' : ''}',
+                  style: const TextStyle(
+                      color: NVColors.textoSecundario, fontSize: 12),
+                ),
               ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  filtrosBar,
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            textoConteo,
-                            style: const TextStyle(
-                                color: NVColors.textoSecundario,
-                                fontSize: 12),
-                          ),
-                        ),
-                        SegmentedButton<VistaResultados>(
-                          segments: const [
-                            ButtonSegment(
-                                value: VistaResultados.lista,
-                                icon: Icon(Icons.list),
-                                label: Text('Lista')),
-                            ButtonSegment(
-                                value: VistaResultados.mapa,
-                                icon: Icon(Icons.map_outlined),
-                                label: Text('Mapa')),
-                          ],
-                          selected: {_filtro.vista},
-                          onSelectionChanged: (nuevo) => _alCambiarFiltro(
-                              _filtro.copyWith(vista: nuevo.first)),
-                        ),
-                      ],
+              if (!ancha)
+                SegmentedButton<VistaResultados>(
+                  segments: const [
+                    ButtonSegment(
+                        value: VistaResultados.lista,
+                        icon: Icon(Icons.list),
+                        label: Text('Lista')),
+                    ButtonSegment(
+                        value: VistaResultados.mapa,
+                        icon: Icon(Icons.map_outlined),
+                        label: Text('Mapa')),
+                  ],
+                  selected: {_filtro.vista},
+                  onSelectionChanged: (nuevo) =>
+                      _alCambiarFiltro(_filtro.copyWith(vista: nuevo.first)),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 600,
+          child: ancha
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      flex: 4,
+                      child: ResultadosLista(
+                        negocios: negocios,
+                        clavesPorNegocio: _clavesPorNegocio,
+                        negocioSeleccionadoId: _negocioSeleccionadoId,
+                        onVerEnMapa: _verEnMapa,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    height: 600,
-                    child: _filtro.vista == VistaResultados.lista
-                        ? resultadosLista
-                        : resultadosMapa,
-                  ),
-                ],
-              ),
-            ),
+                    Expanded(
+                      flex: 6,
+                      child: ResultadosMapa(
+                        negocios: negocios,
+                        mapController: _mapController,
+                        negocioSeleccionadoId: _negocioSeleccionadoId,
+                        onMarcadorTocado: _alTocarMarcador,
+                      ),
+                    ),
+                  ],
+                )
+              : (_filtro.vista == VistaResultados.lista
+                  ? ResultadosLista(
+                      negocios: negocios,
+                      clavesPorNegocio: _clavesPorNegocio,
+                      negocioSeleccionadoId: _negocioSeleccionadoId,
+                      onVerEnMapa: _verEnMapa,
+                    )
+                  : ResultadosMapa(
+                      negocios: negocios,
+                      mapController: _mapController,
+                      negocioSeleccionadoId: _negocioSeleccionadoId,
+                      onMarcadorTocado: _alTocarMarcador,
+                    )),
+        ),
           const PiePagina(),
         ],
       ),
