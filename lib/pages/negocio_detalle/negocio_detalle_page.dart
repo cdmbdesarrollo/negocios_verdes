@@ -242,21 +242,19 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
   /// la fuerza para llenar un banner se veía borroso y mal encuadrado.
   /// Así se ve completo tanto un logo como una foto real.
   ///
-  /// Pedido explícito: un QR único al lado del logo, para que alguien
-  /// pueda mostrarlo/compartirlo físicamente y cualquiera con la cámara
-  /// llegue directo a esta ficha. LayoutBuilder en vez del breakpoint
-  /// global de 900 (esPantallaAncha) — acá la pregunta es mucho más chica
-  /// ("¿entra un QR de 108px al lado del logo?"), no "¿es una pantalla de
-  /// escritorio completa?": en celular igual entra side-by-side casi
-  /// siempre, solo se apila si el ancho es realmente angosto.
+  /// Pedido explícito: un QR único al lado del logo. Primer intento
+  /// (Row/Column según ancho vía LayoutBuilder) dejaba al QR centrado
+  /// verticalmente con un hueco vacío arriba en pantallas angostas —
+  /// pedido explícito de corrección: "pegado arriba, naciendo desde donde
+  /// inicia el banner". Stack con Positioned es más directo para eso que
+  /// pelear con cross-axis de Row/Column: el logo se centra en todo el
+  /// banner como siempre, el QR es una insignia fija arriba a la derecha,
+  /// igual en cualquier ancho de pantalla — sin ramas por tamaño.
   Widget _portada(Negocio negocio) {
-    final tieneImagen =
-        negocio.fotoPortadaUrl != null && negocio.fotoPortadaUrl!.isNotEmpty;
     final logo = negocio.fotoPortadaUrl != null && negocio.fotoPortadaUrl!.isNotEmpty
         ? CachedNetworkImage(
             imageUrl: negocio.fotoPortadaUrl!, fit: BoxFit.contain)
         : const Icon(Icons.storefront, size: 64, color: NVColors.primary);
-    final qr = _qrNegocio(negocio);
 
     // Blanco, no verde: casi todos los logos ya traen su propio fondo
     // blanco — un tinte verde detrás se veía como un recuadro desencajado
@@ -265,32 +263,18 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
       width: double.infinity,
       height: 280,
       color: Colors.white,
-      padding: const EdgeInsets.all(16),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final angosto = constraints.maxWidth < 420;
-          if (angosto) {
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Expanded(child: Center(child: logo)),
-                const SizedBox(height: 8),
-                qr,
-              ],
-            );
-          }
-          return Row(
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(left: tieneImagen ? 32 : 0),
-                  child: Center(child: logo),
-                ),
-              ),
-              qr,
-            ],
-          );
-        },
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Center(child: logo),
+          ),
+          Positioned(
+            top: 16,
+            right: 16,
+            child: _qrNegocio(negocio),
+          ),
+        ],
       ),
     );
   }
@@ -302,8 +286,16 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
+            color: Colors.white,
             border: Border.all(color: NVColors.borde),
             borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.10),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: QrImageView(
             data: _urlPublica(negocio).toString(),
@@ -312,10 +304,15 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
           ),
         ),
         const SizedBox(height: 6),
-        const Text(
-          'Escanea para\nver esta ficha',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 10.5, color: NVColors.textoSecundario),
+        SizedBox(
+          width: 108,
+          child: Text(
+            'QR de ${negocio.nombre}',
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 10.5, color: NVColors.textoSecundario),
+          ),
         ),
       ],
     );
