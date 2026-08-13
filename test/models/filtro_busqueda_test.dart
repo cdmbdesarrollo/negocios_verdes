@@ -38,6 +38,24 @@ void main() {
       const filtro = FiltroBusqueda(municipio: 'Tona');
       expect(filtro.toQueryParameters().containsKey('vista'), isFalse);
     });
+
+    test('nivel/sello/aval — nivel es texto plano, sello/aval son "1" solo si son true', () {
+      const filtro = FiltroBusqueda(
+        nivelDesarrollo: 'verificado',
+        selloMarca: true,
+        avalConfianza: true,
+      );
+      expect(filtro.toQueryParameters(), {
+        'nivel': 'verificado',
+        'sello': '1',
+        'aval': '1',
+      });
+      // false no es "lo contrario de true" para estos dos — es lo mismo
+      // que no filtrar, así que no debe aparecer en la URL en absoluto
+      // (nadie comparte un link pidiendo "sin Sello Marca").
+      const filtroFalse = FiltroBusqueda(selloMarca: false, avalConfianza: false);
+      expect(filtroFalse.toQueryParameters(), isEmpty);
+    });
   });
 
   group('FiltroBusqueda.fromQueryParameters', () {
@@ -60,6 +78,17 @@ void main() {
         FiltroBusqueda.fromQueryParameters(const {'vista': 'lo-que-sea'}).vista,
         VistaResultados.lista,
       );
+    });
+
+    test('"sello=1"/"aval=1" activan el filtro, cualquier otro valor (incluido ausente) no', () {
+      final filtro =
+          FiltroBusqueda.fromQueryParameters(const {'sello': '1', 'aval': '1'});
+      expect(filtro.selloMarca, isTrue);
+      expect(filtro.avalConfianza, isTrue);
+
+      final sinInsignias = FiltroBusqueda.fromQueryParameters(const {});
+      expect(sinInsignias.selloMarca, isNull);
+      expect(sinInsignias.avalConfianza, isNull);
     });
   });
 

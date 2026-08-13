@@ -357,6 +357,57 @@ class _FiltrosBarState extends State<FiltrosBar> {
               ],
             ),
           ],
+          const SizedBox(height: 10),
+          _etiquetaFiltro('Reconocimiento'),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              ChipFiltro(
+                etiqueta: 'Todos',
+                seleccionado: widget.filtro.nivelDesarrollo == null,
+                onTap: () => widget.onCambio(
+                    widget.filtro.copyWith(limpiarNivelDesarrollo: true)),
+              ),
+              ChipFiltro(
+                etiqueta: 'En verificación',
+                seleccionado: widget.filtro.nivelDesarrollo == 'en_verificacion',
+                onTap: () => widget.onCambio(widget.filtro
+                    .copyWith(nivelDesarrollo: 'en_verificacion')),
+              ),
+              ChipFiltro(
+                etiqueta: 'Verificado',
+                seleccionado: widget.filtro.nivelDesarrollo == 'verificado',
+                onTap: () => widget.onCambio(
+                    widget.filtro.copyWith(nivelDesarrollo: 'verificado')),
+              ),
+              ChipFiltro(
+                etiqueta: 'Negocio ancla',
+                seleccionado: widget.filtro.nivelDesarrollo == 'negocio_ancla',
+                onTap: () => widget.onCambio(
+                    widget.filtro.copyWith(nivelDesarrollo: 'negocio_ancla')),
+              ),
+              // Sello Marca y Aval de Confianza son independientes entre sí
+              // y de nivelDesarrollo (mismo criterio de siempre) — por eso
+              // cada chip alterna su propio booleano en vez de ser parte
+              // del mismo grupo "elegí uno" que los chips de arriba.
+              ChipFiltro(
+                etiqueta: '🎖️ Sello Marca',
+                seleccionado: widget.filtro.selloMarca == true,
+                onTap: () => widget.onCambio(widget.filtro.selloMarca == true
+                    ? widget.filtro.copyWith(limpiarSelloMarca: true)
+                    : widget.filtro.copyWith(selloMarca: true)),
+              ),
+              ChipFiltro(
+                etiqueta: '🛡️ Aval de Confianza',
+                seleccionado: widget.filtro.avalConfianza == true,
+                onTap: () => widget.onCambio(widget.filtro.avalConfianza == true
+                    ? widget.filtro.copyWith(limpiarAvalConfianza: true)
+                    : widget.filtro.copyWith(avalConfianza: true)),
+              ),
+            ],
+          ),
         ],
       ),
     );

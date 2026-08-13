@@ -69,6 +69,16 @@ class NegocioService {
         query = query.inFilter('id', negocioIds);
       }
 
+      if (filtro.nivelDesarrollo != null) {
+        query = query.eq('nivel_desarrollo', filtro.nivelDesarrollo!);
+      }
+      if (filtro.selloMarca == true) {
+        query = query.eq('sello_marca', true);
+      }
+      if (filtro.avalConfianza == true) {
+        query = query.eq('aval_confianza', true);
+      }
+
       if (filtro.query.trim().isNotEmpty) {
         // "busqueda" es una columna generada SOLO a partir de nombre +
         // descripciones del propio negocio (0004_negocios.sql) — Postgres

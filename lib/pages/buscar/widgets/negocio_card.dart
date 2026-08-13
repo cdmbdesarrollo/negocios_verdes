@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../core/widgets/aval_confianza_badge.dart';
 import '../../../core/widgets/badge_nivel.dart';
 import '../../../core/widgets/sello_marca_badge.dart';
+import '../../../models/categoria_oficial.dart';
 import '../../../models/negocio.dart';
+import '../../../models/subcategoria.dart';
 import '../../../theme/nv_colors.dart';
 
 /// Tarjeta de negocio reusada en BuscarPage (lista de resultados) y en el
@@ -100,13 +102,17 @@ class NegocioCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         if (negocio.categoriaOficial != null)
-                          Text(
-                            '${negocio.categoriaOficial!.iconoOTexto} '
-                            '${negocio.categoriaOficial!.nombre}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                color: NVColors.textoSecundario, fontSize: 12),
+                          _tocable(
+                            onTap: () => _irABuscar(
+                                context, {'categoria': negocio.categoriaOficial!.slug}),
+                            child: Text(
+                              '${negocio.categoriaOficial!.iconoOTexto} '
+                              '${negocio.categoriaOficial!.nombre}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  color: NVColors.textoSecundario, fontSize: 12),
+                            ),
                           ),
                         const SizedBox(height: 6),
                         Text(
@@ -120,18 +126,46 @@ class NegocioCard extends StatelessWidget {
                           spacing: 6,
                           runSpacing: 4,
                           children: [
-                            BadgeNivel(
-                                nivel: negocio.nivelDesarrollo, tamanoFuente: 10),
+                            _tocable(
+                              onTap: () => _irABuscar(context,
+                                  {'nivel': negocio.nivelDesarrollo}),
+                              child: BadgeNivel(
+                                  nivel: negocio.nivelDesarrollo,
+                                  tamanoFuente: 10),
+                            ),
                             if (negocio.selloMarca)
-                              const SelloMarcaBadge(tamanoFuente: 10),
+                              _tocable(
+                                onTap: () => _irABuscar(
+                                    context, const {'sello': '1'}),
+                                child: const SelloMarcaBadge(tamanoFuente: 10),
+                              ),
                             if (negocio.avalConfianza)
-                              const AvalConfianzaBadge(tamanoFuente: 10),
+                              _tocable(
+                                onTap: () =>
+                                    _irABuscar(context, const {'aval': '1'}),
+                                child: const AvalConfianzaBadge(tamanoFuente: 10),
+                              ),
                             // Municipio y subcategoría como tags aparte del
                             // nombre de categoría de arriba — de un vistazo,
                             // sin tener que abrir la ficha del negocio.
-                            _tag(negocio.municipio, icono: Icons.place_outlined),
+                            // Todas navegan a /buscar con ese filtro puesto
+                            // (pedido explícito) en vez de solo decorar.
+                            _tag(
+                              negocio.municipio,
+                              icono: Icons.place_outlined,
+                              onTap: () => _irABuscar(
+                                  context, {'municipio': negocio.municipio}),
+                            ),
                             for (final sub in negocio.subcategorias.take(2))
-                              _tag(sub.nombre),
+                              _tag(
+                                sub.nombre,
+                                onTap: () => _irABuscar(context, {
+                                  if (_categoriaDeSubcategoria(sub) != null)
+                                    'categoria':
+                                        _categoriaDeSubcategoria(sub)!.slug,
+                                  'subcategoria': sub.slug,
+                                }),
+                              ),
                             if (!negocio.tieneUbicacion)
                               Container(
                                 padding: const EdgeInsets.symmetric(
@@ -160,8 +194,8 @@ class NegocioCard extends StatelessWidget {
       );
   }
 
-  Widget _tag(String texto, {IconData? icono}) {
-    return Container(
+  Widget _tag(String texto, {IconData? icono, VoidCallback? onTap}) {
+    final chip = Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: NVColors.primaryLight,
@@ -186,6 +220,39 @@ class NegocioCard extends StatelessWidget {
         ],
       ),
     );
+    return onTap == null ? chip : _tocable(onTap: onTap, child: chip);
+  }
+
+  /// InkWell propio, ANIDADO adentro del InkWell grande de toda la
+  /// tarjeta (que navega a la ficha) — Flutter resuelve el gesto al más
+  /// específico sin necesitar nada especial, mismo criterio ya probado acá
+  /// con el botón "ver en mapa". BorderRadius genérico para el ripple, no
+  /// necesita calzar exacto con la forma de cada insignia.
+  Widget _tocable({required VoidCallback onTap, required Widget child}) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: child,
+      ),
+    );
+  }
+
+  /// Pedido explícito: cada insignia/tag de la tarjeta debe llevar a
+  /// /buscar ya filtrado por ese criterio, no solo decorar. Usa el mismo
+  /// negocio (sin pedir nada al servidor) — la categoría/subcategoría que
+  /// trae embebida son justamente las de ESTE negocio.
+  void _irABuscar(BuildContext context, Map<String, String> parametros) {
+    final uri = Uri(path: '/buscar', queryParameters: parametros);
+    context.go(uri.toString());
+  }
+
+  CategoriaOficial? _categoriaDeSubcategoria(Subcategoria sub) {
+    for (final c in negocio.categoriasOficiales) {
+      if (c.id == sub.categoriaOficialId) return c;
+    }
+    return null;
   }
 }
 
