@@ -44,21 +44,20 @@ class SlideInfo {
 class HeroSlider extends StatefulWidget {
   final List<SlideInfo> slides;
   final double altura;
-  final double anchoMaximo;
   final Duration intervalo;
 
   const HeroSlider({
     super.key,
     required this.slides,
-    // 1200x300 es el tamaño de banner ya acordado con CDMB para pedirle a
-    // quien les prepare las imágenes (relación 4:1) — antes esto ocupaba
-    // el ancho completo de la pantalla con una altura fija, así que en
-    // desktop terminaba mucho más ancho que ese 4:1 (recorte de más) y con
-    // más alto del que hacía falta ("se ve gigante", pedido explícito de
-    // achicarlo). Con el ancho también topado a 1200 (ver build()), un
-    // banner ya preparado en 1200x300 entra completo sin recortar nada.
+    // 300 (no 420): a 420 el banner se sentía "gigante" y quitaba espacio
+    // de la página (pedido explícito de achicarlo) — 1200x300 (4:1) es el
+    // tamaño de banner ya acordado con CDMB para pedirle a quien les
+    // prepare las imágenes. Topar el ancho del slider a 1200 para que
+    // calzara exacto con esa proporción se probó y se descartó: quedaba
+    // flotando con márgenes visibles a los lados en vez de sentirse parte
+    // de la página ("no queda bien", pedido explícito de volver a
+    // ancho completo).
     this.altura = 300,
-    this.anchoMaximo = 1200,
     this.intervalo = const Duration(seconds: 6),
   });
 
@@ -134,10 +133,7 @@ class _HeroSliderState extends State<HeroSlider> {
     if (widget.slides.isEmpty) return const SizedBox.shrink();
     final variasSlides = widget.slides.length > 1;
 
-    return Center(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: widget.anchoMaximo),
-        child: SizedBox(
+    return SizedBox(
       height: widget.altura,
       child: Stack(
         children: [
@@ -221,8 +217,6 @@ class _HeroSliderState extends State<HeroSlider> {
             ),
           ],
         ],
-      ),
-        ),
       ),
     );
   }

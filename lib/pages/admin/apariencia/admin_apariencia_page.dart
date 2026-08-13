@@ -597,9 +597,10 @@ class _DialogoBannerState extends State<_DialogoBanner> {
             _slotImagen(),
             const SizedBox(height: 6),
             const Text(
-              'Tamaño estándar: 1200×300px — a esa medida entra completo, '
-              'sin recortarse. Otra proporción se recorta arriba y abajo '
-              'para llenar el espacio.',
+              'Tamaño estándar: 1200×300px (relación 4:1). El banner ocupa '
+              'todo el ancho de la pantalla, así que en monitores anchos '
+              'se recorta un poco arriba y abajo — evitá poner contenido '
+              'importante muy cerca del borde superior o inferior.',
               style: TextStyle(color: NVColors.textoSecundario, fontSize: 11),
             ),
             if (_error != null) ...[
