@@ -57,6 +57,12 @@ class _BuscarPageState extends State<BuscarPage> {
   String? _error;
   Timer? _debounceBusqueda;
   bool _inicializado = false;
+  /// Última URL que ESTA página escribió con [_actualizarUrl] — para
+  /// distinguir, en [didChangeDependencies], un cambio de query params que
+  /// viene de afuera (ej. se tocó un tag de NegocioCard con
+  /// context.go('/buscar?...') estando ya en /buscar) de un simple eco de
+  /// lo que el propio estado ya reflejaba.
+  String? _ultimaUrlPropia;
 
   @override
   void initState() {
@@ -75,13 +81,30 @@ class _BuscarPageState extends State<BuscarPage> {
     // GoRouterState.of(context) no se puede llamar de forma segura desde
     // initState (dispara una aserción real de Flutter: depende de
     // inherited widgets que todavía no terminan de montarse ahí) — por eso
-    // la carga inicial se dispara aquí, protegida para correr una sola vez
-    // aunque didChangeDependencies se vuelva a llamar después.
-    if (_inicializado) return;
-    _inicializado = true;
-    final params = GoRouterState.of(context).uri.queryParameters;
-    _filtro = FiltroBusqueda.fromQueryParameters(params);
-    _cargarCatalogosYBuscar();
+    // la carga inicial se dispara aquí.
+    final ubicacion = GoRouterState.of(context).uri;
+    if (!_inicializado) {
+      _inicializado = true;
+      _filtro = FiltroBusqueda.fromQueryParameters(ubicacion.queryParameters);
+      _cargarCatalogosYBuscar();
+      return;
+    }
+    // BuscarPage no tiene key, así que navegar de /buscar a /buscar con
+    // otros query params (ej. tocar el tag "Girón" de una tarjeta estando
+    // YA en /buscar) reutiliza este mismo State en vez de recrearlo — sin
+    // este chequeo, didChangeDependencies se llama de nuevo pero no hacía
+    // nada más, así que el filtro quedaba "congelado" en lo que tenía
+    // antes: la URL cambiaba pero ni los resultados ni los chips de
+    // FiltrosBar se actualizaban. Comparar contra [_ultimaUrlPropia] evita
+    // reaccionar al eco normal de cuando ESTA página es la que acaba de
+    // escribir esa misma URL vía [_actualizarUrl] (si no, cada toque de
+    // chip dispararía una búsqueda duplicada).
+    if (ubicacion.toString() == _ultimaUrlPropia) return;
+    final nuevoFiltro = FiltroBusqueda.fromQueryParameters(
+      ubicacion.queryParameters,
+    );
+    setState(() => _filtro = nuevoFiltro);
+    _buscarConFiltroActual();
   }
 
   @override
@@ -171,6 +194,7 @@ class _BuscarPageState extends State<BuscarPage> {
     final params = _filtro.toQueryParameters();
     final uri =
         Uri(path: '/buscar', queryParameters: params.isEmpty ? null : params);
+    _ultimaUrlPropia = uri.toString();
     context.replace(uri.toString());
   }
 

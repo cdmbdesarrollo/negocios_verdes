@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -14,7 +15,9 @@ import '../../core/widgets/pie_pagina.dart';
 import '../../core/widgets/aval_confianza_badge.dart';
 import '../../core/widgets/pin_negocio_mapa.dart';
 import '../../core/widgets/sello_marca_badge.dart';
+import '../../models/categoria_oficial.dart';
 import '../../models/negocio.dart';
+import '../../models/subcategoria.dart';
 import '../../services/negocio_service.dart';
 import '../../theme/nv_colors.dart';
 import '../estaticas/no_encontrado_page.dart';
@@ -113,19 +116,50 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
                       runSpacing: 8,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        BadgeNivel(nivel: negocio.nivelDesarrollo),
-                        if (negocio.selloMarca) const SelloMarcaBadge(),
-                        if (negocio.avalConfianza) const AvalConfianzaBadge(),
+                        _tocable(
+                          onTap: () =>
+                              _irABuscar({'nivel': negocio.nivelDesarrollo}),
+                          child: BadgeNivel(nivel: negocio.nivelDesarrollo),
+                        ),
+                        if (negocio.selloMarca)
+                          _tocable(
+                            onTap: () => _irABuscar(const {'sello': '1'}),
+                            child: const SelloMarcaBadge(),
+                          ),
+                        if (negocio.avalConfianza)
+                          _tocable(
+                            onTap: () => _irABuscar(const {'aval': '1'}),
+                            child: const AvalConfianzaBadge(),
+                          ),
                         if (negocio.categoriasOficiales.isNotEmpty)
                           for (final cat in negocio.categoriasOficiales)
-                            _chip('${cat.iconoOTexto} ${cat.nombre}')
+                            _chip(
+                              '${cat.iconoOTexto} ${cat.nombre}',
+                              onTap: () =>
+                                  _irABuscar({'categoria': cat.slug}),
+                            )
                         else if (negocio.categoriaOficial != null)
                           _chip(
                             '${negocio.categoriaOficial!.iconoOTexto} '
                             '${negocio.categoriaOficial!.nombre}',
+                            onTap: () => _irABuscar(
+                              {'categoria': negocio.categoriaOficial!.slug},
+                            ),
                           ),
                         for (final sub in negocio.subcategorias)
-                          _chip('${sub.iconoOTexto} ${sub.nombre}'),
+                          _chip(
+                            '${sub.iconoOTexto} ${sub.nombre}',
+                            onTap: () => _irABuscar({
+                              if (_categoriaDeSubcategoria(negocio, sub) !=
+                                  null)
+                                'categoria':
+                                    _categoriaDeSubcategoria(
+                                      negocio,
+                                      sub,
+                                    )!.slug,
+                              'subcategoria': sub.slug,
+                            }),
+                          ),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -466,8 +500,8 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
     );
   }
 
-  Widget _chip(String texto) {
-    return Container(
+  Widget _chip(String texto, {VoidCallback? onTap}) {
+    final chip = Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: NVColors.primaryLight,
@@ -475,6 +509,38 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
       ),
       child: Text(texto, style: const TextStyle(fontSize: 12)),
     );
+    return onTap == null ? chip : _tocable(onTap: onTap, child: chip);
+  }
+
+  /// InkWell propio para cada insignia — mismo criterio que NegocioCard
+  /// (lib/pages/buscar/widgets/negocio_card.dart): acá no hay un InkWell
+  /// exterior con el que pelear (esta página no navega al tocarse a sí
+  /// misma), pero se mantiene el mismo patrón para que el ripple quede
+  /// recortado a la forma de cada insignia en vez de ocupar toda la fila.
+  Widget _tocable({required VoidCallback onTap, required Widget child}) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: child,
+      ),
+    );
+  }
+
+  /// Pedido explícito: cada insignia de la ficha debe llevar a /buscar ya
+  /// filtrado por ese criterio, mismo comportamiento ya implementado en
+  /// NegocioCard para las tarjetas de resultados.
+  void _irABuscar(Map<String, String> parametros) {
+    final uri = Uri(path: '/buscar', queryParameters: parametros);
+    context.go(uri.toString());
+  }
+
+  CategoriaOficial? _categoriaDeSubcategoria(Negocio negocio, Subcategoria sub) {
+    for (final c in negocio.categoriasOficiales) {
+      if (c.id == sub.categoriaOficialId) return c;
+    }
+    return null;
   }
 
   Future<void> _abrir(String url) async {
