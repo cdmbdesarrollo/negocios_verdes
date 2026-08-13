@@ -597,11 +597,9 @@ class _DialogoBannerState extends State<_DialogoBanner> {
             _slotImagen(),
             const SizedBox(height: 6),
             const Text(
-              'Ideal: panorámica ancha (relación ancho:alto entre 3:1 y '
-              '4:1, ej. 1900×500px) y con el contenido importante alejado '
-              'del borde superior e inferior — según el ancho de pantalla '
-              'del visitante se recorta un poco arriba y abajo para llenar '
-              'el espacio.',
+              'Tamaño estándar: 1200×300px — a esa medida entra completo, '
+              'sin recortarse. Otra proporción se recorta arriba y abajo '
+              'para llenar el espacio.',
               style: TextStyle(color: NVColors.textoSecundario, fontSize: 11),
             ),
             if (_error != null) ...[

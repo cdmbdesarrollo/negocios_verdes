@@ -44,19 +44,21 @@ class SlideInfo {
 class HeroSlider extends StatefulWidget {
   final List<SlideInfo> slides;
   final double altura;
+  final double anchoMaximo;
   final Duration intervalo;
 
   const HeroSlider({
     super.key,
     required this.slides,
-    // Los banners reales que sube CDMB suelen venir panorámicos y bastante
-    // más anchos que altos (ej. una diapositiva de una feria a 10000x2639px,
-    // relación ~3.8:1) — a 300 fijo el recorte de BoxFit.cover (arriba y
-    // abajo por igual) se comía contenido cerca del borde inferior de la
-    // imagen. 420 no elimina el recorte en pantallas muy anchas (ninguna
-    // altura fija lo hace si el ancho de viewport varía), pero lo reduce a
-    // la mitad aproximadamente en desktop típico.
-    this.altura = 420,
+    // 1200x300 es el tamaño de banner ya acordado con CDMB para pedirle a
+    // quien les prepare las imágenes (relación 4:1) — antes esto ocupaba
+    // el ancho completo de la pantalla con una altura fija, así que en
+    // desktop terminaba mucho más ancho que ese 4:1 (recorte de más) y con
+    // más alto del que hacía falta ("se ve gigante", pedido explícito de
+    // achicarlo). Con el ancho también topado a 1200 (ver build()), un
+    // banner ya preparado en 1200x300 entra completo sin recortar nada.
+    this.altura = 300,
+    this.anchoMaximo = 1200,
     this.intervalo = const Duration(seconds: 6),
   });
 
@@ -132,7 +134,10 @@ class _HeroSliderState extends State<HeroSlider> {
     if (widget.slides.isEmpty) return const SizedBox.shrink();
     final variasSlides = widget.slides.length > 1;
 
-    return SizedBox(
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: widget.anchoMaximo),
+        child: SizedBox(
       height: widget.altura,
       child: Stack(
         children: [
@@ -216,6 +221,8 @@ class _HeroSliderState extends State<HeroSlider> {
             ),
           ],
         ],
+      ),
+        ),
       ),
     );
   }
