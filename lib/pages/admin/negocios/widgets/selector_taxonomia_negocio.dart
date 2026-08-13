@@ -22,14 +22,21 @@ import 'selector_subcategorias.dart';
 /// padre se entera vía [onCambio], igual que ya hacía con la galería
 /// (onGaleriaCambiada) — sin necesidad de su propio setState.
 ///
-/// Pedido explícito: antes las 3 categorías eran chips sueltos siempre
-/// seleccionables a la vez, y si se elegían 2-3 se veían TODOS sus
+/// Pedido explícito (ronda 1): antes las 3 categorías eran chips sueltos
+/// siempre seleccionables a la vez, y si se elegían 2-3 se veían TODOS sus
 /// árboles de subcategoría/actividad apilados juntos — "se ve un poco
-/// desordenado" (con captura real). Ahora es secuencial: cada categoría
-/// YA elegida tiene su propia sección con su propio árbol adentro, en el
-/// orden en que se eligieron (la primera es la principal), y solo AL
-/// FINAL aparece un selector para agregar la siguiente (hasta 3) — nunca
-/// las 3 opciones sueltas a la vez.
+/// desordenado" (con captura real). Ahora cada categoría YA elegida tiene
+/// su propia sección con su propio árbol adentro, en el orden en que se
+/// eligieron (la primera es la principal).
+///
+/// Pedido explícito (ronda 2): el primer intento ocultaba del selector la
+/// categoría que ya estaba elegida — reportado como error ("deberían
+/// cargar también las 3 categorías"), con el pedido explícito de darle
+/// fondo a cada una según su estado para identificarlas fácil. Ahora las
+/// 3 están SIEMPRE visibles en una sola fila (ChipFiltro con su mismo
+/// tratamiento de "seleccionado" ya usado en todo el sitio — fondo sólido
+/// vs. claro), tocar una ya elegida la quita, tocar una libre la agrega
+/// (respetando el máximo de 3).
 class SelectorTaxonomiaNegocio extends StatefulWidget {
   final List<CategoriaOficial> categorias;
   final List<Subcategoria> subcategorias;
@@ -57,8 +64,6 @@ class SelectorTaxonomiaNegocio extends StatefulWidget {
 }
 
 class _SelectorTaxonomiaNegocioState extends State<SelectorTaxonomiaNegocio> {
-  static const _ordinales = ['primera', 'segunda', 'tercera'];
-
   late List<String> _categoriaIds;
   late Set<String> _subcategoriaIds;
   late Set<String> _actividadIds;
@@ -153,19 +158,32 @@ class _SelectorTaxonomiaNegocioState extends State<SelectorTaxonomiaNegocio> {
           'como principal)',
           style: Theme.of(context).textTheme.bodySmall,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final c in widget.categorias)
+              ChipFiltro(
+                etiqueta: c.nombre,
+                icono: c.iconoOTexto,
+                seleccionado: _categoriaIds.contains(c.id),
+                onTap: () => _alternarCategoria(c.id),
+              ),
+          ],
+        ),
+        if (_categoriaIds.isEmpty)
+          const Padding(
+            padding: EdgeInsets.only(top: 6),
+            child: Text('Selecciona al menos una.',
+                style: TextStyle(color: NVColors.error, fontSize: 12)),
+          ),
+        const SizedBox(height: 12),
         for (final (indice, categoriaId) in _categoriaIds.indexed)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: _seccionCategoria(indice, categoriaId),
           ),
-        if (_categoriaIds.isEmpty)
-          const Padding(
-            padding: EdgeInsets.only(bottom: 10),
-            child: Text('Selecciona al menos una.',
-                style: TextStyle(color: NVColors.error, fontSize: 12)),
-          ),
-        if (_categoriaIds.length < 3) _promptSiguienteCategoria(),
       ],
     );
   }
@@ -263,42 +281,6 @@ class _SelectorTaxonomiaNegocioState extends State<SelectorTaxonomiaNegocio> {
           ],
         ],
       ),
-    );
-  }
-
-  Widget _promptSiguienteCategoria() {
-    final restantes =
-        widget.categorias.where((c) => !_categoriaIds.contains(c.id)).toList();
-    if (restantes.isEmpty) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          _categoriaIds.isEmpty
-              ? 'Elige tu categoría oficial'
-              : 'Elige tu ${_ordinales[_categoriaIds.length]} categoría '
-                  'oficial (opcional)',
-          style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: NVColors.textoSecundario),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final c in restantes)
-              ChipFiltro(
-                etiqueta: c.nombre,
-                icono: c.iconoOTexto,
-                variante: true,
-                seleccionado: false,
-                onTap: () => _alternarCategoria(c.id),
-              ),
-          ],
-        ),
-      ],
     );
   }
 }
