@@ -103,6 +103,26 @@ class NegocioService {
     }
   }
 
+  /// Solo nombre+slug de cada negocio activo, para el autocompletado del
+  /// buscador — a esta escala (cientos, no miles) traer todo una sola vez
+  /// es más simple que una consulta "por cada tecla" al servidor, mismo
+  /// criterio que listarTodosAdmin(). Payload chico a propósito: nada de
+  /// select(_selectConEmbeds) acá, no hace falta ningún embed para esto.
+  Future<List<(String nombre, String slug)>> listarNombresPublicos() async {
+    try {
+      final data = await _supabase
+          .from('negocios')
+          .select('nombre, slug')
+          .eq('activo', true);
+      return (data as List).map((e) {
+        final mapa = e as Map<String, dynamic>;
+        return (mapa['nombre'] as String, mapa['slug'] as String);
+      }).toList();
+    } catch (e) {
+      throw Exception('No se pudieron cargar los nombres de negocios: $e');
+    }
+  }
+
   Future<Negocio?> obtenerPorSlug(String slug) async {
     try {
       final data = await _supabase

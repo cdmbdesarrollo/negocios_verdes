@@ -1,17 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../catalogos.dart';
+import '../../../core/texto_utils.dart';
 import '../../../core/widgets/chip_filtro.dart';
 import '../../../models/actividad_productiva.dart';
 import '../../../models/categoria_oficial.dart';
 import '../../../models/filtro_busqueda.dart';
 import '../../../models/subcategoria.dart';
+import '../../../models/sugerencia_busqueda.dart';
 import '../../../theme/nv_colors.dart';
 
 class FiltrosBar extends StatefulWidget {
   final List<CategoriaOficial> categorias;
   final List<Subcategoria> subcategorias;
   final List<ActividadProductiva> actividades;
+
+  /// Solo nombre+slug de cada negocio activo — para el autocompletado.
+  /// Lista aparte de los resultados de la búsqueda actual (que cambian
+  /// con cada filtro): esta es fija, se carga una sola vez.
+  final List<(String nombre, String slug)> negocios;
   final FiltroBusqueda filtro;
   final ValueChanged<FiltroBusqueda> onCambio;
 
@@ -20,6 +28,7 @@ class FiltrosBar extends StatefulWidget {
     required this.categorias,
     required this.subcategorias,
     required this.actividades,
+    required this.negocios,
     required this.filtro,
     required this.onCambio,
   });
@@ -30,6 +39,7 @@ class FiltrosBar extends StatefulWidget {
 
 class _FiltrosBarState extends State<FiltrosBar> {
   late final TextEditingController _busquedaCtrl;
+  final _busquedaFocus = FocusNode();
 
   @override
   void initState() {
@@ -51,6 +61,7 @@ class _FiltrosBarState extends State<FiltrosBar> {
   @override
   void dispose() {
     _busquedaCtrl.dispose();
+    _busquedaFocus.dispose();
     super.dispose();
   }
 
@@ -70,6 +81,20 @@ class _FiltrosBarState extends State<FiltrosBar> {
     return null;
   }
 
+  CategoriaOficial? _categoriaPorId(String id) {
+    for (final c in widget.categorias) {
+      if (c.id == id) return c;
+    }
+    return null;
+  }
+
+  Subcategoria? _subcategoriaPorId(String id) {
+    for (final s in widget.subcategorias) {
+      if (s.id == id) return s;
+    }
+    return null;
+  }
+
   List<Subcategoria> get _subcategoriasDeCategoriaActual {
     final categoria = _categoriaPorSlug(widget.filtro.categoriaSlug);
     if (categoria == null) return const [];
@@ -84,6 +109,112 @@ class _FiltrosBarState extends State<FiltrosBar> {
     return widget.actividades
         .where((a) => a.subcategoriaId == subcategoria.id)
         .toList();
+  }
+
+  /// Negocios primero (lo más probable que alguien esté buscando por
+  /// nombre exacto, como en el pedido original — "bucarr" → Bucarretes),
+  /// después municipio/categoría/subcategoría/actividad. Tope de 8 en
+  /// total para que el dropdown no se vuelva una pared de opciones.
+  Iterable<SugerenciaBusqueda> _construirSugerencias(TextEditingValue valor) {
+    final texto = valor.text.trim();
+    if (texto.isEmpty) return const [];
+    final normalizado = quitarTildes(texto.toLowerCase());
+    bool contiene(String s) => quitarTildes(s.toLowerCase()).contains(normalizado);
+
+    final resultados = <SugerenciaBusqueda>[];
+    for (final (nombre, slug) in widget.negocios) {
+      if (contiene(nombre)) {
+        resultados.add(SugerenciaBusqueda(
+            tipo: TipoSugerencia.negocio, etiqueta: nombre, valor: slug));
+      }
+    }
+    for (final m in kMunicipios) {
+      if (contiene(m)) {
+        resultados.add(
+            SugerenciaBusqueda(tipo: TipoSugerencia.municipio, etiqueta: m, valor: m));
+      }
+    }
+    for (final c in widget.categorias) {
+      if (contiene(c.nombre)) {
+        resultados.add(SugerenciaBusqueda(
+            tipo: TipoSugerencia.categoria,
+            etiqueta: c.nombre,
+            valor: c.slug,
+            icono: c.icono));
+      }
+    }
+    for (final s in widget.subcategorias) {
+      if (contiene(s.nombre)) {
+        resultados.add(SugerenciaBusqueda(
+            tipo: TipoSugerencia.subcategoria,
+            etiqueta: s.nombre,
+            valor: s.slug,
+            icono: s.icono));
+      }
+    }
+    for (final a in widget.actividades) {
+      if (contiene(a.nombre)) {
+        resultados.add(SugerenciaBusqueda(
+            tipo: TipoSugerencia.actividad,
+            etiqueta: a.nombre,
+            valor: a.slug,
+            icono: a.icono));
+      }
+    }
+    return resultados.take(8);
+  }
+
+  /// Negocio: navega directo a la ficha (mismo criterio que un resultado
+  /// de búsqueda cualquiera). Categoría/subcategoría/actividad: se
+  /// resuelven los padres necesarios (subcategoría necesita su categoría,
+  /// actividad necesita su subcategoría Y su categoría) para que los
+  /// chips correspondientes queden marcados, no solo el filtro aplicado
+  /// "a ciegas". Municipio: se aplica directo, no tiene padres.
+  void _alSeleccionarSugerencia(SugerenciaBusqueda sugerencia) {
+    _busquedaCtrl.clear();
+    _busquedaFocus.unfocus();
+    switch (sugerencia.tipo) {
+      case TipoSugerencia.negocio:
+        context.go('/negocio/${sugerencia.valor}');
+      case TipoSugerencia.municipio:
+        widget.onCambio(
+            widget.filtro.copyWith(municipio: sugerencia.valor, query: ''));
+      case TipoSugerencia.categoria:
+        widget.onCambio(widget.filtro.copyWith(
+          categoriaSlug: sugerencia.valor,
+          limpiarSubcategoria: true,
+          limpiarActividad: true,
+          query: '',
+        ));
+      case TipoSugerencia.subcategoria:
+        final sub = _subcategoriaPorSlug(sugerencia.valor);
+        final categoriaPadre =
+            sub == null ? null : _categoriaPorId(sub.categoriaOficialId);
+        widget.onCambio(widget.filtro.copyWith(
+          categoriaSlug: categoriaPadre?.slug ?? widget.filtro.categoriaSlug,
+          subcategoriaSlug: sugerencia.valor,
+          limpiarActividad: true,
+          query: '',
+        ));
+      case TipoSugerencia.actividad:
+        ActividadProductiva? actividad;
+        for (final a in widget.actividades) {
+          if (a.slug == sugerencia.valor) {
+            actividad = a;
+            break;
+          }
+        }
+        final subPadre =
+            actividad == null ? null : _subcategoriaPorId(actividad.subcategoriaId);
+        final categoriaPadre =
+            subPadre == null ? null : _categoriaPorId(subPadre.categoriaOficialId);
+        widget.onCambio(widget.filtro.copyWith(
+          categoriaSlug: categoriaPadre?.slug ?? widget.filtro.categoriaSlug,
+          subcategoriaSlug: subPadre?.slug ?? widget.filtro.subcategoriaSlug,
+          actividadSlug: sugerencia.valor,
+          query: '',
+        ));
+    }
   }
 
   @override
@@ -108,41 +239,129 @@ class _FiltrosBarState extends State<FiltrosBar> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextField(
-            controller: _busquedaCtrl,
-            style: const TextStyle(fontSize: 14),
-            decoration: InputDecoration(
-              hintText:
-                  'Buscar negocios verdes (ej. ganadería sostenible, turismo de naturaleza...)',
-              hintStyle: const TextStyle(fontSize: 13.5),
-              prefixIcon: const Icon(Icons.search, color: NVColors.primary),
-              suffixIcon: widget.filtro.query.isNotEmpty
-                  ? IconButton(
-                      tooltip: 'Borrar búsqueda',
-                      icon: const Icon(Icons.close),
-                      onPressed: () {
-                        _busquedaCtrl.clear();
-                        widget.onCambio(widget.filtro.copyWith(query: ''));
+          RawAutocomplete<SugerenciaBusqueda>(
+            textEditingController: _busquedaCtrl,
+            focusNode: _busquedaFocus,
+            optionsBuilder: _construirSugerencias,
+            displayStringForOption: (s) => s.etiqueta,
+            onSelected: _alSeleccionarSugerencia,
+            fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+              return TextField(
+                controller: controller,
+                focusNode: focusNode,
+                style: const TextStyle(fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: 'Buscar negocios verdes (ej. ganadería sostenible, '
+                      'turismo de naturaleza...)',
+                  hintStyle: const TextStyle(fontSize: 13.5),
+                  prefixIcon: const Icon(Icons.search, color: NVColors.primary),
+                  suffixIcon: widget.filtro.query.isNotEmpty
+                      ? IconButton(
+                          tooltip: 'Borrar búsqueda',
+                          icon: const Icon(Icons.close),
+                          onPressed: () {
+                            controller.clear();
+                            widget.onCambio(widget.filtro.copyWith(query: ''));
+                          },
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: NVColors.fondo,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(26),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(26),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(26),
+                    borderSide:
+                        const BorderSide(color: NVColors.primary, width: 1.5),
+                  ),
+                ),
+                onChanged: (v) =>
+                    widget.onCambio(widget.filtro.copyWith(query: v)),
+              );
+            },
+            optionsViewBuilder: (context, onSelected, opciones) {
+              final lista = opciones.toList();
+              return Align(
+                alignment: Alignment.topLeft,
+                child: Material(
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(12),
+                  child: ConstrainedBox(
+                    constraints:
+                        const BoxConstraints(maxHeight: 320, minWidth: 280),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      shrinkWrap: true,
+                      itemCount: lista.length,
+                      itemBuilder: (context, i) {
+                        final sugerencia = lista[i];
+                        final esNuevoGrupo =
+                            i == 0 || lista[i - 1].tipo != sugerencia.tipo;
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (esNuevoGrupo)
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
+                                child: Text(
+                                  sugerencia.etiquetaGrupo.toUpperCase(),
+                                  style: const TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.4,
+                                    color: NVColors.textoSecundario,
+                                  ),
+                                ),
+                              ),
+                            InkWell(
+                              onTap: () => onSelected(sugerencia),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 8),
+                                child: Row(
+                                  children: [
+                                    if (sugerencia.icono != null) ...[
+                                      Text(sugerencia.icono!,
+                                          style: const TextStyle(fontSize: 15)),
+                                      const SizedBox(width: 8),
+                                    ] else if (sugerencia.tipo ==
+                                        TipoSugerencia.negocio) ...[
+                                      const Icon(Icons.storefront_outlined,
+                                          size: 16, color: NVColors.primary),
+                                      const SizedBox(width: 8),
+                                    ] else if (sugerencia.tipo ==
+                                        TipoSugerencia.municipio) ...[
+                                      const Icon(Icons.place_outlined,
+                                          size: 16, color: NVColors.primary),
+                                      const SizedBox(width: 8),
+                                    ],
+                                    Expanded(
+                                      child: Text(
+                                        sugerencia.etiqueta,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(fontSize: 13.5),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
                       },
-                    )
-                  : null,
-              filled: true,
-              fillColor: NVColors.fondo,
-              contentPadding: const EdgeInsets.symmetric(vertical: 10),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(26),
-                borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(26),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(26),
-                borderSide: const BorderSide(color: NVColors.primary, width: 1.5),
-              ),
-            ),
-            onChanged: (v) => widget.onCambio(widget.filtro.copyWith(query: v)),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 10),
           _etiquetaFiltro('Municipio'),

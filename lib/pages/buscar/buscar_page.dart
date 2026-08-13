@@ -47,6 +47,11 @@ class _BuscarPageState extends State<BuscarPage> {
   List<CategoriaOficial> _categorias = [];
   List<Subcategoria> _subcategorias = [];
   List<ActividadProductiva> _actividades = [];
+  /// Nombre+slug de TODOS los negocios activos, para el autocompletado —
+  /// a diferencia de [_negocios] (los resultados de la búsqueda actual,
+  /// que cambian con cada filtro), esta lista se carga una sola vez y no
+  /// se vuelve a tocar.
+  List<(String nombre, String slug)> _nombresNegocios = [];
   String? _negocioSeleccionadoId;
   bool _cargando = true;
   String? _error;
@@ -92,6 +97,7 @@ class _BuscarPageState extends State<BuscarPage> {
         _subcategoriaService.listarTodas(),
         _actividadService.listarTodas(),
         _negocioService.buscar(_filtro),
+        _negocioService.listarNombresPublicos(),
       ]);
       if (!mounted) return;
       setState(() {
@@ -99,6 +105,8 @@ class _BuscarPageState extends State<BuscarPage> {
         _subcategorias = resultados[1] as List<Subcategoria>;
         _actividades = resultados[2] as List<ActividadProductiva>;
         _negocios = resultados[3] as List<Negocio>;
+        _nombresNegocios =
+            resultados[4] as List<(String nombre, String slug)>;
         _cargando = false;
       });
     } catch (e) {
@@ -242,6 +250,7 @@ class _BuscarPageState extends State<BuscarPage> {
             categorias: _categorias,
             subcategorias: _subcategorias,
             actividades: _actividades,
+            negocios: _nombresNegocios,
             filtro: _filtro,
             onCambio: _alCambiarFiltro,
           ),
