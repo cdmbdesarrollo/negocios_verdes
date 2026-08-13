@@ -756,7 +756,13 @@ class _InicioPageState extends State<InicioPage> {
                 itemCount: _destacados.length,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: columnas,
-                  mainAxisExtent: 150,
+                  // Antes 150 — alcanzaba para nivel + destacado en una
+                  // sola fila de insignias. Con Sello Marca y Aval de
+                  // Confianza el Wrap de abajo puede necesitar 2 filas
+                  // (nivel + sello + aval + destacado + tags), y la
+                  // tarjeta se veía cortada porque mainAxisExtent es un
+                  // alto fijo, no un mínimo.
+                  mainAxisExtent: 190,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
                 ),
