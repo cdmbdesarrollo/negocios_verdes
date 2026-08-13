@@ -1,7 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../catalogos.dart';
@@ -160,6 +162,11 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
                           mensaje:
                               mensajeWhatsappPredeterminado(negocio.nombre),
                         ),
+                        OutlinedButton.icon(
+                          onPressed: () => _mostrarCompartir(context, negocio),
+                          icon: const Icon(Icons.share_outlined),
+                          label: const Text('Compartir'),
+                        ),
                         if (negocio.telefono != null &&
                             negocio.telefono!.isNotEmpty)
                           OutlinedButton.icon(
@@ -221,25 +228,96 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
     );
   }
 
+  /// URL pública y absoluta de esta ficha — Uri.base refleja el origen real
+  /// que está sirviendo la página en este momento (localhost en desarrollo,
+  /// el dominio real en producción), así el QR y "Copiar enlace" funcionan
+  /// sin hardcodear ningún dominio (todavía no hay uno definitivo, ver
+  /// CLAUDE.md). dart:core puro, sin dart:html — mismo criterio que
+  /// seo_tags.dart.
+  Uri _urlPublica(Negocio negocio) =>
+      Uri.base.replace(path: '/negocio/${negocio.slug}', query: '');
+
   /// BoxFit.contain (no cover) a propósito — muchos negocios solo tienen a
   /// mano su logo, no una foto ancha de portada, y recortarlo/estirarlo a
   /// la fuerza para llenar un banner se veía borroso y mal encuadrado.
   /// Así se ve completo tanto un logo como una foto real.
+  ///
+  /// Pedido explícito: un QR único al lado del logo, para que alguien
+  /// pueda mostrarlo/compartirlo físicamente y cualquiera con la cámara
+  /// llegue directo a esta ficha. LayoutBuilder en vez del breakpoint
+  /// global de 900 (esPantallaAncha) — acá la pregunta es mucho más chica
+  /// ("¿entra un QR de 108px al lado del logo?"), no "¿es una pantalla de
+  /// escritorio completa?": en celular igual entra side-by-side casi
+  /// siempre, solo se apila si el ancho es realmente angosto.
   Widget _portada(Negocio negocio) {
+    final tieneImagen =
+        negocio.fotoPortadaUrl != null && negocio.fotoPortadaUrl!.isNotEmpty;
+    final logo = negocio.fotoPortadaUrl != null && negocio.fotoPortadaUrl!.isNotEmpty
+        ? CachedNetworkImage(
+            imageUrl: negocio.fotoPortadaUrl!, fit: BoxFit.contain)
+        : const Icon(Icons.storefront, size: 64, color: NVColors.primary);
+    final qr = _qrNegocio(negocio);
+
     // Blanco, no verde: casi todos los logos ya traen su propio fondo
     // blanco — un tinte verde detrás se veía como un recuadro desencajado
-    // en vez de integrarse. Padding chico (antes 20) para que el logo
-    // ocupe casi todo el espacio en vez de verse pequeño en el centro.
+    // en vez de integrarse.
     return Container(
       width: double.infinity,
       height: 280,
       color: Colors.white,
-      padding: const EdgeInsets.all(8),
-      alignment: Alignment.center,
-      child: negocio.fotoPortadaUrl != null && negocio.fotoPortadaUrl!.isNotEmpty
-          ? CachedNetworkImage(
-              imageUrl: negocio.fotoPortadaUrl!, fit: BoxFit.contain)
-          : const Icon(Icons.storefront, size: 64, color: NVColors.primary),
+      padding: const EdgeInsets.all(16),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final angosto = constraints.maxWidth < 420;
+          if (angosto) {
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Expanded(child: Center(child: logo)),
+                const SizedBox(height: 8),
+                qr,
+              ],
+            );
+          }
+          return Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(left: tieneImagen ? 32 : 0),
+                  child: Center(child: logo),
+                ),
+              ),
+              qr,
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _qrNegocio(Negocio negocio) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            border: Border.all(color: NVColors.borde),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: QrImageView(
+            data: _urlPublica(negocio).toString(),
+            size: 92,
+            backgroundColor: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Escanea para\nver esta ficha',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 10.5, color: NVColors.textoSecundario),
+        ),
+      ],
     );
   }
 
@@ -410,6 +488,69 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
 
   Future<void> _llamar(String telefono) async {
     await launchUrl(Uri(scheme: 'tel', path: telefono));
+  }
+
+  /// Enlaces estándar de "compartir" de cada red (no un share sheet nativo
+  /// — esto es Flutter Web, no hay uno del sistema operativo disponible de
+  /// forma confiable en navegador de escritorio). Cada uno abre la propia
+  /// ventana de compartir de la red con el link y el nombre del negocio
+  /// precargados; "Copiar enlace" es el único que no navega a ningún lado.
+  void _mostrarCompartir(BuildContext context, Negocio negocio) {
+    final url = _urlPublica(negocio).toString();
+    final texto = '${negocio.nombre} — Negocios Verdes CDMB';
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (contextHoja) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.chat_bubble_outline,
+                    color: NVColors.whatsapp),
+                title: const Text('WhatsApp'),
+                onTap: () {
+                  Navigator.pop(contextHoja);
+                  _abrir('https://wa.me/?text=${Uri.encodeComponent('$texto $url')}');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.facebook, color: NVColors.primary),
+                title: const Text('Facebook'),
+                onTap: () {
+                  Navigator.pop(contextHoja);
+                  _abrir(
+                      'https://www.facebook.com/sharer/sharer.php?u=${Uri.encodeComponent(url)}');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.close, color: NVColors.textoPrincipal),
+                title: const Text('X (Twitter)'),
+                onTap: () {
+                  Navigator.pop(contextHoja);
+                  _abrir(
+                      'https://twitter.com/intent/tweet?text=${Uri.encodeComponent(texto)}&url=${Uri.encodeComponent(url)}');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.link, color: NVColors.textoSecundario),
+                title: const Text('Copiar enlace'),
+                onTap: () async {
+                  Navigator.pop(contextHoja);
+                  await Clipboard.setData(ClipboardData(text: url));
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Enlace copiado.')));
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
