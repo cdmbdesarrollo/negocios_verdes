@@ -371,12 +371,6 @@ class _FiltrosBarState extends State<FiltrosBar> {
                     widget.filtro.copyWith(limpiarNivelDesarrollo: true)),
               ),
               ChipFiltro(
-                etiqueta: 'En verificación',
-                seleccionado: widget.filtro.nivelDesarrollo == 'en_verificacion',
-                onTap: () => widget.onCambio(widget.filtro
-                    .copyWith(nivelDesarrollo: 'en_verificacion')),
-              ),
-              ChipFiltro(
                 etiqueta: 'Verificado',
                 seleccionado: widget.filtro.nivelDesarrollo == 'verificado',
                 onTap: () => widget.onCambio(
