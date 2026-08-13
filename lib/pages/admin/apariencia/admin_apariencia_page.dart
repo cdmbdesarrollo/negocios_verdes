@@ -494,6 +494,11 @@ class _DialogoBannerState extends State<_DialogoBanner> {
   String? _imagenPath;
   bool _subiendoImagen = false;
   bool _guardando = false;
+  /// Inline en vez de SnackBar a propósito: un SnackBar disparado mientras
+  /// este AlertDialog está abierto queda tapado por su propio barrier
+  /// modal — el usuario reportó justo eso ("hace el proceso pero no sube,
+  /// queda así"), sin ver ningún aviso del motivo real.
+  String? _error;
 
   @override
   void initState() {
@@ -513,13 +518,17 @@ class _DialogoBannerState extends State<_DialogoBanner> {
     super.dispose();
   }
 
-  void _avisar(String mensaje) {
+  void _marcarError(String mensaje) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mensaje)));
+    setState(() => _error = mensaje);
   }
 
   Future<void> _elegirImagen() async {
-    final elegida = await elegirImagenValidada(onError: _avisar);
+    setState(() => _error = null);
+    final elegida = await elegirImagenValidada(
+      onError: _marcarError,
+      maxBytes: kMaxBytesBanner,
+    );
     if (elegida == null) return;
     setState(() => _subiendoImagen = true);
     try {
@@ -534,7 +543,7 @@ class _DialogoBannerState extends State<_DialogoBanner> {
         _imagenPath = subida.path;
       });
     } catch (e) {
-      _avisar(e.toString().replaceFirst('Exception: ', ''));
+      _marcarError(e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _subiendoImagen = false);
     }
@@ -542,10 +551,13 @@ class _DialogoBannerState extends State<_DialogoBanner> {
 
   Future<void> _guardar() async {
     if (_imagenUrl == null || _imagenPath == null) {
-      _avisar('Sube una imagen para el banner.');
+      _marcarError('Sube una imagen para el banner.');
       return;
     }
-    setState(() => _guardando = true);
+    setState(() {
+      _guardando = true;
+      _error = null;
+    });
     try {
       final destino = _urlCtrl.text.trim();
       if (widget.banner == null) {
@@ -566,7 +578,7 @@ class _DialogoBannerState extends State<_DialogoBanner> {
       }
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
-      _avisar(e.toString().replaceFirst('Exception: ', ''));
+      _marcarError(e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _guardando = false);
     }
@@ -583,6 +595,11 @@ class _DialogoBannerState extends State<_DialogoBanner> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _slotImagen(),
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Text(_error!,
+                  style: const TextStyle(color: NVColors.error, fontSize: 12)),
+            ],
             const SizedBox(height: 16),
             TextField(
               controller: _urlCtrl,

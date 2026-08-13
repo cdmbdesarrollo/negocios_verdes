@@ -5,6 +5,10 @@ import 'package:image_picker/image_picker.dart';
 /// Política compartida de qué imágenes se aceptan — un solo lugar si algún
 /// día hay que subir/bajar el límite.
 const int kMaxBytesImagen = 1 * 1024 * 1024; // 1 MB
+/// Los banners del inicio son imágenes de ancho completo (slider) — pesan
+/// más por naturaleza que un logo o un ícono, así que su tope es más alto
+/// que el resto de las imágenes del sitio (pedido explícito).
+const int kMaxBytesBanner = 1536 * 1024; // 1.5 MB
 const Set<String> _extensionesNoSoportadas = {'heic', 'heif'};
 
 class ImagenElegida {
@@ -22,6 +26,7 @@ class ImagenElegida {
 /// validación (ya se avisó el motivo mediante [onError]).
 Future<ImagenElegida?> elegirImagenValidada({
   required void Function(String mensaje) onError,
+  int maxBytes = kMaxBytesImagen,
 }) async {
   final picker = ImagePicker();
   final archivo =
@@ -36,8 +41,9 @@ Future<ImagenElegida?> elegirImagenValidada({
   }
 
   final bytes = await archivo.readAsBytes();
-  if (bytes.lengthInBytes > kMaxBytesImagen) {
-    onError('La imagen pesa demasiado (máximo 1 MB) — usa una versión más liviana.');
+  if (bytes.lengthInBytes > maxBytes) {
+    onError(
+        'La imagen pesa demasiado (máximo ${_formatoMb(maxBytes)}) — usa una versión más liviana.');
     return null;
   }
 
@@ -45,6 +51,14 @@ Future<ImagenElegida?> elegirImagenValidada({
     bytes: bytes,
     extension: _extensionFinal(bytes, extensionOriginal),
   );
+}
+
+String _formatoMb(int bytes) {
+  final mb = bytes / (1024 * 1024);
+  final texto = mb == mb.roundToDouble()
+      ? mb.toStringAsFixed(0)
+      : mb.toStringAsFixed(1);
+  return '$texto MB';
 }
 
 /// Igual que [elegirImagenValidada] pero deja elegir varios archivos de una
