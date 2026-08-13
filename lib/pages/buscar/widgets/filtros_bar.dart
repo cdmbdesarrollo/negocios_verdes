@@ -181,6 +181,7 @@ class _FiltrosBarState extends State<FiltrosBar> {
                   limpiarSubcategoria: true,
                   limpiarActividad: true,
                 )),
+                anchoMinimo: 190,
               ),
               for (final c in widget.categorias)
                 ChipFiltro(
@@ -192,6 +193,7 @@ class _FiltrosBarState extends State<FiltrosBar> {
                     limpiarSubcategoria: true,
                     limpiarActividad: true,
                   )),
+                  anchoMinimo: 190,
                 ),
             ],
           ),
