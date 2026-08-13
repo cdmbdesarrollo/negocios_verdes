@@ -9,7 +9,6 @@ import '../../core/widgets/chip_filtro.dart';
 import '../../core/widgets/entrada_animada.dart';
 import '../../core/widgets/hover_lift.dart';
 import '../../core/widgets/icono_etiqueta.dart';
-import '../../core/widgets/logo_negocios_verdes.dart';
 import '../../core/widgets/onda_divisora.dart';
 import '../../core/widgets/pie_pagina.dart';
 import '../../core/widgets/section_header.dart';
@@ -447,7 +446,7 @@ class _InicioPageState extends State<InicioPage> {
                       onSubmitted: _buscar,
                       style: const TextStyle(fontSize: 15),
                       decoration: InputDecoration(
-                        hintText: 'Busca por nombre, categoría o municipio...',
+                        hintText: 'Busca por Negocio Verde',
                         hintStyle: const TextStyle(
                             color: NVColors.textoSecundario, fontSize: 14),
                         prefixIcon:
@@ -498,25 +497,6 @@ class _InicioPageState extends State<InicioPage> {
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const LogoNegociosVerdes(altura: 36),
-              const SizedBox(width: 10),
-              const Flexible(
-                child: Text(
-                  'Negocios Verdes CDMB',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: NVColors.textoPrincipal,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),
