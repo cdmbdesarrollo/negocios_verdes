@@ -25,6 +25,15 @@ abstract final class NVColors {
   static const Color accent = Color(0xFFFF8623);
   static const Color accentDark = Color(0xFFCC6B1C);
 
+  /// Verde vivo de la misma campaña (#01BD32, también confirmado por
+  /// CDMB) — deliberadamente NO reemplaza a [primary] (ese sigue siendo el
+  /// institucional real de la Sede Electrónica): es un segundo verde para
+  /// piezas nuevas/de campaña, pensado para bordes, íconos y como ancla
+  /// clara de un degradado — no para texto blanco encima a tamaño chico,
+  /// su luminancia es alta y el contraste con blanco queda por debajo de
+  /// lo institucional (~2.5:1 vs. ~4:1 de [primary]).
+  static const Color verdeVivo = Color(0xFF01BD32);
+
   /// Azul de la franja superior obligatoria de GOV.CO — NO es parte de la
   /// paleta propia de la marca, es el color que trae la franja institucional
   /// de gov.co en la Sede Electrónica de la CDMB (de la que este sitio es
@@ -91,5 +100,15 @@ abstract final class NVColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [primaryDark, accentDark],
+  );
+
+  /// Ancla en [primaryDark] (oscuro, buen contraste con texto blanco) y
+  /// termina en [verdeVivo] — así el degradado introduce el verde de
+  /// campaña en una pieza grande sin heredar su problema de contraste:
+  /// el texto queda del lado oscuro, no sobre el verde vivo puro.
+  static const LinearGradient gradientVerdeVivo = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [primaryDark, verdeVivo],
   );
 }

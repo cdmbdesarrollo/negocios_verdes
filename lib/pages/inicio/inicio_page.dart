@@ -331,7 +331,7 @@ class _InicioPageState extends State<InicioPage> {
           subtitulo: 'Agrosistemas, turismo sostenible, biocomercio, '
               'tecnologías verdes y más.',
           icono: Icons.category_outlined,
-          fondo: NVColors.gradientOscuro,
+          fondo: NVColors.gradientVerdeVivo,
           textoBoton: 'Ver categorías',
           onTap: () => _irA(const {}),
         ),
@@ -610,8 +610,12 @@ class _InicioPageState extends State<InicioPage> {
         shadowColor: Colors.black.withValues(alpha: 0.10),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
+          // verdeVivo (no primary) a propósito: el pedido explícito fue
+          // usar el verde nuevo de campaña en secciones adicionales, y un
+          // borde de 2px no tiene el problema de contraste que sí tendría
+          // como fondo de texto blanco.
           side: BorderSide(
-            color: seleccionado ? NVColors.primary : Colors.transparent,
+            color: seleccionado ? NVColors.verdeVivo : Colors.transparent,
             width: 2,
           ),
         ),
