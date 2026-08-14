@@ -18,8 +18,12 @@ abstract final class NVColors {
   static const Color primaryDark = Color(0xFF026B4D);
   static const Color primaryLight = Color(0xFFDCEEE6);
 
-  static const Color accent = Color(0xFFD98B2B);
-  static const Color accentDark = Color(0xFFB06F1D);
+  // Naranja de la campaña de la Feria Regional de Negocios Verdes (banner
+  // oficial, valores RGB confirmados por CDMB: #FF8623). accentDark es ese
+  // mismo tono escalado ~80%, mismo criterio que ya tenía el naranja
+  // anterior con el suyo.
+  static const Color accent = Color(0xFFFF8623);
+  static const Color accentDark = Color(0xFFCC6B1C);
 
   /// Azul de la franja superior obligatoria de GOV.CO — NO es parte de la
   /// paleta propia de la marca, es el color que trae la franja institucional
