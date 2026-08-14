@@ -53,7 +53,17 @@ class NegocioCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 100,
+                // 128 de ancho (antes 100): la mayoría de los logos reales
+                // son cuadrados o más anchos que altos, y con BoxFit.contain
+                // en una casilla angosta ese sobrante de ancho se traduce
+                // en aire vacío arriba/abajo — el logo se veía chico dentro
+                // de su propia casilla aunque el contenedor no lo fuera
+                // (reportado con captura real). Ancho = alto (casilla
+                // cuadrada) le da más margen a un logo panorámico antes de
+                // toparse con esa restricción. El alto se queda en 128 a
+                // propósito — subirlo también rompería el mainAxisExtent
+                // fijo de la grilla de destacados en InicioPage.
+                width: 128,
                 height: 128,
                 // Blanco, no verde: la mayoría de los negocios suben su
                 // logo tal cual, que casi siempre ya trae fondo blanco
