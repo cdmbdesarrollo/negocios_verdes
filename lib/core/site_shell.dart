@@ -162,7 +162,18 @@ class _SiteShellState extends State<SiteShell> {
         padding: const EdgeInsets.only(right: 4, bottom: 6),
         child: Material(
           color: activo ? NVColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
+          // Anillo de verdeVivo en el ítem activo — el relleno y el texto
+          // blanco se quedan igual que siempre (buen contraste, ~4:1); el
+          // verde nuevo entra como borde, no como fondo, así no hereda el
+          // problema de contraste que sí tendría el texto blanco encima
+          // suyo directamente.
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(6),
+            side: BorderSide(
+              color: activo ? NVColors.verdeVivo : Colors.transparent,
+              width: 2,
+            ),
+          ),
           child: InkWell(
             borderRadius: BorderRadius.circular(6),
             onTap: () => context.go(enlace.ruta),

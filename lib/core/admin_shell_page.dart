@@ -238,7 +238,13 @@ class _BarraLateral extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Material(
-        color: activo ? Colors.white.withValues(alpha: 0.14) : Colors.transparent,
+        // verdeVivo en vez de blanco puro para el ítem activo — a esta
+        // opacidad baja sobre el fondo oscuro (primaryDark) el resultado
+        // se queda del lado oscuro, así que el texto/ícono blanco de
+        // siempre sigue teniendo buen contraste.
+        color: activo
+            ? NVColors.verdeVivo.withValues(alpha: 0.25)
+            : Colors.transparent,
         borderRadius: BorderRadius.circular(10),
         child: InkWell(
           borderRadius: BorderRadius.circular(10),
