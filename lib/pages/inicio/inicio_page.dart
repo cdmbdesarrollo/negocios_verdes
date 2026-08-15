@@ -303,6 +303,10 @@ class _InicioPageState extends State<InicioPage> {
     };
   }
 
+  // Colores planos, sin degradado (pedido explícito) -- cada diapositiva
+  // usa un solo color repetido dos veces porque SlideInfo.fondo espera un
+  // Gradient, no un Color; un LinearGradient de dos paradas iguales
+  // pinta como color sólido sin tener que cambiar esa API.
   List<SlideInfo> get _slidesDeFabrica => [
         SlideInfo.texto(
           titulo: 'Negocios Verdes CDMB',
@@ -312,15 +316,16 @@ class _InicioPageState extends State<InicioPage> {
               : '$_totalNegocios negocios verdes en los 13 municipios de '
                   'la jurisdicción CDMB',
           icono: Icons.eco,
-          fondo: NVColors.gradientHero,
+          fondo: const LinearGradient(
+              colors: [NVColors.verdeMenu, NVColors.verdeMenu]),
         ),
         SlideInfo.texto(
           titulo: '¿Qué son los Negocios Verdes?',
           subtitulo: 'Conoce los requisitos y beneficios de hacer parte '
               'del programa de la CDMB.',
           icono: Icons.info_outline,
-          fondo:
-              const LinearGradient(colors: [NVColors.accentDark, NVColors.accent]),
+          fondo: const LinearGradient(
+              colors: [NVColors.accent, NVColors.accent]),
           textoBoton: 'Conocer más',
           onTap: () => context.go('/nosotros'),
         ),
@@ -329,7 +334,8 @@ class _InicioPageState extends State<InicioPage> {
           subtitulo: 'Agrosistemas, turismo sostenible, biocomercio, '
               'tecnologías verdes y más.',
           icono: Icons.category_outlined,
-          fondo: NVColors.gradientVerdeVivo,
+          fondo: const LinearGradient(
+              colors: [NVColors.verdeVivo, NVColors.verdeVivo]),
           textoBoton: 'Ver categorías',
           onTap: () => _irA(const {}),
         ),
@@ -338,7 +344,8 @@ class _InicioPageState extends State<InicioPage> {
           subtitulo: 'Bucaramanga, Floridablanca, Girón, Piedecuesta y 9 '
               'municipios más de la jurisdicción CDMB.',
           icono: Icons.map_outlined,
-          fondo: NVColors.gradientDuo,
+          fondo: const LinearGradient(
+              colors: [NVColors.neutroOscuro, NVColors.neutroOscuro]),
           textoBoton: 'Buscar por municipio',
           onTap: () => context.go('/buscar'),
         ),
@@ -384,14 +391,14 @@ class _InicioPageState extends State<InicioPage> {
             scaleY: 1.1,
             alignment: Alignment.topCenter,
             child: const OndaDivisora(
-                colorFondo: NVColors.fondo, colorOnda: NVColors.verdeVivo),
+                colorFondo: NVColors.fondo, colorOnda: NVColors.verdeMenu),
           ),
           entrada(_seccionEstadisticas(context)),
           Transform.scale(
             scaleY: 1.1,
             alignment: Alignment.topCenter,
             child: const OndaDivisora(
-                colorFondo: NVColors.verdeVivo,
+                colorFondo: NVColors.verdeMenu,
                 colorOnda: NVColors.primaryLight),
           ),
           entrada(_seccionQueSon(context)),
@@ -519,7 +526,11 @@ class _InicioPageState extends State<InicioPage> {
   Widget _seccionEstadisticas(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: NVColors.verdeVivo,
+      // verdeMenu (no verdeVivo) -- rellenos grandes usan siempre el verde
+      // de menús/botones, para continuidad con la onda divisora de arriba
+      // y de abajo (ambas ya en verdeMenu). verdeVivo queda para acentos
+      // chicos (íconos, bordes, texto de enlace).
+      color: NVColors.verdeMenu,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
       child: Center(
         child: ConstrainedBox(

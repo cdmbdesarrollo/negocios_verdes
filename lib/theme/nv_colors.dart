@@ -86,36 +86,4 @@ abstract final class NVColors {
   /// nunca se reusa) y de selloMarcaDorado (para no verse como "el mismo
   /// tipo de insignia" cuando son dos reconocimientos independientes).
   static const Color avalConfianzaAzul = Color(0xFF2A6F97);
-
-  static const LinearGradient gradientHero = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [primaryDark, primary],
-  );
-
-  /// Neutro oscuro, para diapositivas/secciones grandes que necesitan
-  /// contrastar con el verde de marca sin salirse de la paleta.
-  static const LinearGradient gradientOscuro = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [neutroOscuro, Color(0xFF37423F)],
-  );
-
-  /// Mezcla verde→ámbar, para piezas grandes donde marca y acento conviven
-  /// en la misma pieza en vez de alternarlas en piezas separadas.
-  static const LinearGradient gradientDuo = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [primaryDark, accentDark],
-  );
-
-  /// Ancla en [primaryDark] (oscuro, buen contraste con texto blanco) y
-  /// termina en [verdeVivo] — así el degradado introduce el verde de
-  /// campaña en una pieza grande sin heredar su problema de contraste:
-  /// el texto queda del lado oscuro, no sobre el verde vivo puro.
-  static const LinearGradient gradientVerdeVivo = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [primaryDark, verdeVivo],
-  );
 }

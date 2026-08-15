@@ -342,7 +342,11 @@ class _PlanNacionalPageState extends State<PlanNacionalPage> {
       width: 200,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: NVColors.verdeVivo,
+        // verdeMenu (no verdeVivo) -- es una tarjeta de cifra/contador,
+        // mismo tratamiento que la franja de estadísticas del inicio: el
+        // verde de relleno grande es siempre verdeMenu, verdeVivo se
+        // reserva para acentos chicos (íconos, bordes, texto de enlace).
+        color: NVColors.verdeMenu,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(

@@ -50,19 +50,18 @@ class ChipFiltro extends StatelessWidget {
         // Relleno completo de verdeMenu al seleccionar (antes era un lavado
         // pálido de primaryLight con solo el contorno marcando el estado)
         // -- estos chips son "los botones del buscador", así que llevan el
-        // mismo verde que los demás botones/menús, no verdeVivo. primaryDark
-        // como texto sigue funcionando: da buen contraste tanto sobre
-        // blanco/transparente (sin seleccionar) como sobre verdeMenu
-        // (seleccionado).
+        // mismo verde que los demás botones/menús, no verdeVivo. Texto y
+        // contorno en verdeVivo (no primaryDark/primary) -- pedido
+        // explícito de no dejar nada del verde institucional viejo.
         selectedColor: NVColors.verdeMenu,
         labelStyle: TextStyle(
-          color: NVColors.primaryDark,
+          color: NVColors.verdeVivo,
           fontWeight: seleccionado ? FontWeight.w600 : FontWeight.normal,
         ),
         side: BorderSide(
-          color: seleccionado ? NVColors.verdeMenu : NVColors.primary,
+          color: seleccionado ? NVColors.verdeMenu : NVColors.verdeVivo,
         ),
-        checkmarkColor: NVColors.primaryDark,
+        checkmarkColor: NVColors.verdeVivo,
       );
     } else {
       chip = FilterChip(

@@ -395,10 +395,15 @@ class _NosotrosPageState extends State<NosotrosPage> {
             onTap: () => context.go('/buscar?categoria=$slug'),
             child: const Text(
               'Ver negocios de esta categoría →',
+              // verdeVivo (no primary) -- pedido explícito. Subrayado de
+              // más, porque este verde es más claro y da menos contraste
+              // como texto que el institucional que reemplaza.
               style: TextStyle(
-                  color: NVColors.primary,
+                  color: NVColors.verdeVivo,
                   fontSize: 13,
-                  fontWeight: FontWeight.w600),
+                  fontWeight: FontWeight.w600,
+                  decoration: TextDecoration.underline,
+                  decorationColor: NVColors.verdeVivo),
             ),
           ),
         ],

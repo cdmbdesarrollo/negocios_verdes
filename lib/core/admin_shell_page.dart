@@ -127,7 +127,15 @@ class AdminShellPage extends StatelessWidget {
                   leading: Icon(enlace.icono),
                   title: Text(enlace.titulo),
                   selected: _enlaceActivo(rutaActual, enlace),
-                  selectedColor: NVColors.primary,
+                  // Relleno verdeMenu + texto oscuro en el ítem activo (no
+                  // solo texto primary sobre blanco) -- mismo criterio de
+                  // contraste que el resto del sitio: blanco encima de un
+                  // verde tan claro es difícil de leer, pero un tinte de
+                  // texto verde claro sobre fondo blanco también, así que
+                  // el relleno pasa a ser el indicador y el texto se queda
+                  // oscuro.
+                  selectedTileColor: NVColors.verdeMenu,
+                  selectedColor: NVColors.textoPrincipal,
                   onTap: () {
                     Navigator.of(context).pop();
                     context.go(enlace.ruta);

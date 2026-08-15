@@ -6,8 +6,11 @@ import 'nv_colors.dart';
 abstract final class NVTheme {
   static ThemeData get light {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: NVColors.primary,
-      primary: NVColors.primary,
+      // verdeVivo (no primary) -- pedido explícito de no dejar el verde
+      // institucional viejo en ningún lado, ni siquiera como semilla del
+      // esquema de color.
+      seedColor: NVColors.verdeVivo,
+      primary: NVColors.verdeVivo,
       secondary: NVColors.accent,
       surface: NVColors.superficie,
       error: NVColors.error,
@@ -93,7 +96,7 @@ abstract final class NVTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: NVColors.primaryDark,
+          foregroundColor: NVColors.verdeVivo,
           // verdeMenu en el contorno (no primary ni verdeVivo) -- estos son
           // botones reales (OutlinedButton), pedido explícito de que los
           // botones lleven ese verde específico. El texto se queda en
@@ -110,7 +113,7 @@ abstract final class NVTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: NVColors.primaryDark,
+          foregroundColor: NVColors.verdeVivo,
           textStyle: GoogleFonts.workSans(fontWeight: FontWeight.w600),
         ),
       ),
