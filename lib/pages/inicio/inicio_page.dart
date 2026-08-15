@@ -269,15 +269,13 @@ class _InicioPageState extends State<InicioPage> {
     });
   }
 
-  /// Banners reales subidos desde /admin/apariencia, primero, seguidos de
-  /// las diapositivas de fábrica que hagan falta para completar el mismo
-  /// total que las de fábrica — así el carrusel SIEMPRE tiene con qué
-  /// rotar (flechas, puntos, auto-avance) desde el primer banner real que
-  /// se sube, en vez de quedar fijo en una sola imagen estática hasta que
-  /// haya 2 o más banners reales cargados. Antes, con exactamente 1 banner
-  /// real, el carrusel mostraba solo ese banner sin controles — un
-  /// comportamiento correcto por diseño (nada más con qué rotar) pero que
-  /// se leía como "el slider está roto".
+  /// Solo banners reales subidos desde /admin/apariencia -- pedido
+  /// explícito de ocultar las diapositivas de fábrica (no son imagen, cada
+  /// una traía su propio ícono/degradado) en cuanto exista al menos un
+  /// banner real, aunque sea uno solo ("que se vea completo el principal",
+  /// sin nada de relleno alrededor). Las de fábrica quedan solo como
+  /// último recurso, para no dejar el slider completamente vacío si
+  /// todavía no se subió ningún banner real.
   List<SlideInfo> get _slides {
     final reales = [
       for (final banner in _banners)
@@ -286,8 +284,8 @@ class _InicioPageState extends State<InicioPage> {
           onTap: _resolverDestino(banner.urlDestino, banner.abrirEnPestanaNueva),
         ),
     ];
-    if (reales.length >= _slidesDeFabrica.length) return reales;
-    return [...reales, ..._slidesDeFabrica];
+    if (reales.isNotEmpty) return reales;
+    return _slidesDeFabrica;
   }
 
   VoidCallback? _resolverDestino(String? urlDestino, bool nuevaPestana) {

@@ -69,7 +69,10 @@ abstract final class NVTheme {
       // el lenguaje de forma, para que no se lean como el mismo producto.
       chipTheme: ChipThemeData(
         backgroundColor: NVColors.primaryLight,
-        selectedColor: NVColors.primary,
+        // verdeMenu, consistente con ChipFiltro (que sí se usa en todo el
+        // sitio) -- el texto ya era textoPrincipal (oscuro), sin ningún
+        // riesgo de contraste.
+        selectedColor: NVColors.verdeMenu,
         labelStyle: GoogleFonts.workSans(color: NVColors.textoPrincipal),
         side: BorderSide.none,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
