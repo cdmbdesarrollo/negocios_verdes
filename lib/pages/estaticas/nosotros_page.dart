@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/seo_tags.dart';
-import '../../core/widgets/logo_negocios_verdes.dart';
 import '../../core/widgets/pie_pagina.dart';
 import '../../models/actividad_productiva.dart';
 import '../../models/categoria_oficial.dart';
@@ -74,21 +73,18 @@ class _NosotrosPageState extends State<NosotrosPage> {
         children: [
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+            // Pedido explícito: sin el logo (ya está en el navbar arriba,
+            // sobraba acá) y con menos padding vertical (antes 40) para
+            // que la franja ocupe menos espacio.
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             decoration: const BoxDecoration(gradient: NVColors.gradientHero),
-            child: Column(
-              children: [
-                const LogoNegociosVerdes(altura: 48),
-                const SizedBox(height: 8),
-                const Text(
-                  '¿Qué son los Negocios Verdes?',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold),
-                ),
-              ],
+            child: const Text(
+              '¿Qué son los Negocios Verdes?',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold),
             ),
           ),
           Center(
