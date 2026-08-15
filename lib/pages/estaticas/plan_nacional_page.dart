@@ -47,15 +47,19 @@ class _PlanNacionalPageState extends State<PlanNacionalPage> {
             // sobraba acá) y con menos padding vertical (antes 40) para
             // que la franja ocupe menos espacio.
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            decoration:
-                const BoxDecoration(gradient: NVColors.gradientVerdeVivo),
+            // verdeMenu sin degradado (pedido explícito) -- el mismo verde
+            // plano de los menús, para que se lea como una continuidad de
+            // color. El texto pasa de blanco a textoPrincipal/
+            // textoSecundario: blanco sobre este verde tan claro es casi
+            // ilegible.
+            color: NVColors.verdeMenu,
             child: Column(
               children: [
                 const Text(
                   'Plan Nacional de Negocios Verdes 2022-2030',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                      color: Colors.white,
+                      color: NVColors.textoPrincipal,
                       fontSize: 24,
                       fontWeight: FontWeight.bold),
                 ),
@@ -63,7 +67,8 @@ class _PlanNacionalPageState extends State<PlanNacionalPage> {
                 const Text(
                   'Ministerio de Ambiente y Desarrollo Sostenible de Colombia',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                  style: TextStyle(
+                      color: NVColors.textoSecundario, fontSize: 13),
                 ),
               ],
             ),

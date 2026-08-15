@@ -145,10 +145,10 @@ class _HeroSliderState extends State<HeroSlider> {
       // probó topar el ancho, los márgenes a los lados mostraban el fondo
       // crema de la página y se veía "flotando"/roto. Con un color de
       // marca detrás, esos márgenes se leen como marco a propósito.
-      // gradientVerdeVivo (no primaryDark) -- mismo degradado que ya usan
-      // los banners de /nosotros y /plan-nacional, para que los tres
-      // "hero" del sitio compartan el mismo verde de la paleta nueva.
-      decoration: const BoxDecoration(gradient: NVColors.gradientVerdeVivo),
+      // verdeMenu SIN degradado (pedido explícito) -- el mismo verde
+      // plano de los menús, para que menús y banners se lean como una
+      // sola continuidad de color, no colores distintos ni un degradado.
+      color: NVColors.verdeMenu,
       child: Center(
         child: ConstrainedBox(
       constraints: BoxConstraints(maxWidth: widget.anchoMaximo),
