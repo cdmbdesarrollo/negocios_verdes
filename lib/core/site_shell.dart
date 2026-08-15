@@ -63,9 +63,9 @@ class _SiteShellState extends State<SiteShell> {
               children: [
                 const _FranjaGovCo(),
                 _encabezado(context, ancha, rutaActual),
-                // Franja puramente decorativa, sin texto encima -- verdeVivo
-                // acá no tiene ningún riesgo de contraste.
-                Container(height: 3, color: NVColors.verdeVivo),
+                // Franja puramente decorativa, sin texto encima -- parte del
+                // menú, usa verdeMenu (el verde específico para menús).
+                Container(height: 3, color: NVColors.verdeMenu),
               ],
             ),
           ),
@@ -163,12 +163,11 @@ class _SiteShellState extends State<SiteShell> {
       child: Padding(
         padding: const EdgeInsets.only(right: 4, bottom: 6),
         child: Material(
-          // Relleno completo de verdeVivo (no solo un borde) -- pedido
-          // explícito. El texto pasa de blanco a textoPrincipal (oscuro):
-          // blanco sobre verdeVivo da apenas ~2.5:1 de contraste, muy poco
-          // para leer bien; textoPrincipal sobre verdeVivo da ~6:1, que sí
-          // funciona, así que el color completo no sacrifica legibilidad.
-          color: activo ? NVColors.verdeVivo : Colors.transparent,
+          // verdeMenu (el verde específico confirmado para menús, distinto
+          // de verdeVivo que cubre el resto del sitio) como relleno
+          // completo. El texto es textoPrincipal (oscuro): blanco encima
+          // de un verde tan claro sería casi ilegible.
+          color: activo ? NVColors.verdeMenu : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
           child: InkWell(
             borderRadius: BorderRadius.circular(6),

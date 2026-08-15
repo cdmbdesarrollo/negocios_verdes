@@ -238,13 +238,12 @@ class _BarraLateral extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Material(
-        // Relleno completo de verdeVivo en el ítem activo (no solo un
-        // tinte) -- pedido explícito. Ícono/texto pasan de blanco a
+        // verdeMenu (el verde específico confirmado para menús) como
+        // relleno completo del ítem activo. Ícono/texto pasan a
         // textoPrincipal SOLO en el activo (los inactivos se quedan
-        // blancos, siguen sobre el fondo oscuro de siempre): blanco sobre
-        // verdeVivo da ~2.5:1, muy poco para leer bien; textoPrincipal
-        // sobre verdeVivo da ~6:1.
-        color: activo ? NVColors.verdeVivo : Colors.transparent,
+        // blancos, siguen sobre el fondo oscuro de siempre) -- blanco
+        // sobre este verde tan claro sería casi ilegible.
+        color: activo ? NVColors.verdeMenu : Colors.transparent,
         borderRadius: BorderRadius.circular(10),
         child: InkWell(
           borderRadius: BorderRadius.circular(10),

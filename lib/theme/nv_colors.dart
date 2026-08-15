@@ -34,6 +34,13 @@ abstract final class NVColors {
   /// lo institucional (~2.5:1 vs. ~4:1 de [primary]).
   static const Color verdeVivo = Color(0xFF01BD32);
 
+  /// Segundo verde de campaña, confirmado por CDMB específicamente para los
+  /// menús (navbar público + sidebar admin) — distinto de [verdeVivo], que
+  /// cubre el resto del sitio (chips, botones, íconos). Mismo criterio de
+  /// contraste: su luminancia es alta (más aún que [verdeVivo]), así que va
+  /// siempre con texto oscuro encima, nunca blanco.
+  static const Color verdeMenu = Color(0xFF85C800);
+
   /// Azul de la franja superior obligatoria de GOV.CO — NO es parte de la
   /// paleta propia de la marca, es el color que trae la franja institucional
   /// de gov.co en la Sede Electrónica de la CDMB (de la que este sitio es
