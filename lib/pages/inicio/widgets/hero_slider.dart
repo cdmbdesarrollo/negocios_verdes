@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../../../theme/nv_colors.dart';
+
 /// Contenido de una diapositiva — dos variantes:
 /// - [SlideInfo.imagen]: banner subido desde /admin/apariencia (sin texto,
 ///   el banner ES la imagen), opcionalmente tocable.
@@ -44,18 +46,24 @@ class SlideInfo {
 class HeroSlider extends StatefulWidget {
   final List<SlideInfo> slides;
   final double altura;
+  final double anchoMaximo;
   final Duration intervalo;
 
   const HeroSlider({
     super.key,
     required this.slides,
-    // Vuelve a 300 -- pedido explícito de dejar la altura en la medida
-    // original del banner (1200x300, relación 4:1, el tamaño acordado con
-    // CDMB para pedirle a diseño). Se probaron 420 (se sentía "gigante") y
-    // 360 (punto medio) antes de esto; ahora que el slider solo muestra el
-    // banner real (sin diapositivas de fábrica de relleno, ver _slides en
-    // InicioPage), no hay motivo para desviarse de la medida acordada.
+    // 1200x300 (relación 4:1) es la medida acordada con CDMB para pedirle
+    // a diseño -- ahora el slider topa su propio ancho a esa misma medida
+    // (antes solo la altura, el ancho quedaba libre) para que la relación
+    // del contenedor calce casi exacta con la del banner real: con eso el
+    // recorte arriba/abajo que se venía reportando queda en unos pocos
+    // píxeles en vez de ~180px como con ancho completo de pantalla. Ya se
+    // había probado topar el ancho una vez (se descartó por verse
+    // "flotando" con márgenes vacíos a los lados) -- esta vez el fondo
+    // detrás del banner lleva color (ver build()), así esos márgenes se
+    // leen como marco, no como espacio roto.
     this.altura = 300,
+    this.anchoMaximo = 1200,
     this.intervalo = const Duration(seconds: 6),
   });
 
@@ -131,7 +139,17 @@ class _HeroSliderState extends State<HeroSlider> {
     if (widget.slides.isEmpty) return const SizedBox.shrink();
     final variasSlides = widget.slides.length > 1;
 
-    return SizedBox(
+    return Container(
+      width: double.infinity,
+      // Fondo detrás del banner topado en ancho -- la vez anterior que se
+      // probó topar el ancho, los márgenes a los lados mostraban el fondo
+      // crema de la página y se veía "flotando"/roto. Con un color de
+      // marca detrás, esos márgenes se leen como marco a propósito.
+      color: NVColors.primaryDark,
+      child: Center(
+        child: ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: widget.anchoMaximo),
+      child: SizedBox(
       height: widget.altura,
       child: Stack(
         children: [
@@ -215,6 +233,9 @@ class _HeroSliderState extends State<HeroSlider> {
             ),
           ],
         ],
+      ),
+      ),
+      ),
       ),
     );
   }
