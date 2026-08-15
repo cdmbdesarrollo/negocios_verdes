@@ -47,17 +47,19 @@ class ChipFiltro extends StatelessWidget {
         selected: seleccionado,
         onSelected: (_) => onTap(),
         backgroundColor: Colors.transparent,
-        selectedColor: NVColors.primaryLight,
+        // Relleno completo de verdeVivo al seleccionar (antes era un lavado
+        // pálido de primaryLight con solo el contorno marcando el estado)
+        // -- pedido explícito de que el color nuevo sea el relleno, no solo
+        // un borde. primaryDark como texto sigue funcionando: da buen
+        // contraste tanto sobre blanco/transparente (sin seleccionar) como
+        // sobre verdeVivo (seleccionado).
+        selectedColor: NVColors.verdeVivo,
         labelStyle: TextStyle(
           color: NVColors.primaryDark,
           fontWeight: seleccionado ? FontWeight.w600 : FontWeight.normal,
         ),
-        // verdeVivo cuando está seleccionado (no solo primary siempre) —
-        // el texto es primaryDark en los dos casos, así que no hay riesgo
-        // de contraste acá, es solo el contorno el que marca el estado.
         side: BorderSide(
           color: seleccionado ? NVColors.verdeVivo : NVColors.primary,
-          width: seleccionado ? 2 : 1,
         ),
         checkmarkColor: NVColors.primaryDark,
       );
@@ -67,19 +69,16 @@ class ChipFiltro extends StatelessWidget {
         selected: seleccionado,
         onSelected: (_) => onTap(),
         backgroundColor: NVColors.primaryLight,
-        selectedColor: NVColors.primary,
+        // Relleno completo de verdeVivo (no primary) al seleccionar --
+        // pedido explícito. El texto pasa de blanco a textoPrincipal: sobre
+        // verdeVivo, blanco da ~2.5:1 (muy poco), textoPrincipal da ~6:1.
+        selectedColor: NVColors.verdeVivo,
         labelStyle: TextStyle(
-          color: seleccionado ? Colors.white : NVColors.textoPrincipal,
+          color: NVColors.textoPrincipal,
           fontWeight: seleccionado ? FontWeight.w600 : FontWeight.normal,
         ),
-        // Anillo de verdeVivo sobre el relleno primary de siempre cuando
-        // está seleccionado — mismo criterio que el navbar y las tarjetas
-        // de categoría: el texto blanco se queda sobre primary (~4:1),
-        // verdeVivo entra solo como contorno.
-        side: seleccionado
-            ? const BorderSide(color: NVColors.verdeVivo, width: 2)
-            : BorderSide.none,
-        checkmarkColor: Colors.white,
+        side: BorderSide.none,
+        checkmarkColor: NVColors.textoPrincipal,
       );
     }
     // Alto MÍNIMO siempre (no solo cuando hay anchoMinimo), nunca fijo —

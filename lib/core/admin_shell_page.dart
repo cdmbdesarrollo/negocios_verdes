@@ -238,13 +238,13 @@ class _BarraLateral extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Material(
-        // verdeVivo en vez de blanco puro para el ítem activo — a esta
-        // opacidad baja sobre el fondo oscuro (primaryDark) el resultado
-        // se queda del lado oscuro, así que el texto/ícono blanco de
-        // siempre sigue teniendo buen contraste.
-        color: activo
-            ? NVColors.verdeVivo.withValues(alpha: 0.25)
-            : Colors.transparent,
+        // Relleno completo de verdeVivo en el ítem activo (no solo un
+        // tinte) -- pedido explícito. Ícono/texto pasan de blanco a
+        // textoPrincipal SOLO en el activo (los inactivos se quedan
+        // blancos, siguen sobre el fondo oscuro de siempre): blanco sobre
+        // verdeVivo da ~2.5:1, muy poco para leer bien; textoPrincipal
+        // sobre verdeVivo da ~6:1.
+        color: activo ? NVColors.verdeVivo : Colors.transparent,
         borderRadius: BorderRadius.circular(10),
         child: InkWell(
           borderRadius: BorderRadius.circular(10),
@@ -254,12 +254,15 @@ class _BarraLateral extends StatelessWidget {
             child: Row(
               children: [
                 Icon(icono,
-                    color: activo ? Colors.white : Colors.white70, size: 20),
+                    color: activo
+                        ? NVColors.textoPrincipal
+                        : Colors.white70,
+                    size: 20),
                 const SizedBox(width: 12),
                 Text(
                   titulo,
                   style: TextStyle(
-                    color: activo ? Colors.white : Colors.white70,
+                    color: activo ? NVColors.textoPrincipal : Colors.white70,
                     fontWeight: activo ? FontWeight.w600 : FontWeight.normal,
                     fontSize: 13.5,
                   ),

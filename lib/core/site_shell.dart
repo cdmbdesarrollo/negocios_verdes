@@ -163,19 +163,13 @@ class _SiteShellState extends State<SiteShell> {
       child: Padding(
         padding: const EdgeInsets.only(right: 4, bottom: 6),
         child: Material(
-          color: activo ? NVColors.primary : Colors.transparent,
-          // Anillo de verdeVivo en el ítem activo — el relleno y el texto
-          // blanco se quedan igual que siempre (buen contraste, ~4:1); el
-          // verde nuevo entra como borde, no como fondo, así no hereda el
-          // problema de contraste que sí tendría el texto blanco encima
-          // suyo directamente.
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(6),
-            side: BorderSide(
-              color: activo ? NVColors.verdeVivo : Colors.transparent,
-              width: 2,
-            ),
-          ),
+          // Relleno completo de verdeVivo (no solo un borde) -- pedido
+          // explícito. El texto pasa de blanco a textoPrincipal (oscuro):
+          // blanco sobre verdeVivo da apenas ~2.5:1 de contraste, muy poco
+          // para leer bien; textoPrincipal sobre verdeVivo da ~6:1, que sí
+          // funciona, así que el color completo no sacrifica legibilidad.
+          color: activo ? NVColors.verdeVivo : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
           child: InkWell(
             borderRadius: BorderRadius.circular(6),
             onTap: () => context.go(enlace.ruta),
@@ -184,7 +178,7 @@ class _SiteShellState extends State<SiteShell> {
               child: Text(
                 enlace.titulo,
                 style: TextStyle(
-                  color: activo ? Colors.white : NVColors.textoPrincipal,
+                  color: NVColors.textoPrincipal,
                   fontWeight: activo ? FontWeight.w600 : FontWeight.normal,
                   fontSize: 13,
                 ),
