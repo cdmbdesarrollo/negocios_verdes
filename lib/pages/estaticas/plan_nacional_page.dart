@@ -47,7 +47,8 @@ class _PlanNacionalPageState extends State<PlanNacionalPage> {
             // sobraba acá) y con menos padding vertical (antes 40) para
             // que la franja ocupe menos espacio.
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            decoration: const BoxDecoration(gradient: NVColors.gradientHero),
+            decoration:
+                const BoxDecoration(gradient: NVColors.gradientVerdeVivo),
             child: Column(
               children: [
                 const Text(
