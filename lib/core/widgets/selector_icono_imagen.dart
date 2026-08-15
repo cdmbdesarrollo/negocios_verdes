@@ -101,7 +101,8 @@ class _SelectorIconoImagenState extends State<SelectorIconoImagen> {
                       child:
                           CachedNetworkImage(imageUrl: _url!, fit: BoxFit.contain),
                     )
-                  : const Icon(Icons.image_outlined, color: NVColors.primary)),
+                  : const Icon(Icons.image_outlined,
+                      color: NVColors.verdeVivo)),
         ),
         const SizedBox(width: 10),
         Expanded(

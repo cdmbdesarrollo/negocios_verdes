@@ -205,7 +205,8 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
                   : Container(
                       color: NVColors.primaryLight,
                       child:
-                          const Icon(Icons.storefront, color: NVColors.primary),
+                          const Icon(Icons.storefront,
+                              color: NVColors.verdeVivo),
                     ),
             ),
           ),

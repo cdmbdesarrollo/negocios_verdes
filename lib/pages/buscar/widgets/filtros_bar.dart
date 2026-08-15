@@ -207,7 +207,8 @@ class _FiltrosBarState extends State<FiltrosBar> {
                   hintText: 'Buscar negocios verdes (ej. ganadería sostenible, '
                       'turismo de naturaleza...)',
                   hintStyle: const TextStyle(fontSize: 13.5),
-                  prefixIcon: const Icon(Icons.search, color: NVColors.primary),
+                  prefixIcon:
+                      const Icon(Icons.search, color: NVColors.verdeVivo),
                   suffixIcon: widget.filtro.query.isNotEmpty
                       ? IconButton(
                           tooltip: 'Borrar búsqueda',
@@ -231,8 +232,8 @@ class _FiltrosBarState extends State<FiltrosBar> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(26),
-                    borderSide:
-                        const BorderSide(color: NVColors.primary, width: 1.5),
+                    borderSide: const BorderSide(
+                        color: NVColors.verdeVivo, width: 1.5),
                   ),
                 ),
                 onChanged: (v) =>

@@ -78,7 +78,7 @@ class NegocioCard extends StatelessWidget {
                     ? CachedNetworkImage(
                         imageUrl: negocio.fotoPortadaUrl!, fit: BoxFit.contain)
                     : const Icon(Icons.storefront,
-                        color: NVColors.primary, size: 32),
+                        color: NVColors.verdeVivo, size: 32),
               ),
               Expanded(
                   child: Padding(
@@ -104,7 +104,7 @@ class NegocioCard extends StatelessWidget {
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
                                 icon: const Icon(Icons.place_outlined,
-                                    size: 20, color: NVColors.primary),
+                                    size: 20, color: NVColors.verdeVivo),
                                 tooltip: 'Ver en el mapa',
                                 onPressed: onVerEnMapa,
                               ),

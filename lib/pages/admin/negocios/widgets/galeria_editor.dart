@@ -212,7 +212,7 @@ class _GaleriaEditorState extends State<GaleriaEditor> {
                     ? CachedNetworkImage(imageUrl: _portadaUrl!, fit: BoxFit.contain)
                     : const Center(
                         child: Icon(Icons.add_a_photo_outlined,
-                            size: 40, color: NVColors.primary),
+                            size: 40, color: NVColors.verdeVivo),
                       )),
           ),
           Positioned.fill(
@@ -300,7 +300,7 @@ class _GaleriaEditorState extends State<GaleriaEditor> {
               ? const Center(child: CircularProgressIndicator())
               : const Center(
                   child: Icon(Icons.add_photo_alternate_outlined,
-                      color: NVColors.primary, size: 32)),
+                      color: NVColors.verdeVivo, size: 32)),
         ),
       ),
     );

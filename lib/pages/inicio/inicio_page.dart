@@ -424,7 +424,7 @@ class _InicioPageState extends State<InicioPage> {
               constraints: const BoxConstraints(maxWidth: 580),
               child: Material(
                 elevation: 6,
-                shadowColor: NVColors.primary.withValues(alpha: 0.25),
+                shadowColor: NVColors.verdeVivo.withValues(alpha: 0.25),
                 borderRadius: BorderRadius.circular(32),
                 child: RawAutocomplete<SugerenciaBusqueda>(
                   textEditingController: _busquedaCtrl,
@@ -449,23 +449,25 @@ class _InicioPageState extends State<InicioPage> {
                         hintText: 'Busca por Negocio Verde',
                         hintStyle: const TextStyle(
                             color: NVColors.textoSecundario, fontSize: 14),
-                        prefixIcon:
-                            const Icon(Icons.search, color: NVColors.primary),
+                        prefixIcon: const Icon(Icons.search,
+                            color: NVColors.verdeVivo),
                         contentPadding: const EdgeInsets.symmetric(vertical: 18),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(32),
                           borderSide: BorderSide(
-                              color: NVColors.primary.withValues(alpha: 0.15)),
+                              color:
+                                  NVColors.verdeVivo.withValues(alpha: 0.15)),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(32),
                           borderSide: BorderSide(
-                              color: NVColors.primary.withValues(alpha: 0.15)),
+                              color:
+                                  NVColors.verdeVivo.withValues(alpha: 0.15)),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(32),
                           borderSide: const BorderSide(
-                              color: NVColors.primary, width: 1.5),
+                              color: NVColors.verdeVivo, width: 1.5),
                         ),
                         filled: true,
                         fillColor: Colors.white,
@@ -474,7 +476,10 @@ class _InicioPageState extends State<InicioPage> {
                         suffixIcon: Padding(
                           padding: const EdgeInsets.all(6),
                           child: Material(
-                            color: NVColors.primary,
+                            // Relleno completo de verdeVivo -- el ícono pasa
+                            // de blanco a textoPrincipal por la misma razón
+                            // de contraste que el resto de esta ronda.
+                            color: NVColors.verdeVivo,
                             shape: const CircleBorder(),
                             child: InkWell(
                               onTap: () => _buscar(),
@@ -485,7 +490,8 @@ class _InicioPageState extends State<InicioPage> {
                                 child: const Padding(
                                   padding: EdgeInsets.all(10),
                                   child: Icon(Icons.arrow_forward,
-                                      color: Colors.white, size: 20),
+                                      color: NVColors.textoPrincipal,
+                                      size: 20),
                                 ),
                               ),
                             ),

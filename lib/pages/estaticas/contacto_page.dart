@@ -82,7 +82,7 @@ class _ContactoPageState extends State<ContactoPage> {
                       onTap: () => _abrir('https://www.cdmb.gov.co'),
                     ),
                     const SizedBox(height: 12),
-                    const RedesSocialesCdmb(color: NVColors.primary),
+                    const RedesSocialesCdmb(color: NVColors.verdeVivo),
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(16),
@@ -123,7 +123,7 @@ class _ContactoPageState extends State<ContactoPage> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icono, color: NVColors.primary, size: 20),
+            Icon(icono, color: NVColors.verdeVivo, size: 20),
             const SizedBox(width: 12),
             Expanded(child: Text(texto, style: const TextStyle(fontSize: 15))),
           ],

@@ -301,13 +301,15 @@ class _PlanNacionalPageState extends State<PlanNacionalPage> {
             height: 24,
             alignment: Alignment.center,
             decoration: const BoxDecoration(
-              color: NVColors.primary,
+              color: NVColors.verdeVivo,
               shape: BoxShape.circle,
             ),
             child: Text(
               '$numero',
               style: const TextStyle(
-                  color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                  color: NVColors.textoPrincipal,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(width: 10),
@@ -334,7 +336,7 @@ class _PlanNacionalPageState extends State<PlanNacionalPage> {
       width: 200,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: NVColors.primary,
+        color: NVColors.verdeVivo,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -342,10 +344,13 @@ class _PlanNacionalPageState extends State<PlanNacionalPage> {
         children: [
           Text(numero,
               style: const TextStyle(
-                  color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                  color: NVColors.textoPrincipal,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
           Text(etiqueta,
-              style: const TextStyle(color: Colors.white70, fontSize: 12.5)),
+              style: const TextStyle(
+                  color: NVColors.textoPrincipal, fontSize: 12.5)),
         ],
       ),
     );

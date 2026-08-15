@@ -37,7 +37,7 @@ class ResultadosLista extends StatelessWidget {
                 ),
                 alignment: Alignment.center,
                 child: const Icon(Icons.search_off,
-                    color: NVColors.primary, size: 30),
+                    color: NVColors.verdeVivo, size: 30),
               ),
               const SizedBox(height: 16),
               const Text(

@@ -288,7 +288,7 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
     final logo = negocio.fotoPortadaUrl != null && negocio.fotoPortadaUrl!.isNotEmpty
         ? CachedNetworkImage(
             imageUrl: negocio.fotoPortadaUrl!, fit: BoxFit.contain)
-        : const Icon(Icons.storefront, size: 64, color: NVColors.primary);
+        : const Icon(Icons.storefront, size: 64, color: NVColors.verdeVivo);
 
     // Blanco, no verde: casi todos los logos ya traen su propio fondo
     // blanco — un tinte verde detrás se veía como un recuadro desencajado
@@ -580,7 +580,7 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.facebook, color: NVColors.primary),
+                leading: const Icon(Icons.facebook, color: NVColors.verdeVivo),
                 title: const Text('Facebook'),
                 onTap: () {
                   Navigator.pop(contextHoja);

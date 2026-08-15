@@ -76,7 +76,8 @@ class PiePagina extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 2),
-                  const RedesSocialesCdmb(color: NVColors.primary, tamano: 20),
+                  const RedesSocialesCdmb(
+                      color: NVColors.verdeVivo, tamano: 20),
                 ],
               ),
             ],
@@ -265,7 +266,7 @@ class _FilaDato extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icono, color: NVColors.primary, size: 16),
+          Icon(icono, color: NVColors.verdeVivo, size: 16),
           const SizedBox(width: 10),
           Expanded(
             child: Text(

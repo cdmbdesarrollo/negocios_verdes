@@ -121,12 +121,12 @@ Widget vistaOpcionesBusqueda(
                         ] else if (sugerencia.tipo ==
                             TipoSugerencia.negocio) ...[
                           const Icon(Icons.storefront_outlined,
-                              size: 16, color: NVColors.primary),
+                              size: 16, color: NVColors.verdeVivo),
                           const SizedBox(width: 8),
                         ] else if (sugerencia.tipo ==
                             TipoSugerencia.municipio) ...[
                           const Icon(Icons.place_outlined,
-                              size: 16, color: NVColors.primary),
+                              size: 16, color: NVColors.verdeVivo),
                           const SizedBox(width: 8),
                         ],
                         Expanded(
