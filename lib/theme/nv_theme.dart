@@ -91,7 +91,12 @@ abstract final class NVTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: NVColors.primaryDark,
-          side: const BorderSide(color: NVColors.primary),
+          // verdeVivo en el contorno (no primary) -- todos los
+          // OutlinedButton del sitio comparten este estilo, así que es
+          // apalancamiento alto para la paleta nueva; el texto se queda en
+          // primaryDark, sin ningún riesgo de contraste (un borde no
+          // necesita el mismo nivel que texto).
+          side: const BorderSide(color: NVColors.verdeVivo),
           textStyle: GoogleFonts.workSans(
               fontWeight: FontWeight.w600, fontSize: 14.5),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
@@ -125,7 +130,10 @@ abstract final class NVTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: NVColors.primary, width: 2),
+          // verdeVivo al enfocar un campo -- mismo criterio que el borde
+          // de OutlinedButton arriba, aplica a todos los formularios que
+          // no fijan su propio estilo (sobre todo admin).
+          borderSide: const BorderSide(color: NVColors.verdeVivo, width: 2),
         ),
       ),
       dividerTheme: const DividerThemeData(

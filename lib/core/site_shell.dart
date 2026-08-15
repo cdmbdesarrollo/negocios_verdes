@@ -63,7 +63,9 @@ class _SiteShellState extends State<SiteShell> {
               children: [
                 const _FranjaGovCo(),
                 _encabezado(context, ancha, rutaActual),
-                Container(height: 3, color: NVColors.primary),
+                // Franja puramente decorativa, sin texto encima -- verdeVivo
+                // acá no tiene ningún riesgo de contraste.
+                Container(height: 3, color: NVColors.verdeVivo),
               ],
             ),
           ),

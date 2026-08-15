@@ -23,7 +23,9 @@ class PinNegocioMapa extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = destacado ? NVColors.accent : NVColors.primary;
+    // El pin es un anillo de color sobre foto/blanco -- sin texto encima,
+    // así que no hereda el problema de contraste de verdeVivo.
+    final color = destacado ? NVColors.accent : NVColors.verdeVivo;
     final tieneFoto = fotoPortadaUrl != null && fotoPortadaUrl!.isNotEmpty;
     return Container(
       width: tamano,
