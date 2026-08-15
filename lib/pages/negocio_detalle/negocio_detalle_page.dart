@@ -458,7 +458,7 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icono, size: 18, color: NVColors.primaryDark),
+          Icon(icono, size: 18, color: NVColors.verdeVivo),
           const SizedBox(width: 10),
           Expanded(
             child: SelectableText(valor, style: const TextStyle(fontSize: 14)),
