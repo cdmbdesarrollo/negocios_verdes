@@ -91,12 +91,12 @@ abstract final class NVTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: NVColors.primaryDark,
-          // verdeVivo en el contorno (no primary) -- todos los
-          // OutlinedButton del sitio comparten este estilo, así que es
-          // apalancamiento alto para la paleta nueva; el texto se queda en
+          // verdeMenu en el contorno (no primary ni verdeVivo) -- estos son
+          // botones reales (OutlinedButton), pedido explícito de que los
+          // botones lleven ese verde específico. El texto se queda en
           // primaryDark, sin ningún riesgo de contraste (un borde no
           // necesita el mismo nivel que texto).
-          side: const BorderSide(color: NVColors.verdeVivo),
+          side: const BorderSide(color: NVColors.verdeMenu),
           textStyle: GoogleFonts.workSans(
               fontWeight: FontWeight.w600, fontSize: 14.5),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),

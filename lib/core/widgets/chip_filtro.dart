@@ -47,19 +47,20 @@ class ChipFiltro extends StatelessWidget {
         selected: seleccionado,
         onSelected: (_) => onTap(),
         backgroundColor: Colors.transparent,
-        // Relleno completo de verdeVivo al seleccionar (antes era un lavado
+        // Relleno completo de verdeMenu al seleccionar (antes era un lavado
         // pálido de primaryLight con solo el contorno marcando el estado)
-        // -- pedido explícito de que el color nuevo sea el relleno, no solo
-        // un borde. primaryDark como texto sigue funcionando: da buen
-        // contraste tanto sobre blanco/transparente (sin seleccionar) como
-        // sobre verdeVivo (seleccionado).
-        selectedColor: NVColors.verdeVivo,
+        // -- estos chips son "los botones del buscador", así que llevan el
+        // mismo verde que los demás botones/menús, no verdeVivo. primaryDark
+        // como texto sigue funcionando: da buen contraste tanto sobre
+        // blanco/transparente (sin seleccionar) como sobre verdeMenu
+        // (seleccionado).
+        selectedColor: NVColors.verdeMenu,
         labelStyle: TextStyle(
           color: NVColors.primaryDark,
           fontWeight: seleccionado ? FontWeight.w600 : FontWeight.normal,
         ),
         side: BorderSide(
-          color: seleccionado ? NVColors.verdeVivo : NVColors.primary,
+          color: seleccionado ? NVColors.verdeMenu : NVColors.primary,
         ),
         checkmarkColor: NVColors.primaryDark,
       );
@@ -69,10 +70,12 @@ class ChipFiltro extends StatelessWidget {
         selected: seleccionado,
         onSelected: (_) => onTap(),
         backgroundColor: NVColors.primaryLight,
-        // Relleno completo de verdeVivo (no primary) al seleccionar --
-        // pedido explícito. El texto pasa de blanco a textoPrincipal: sobre
-        // verdeVivo, blanco da ~2.5:1 (muy poco), textoPrincipal da ~6:1.
-        selectedColor: NVColors.verdeVivo,
+        // Relleno completo de verdeMenu (no primary) al seleccionar -- estos
+        // chips son "los botones del buscador", pedido explícito de que
+        // lleven el mismo verde que menús/botones. El texto pasa de blanco
+        // a textoPrincipal: blanco encima de este verde es casi ilegible,
+        // textoPrincipal da ~7:1.
+        selectedColor: NVColors.verdeMenu,
         labelStyle: TextStyle(
           color: NVColors.textoPrincipal,
           fontWeight: seleccionado ? FontWeight.w600 : FontWeight.normal,

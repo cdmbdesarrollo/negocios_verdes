@@ -476,10 +476,12 @@ class _InicioPageState extends State<InicioPage> {
                         suffixIcon: Padding(
                           padding: const EdgeInsets.all(6),
                           child: Material(
-                            // Relleno completo de verdeVivo -- el ícono pasa
-                            // de blanco a textoPrincipal por la misma razón
-                            // de contraste que el resto de esta ronda.
-                            color: NVColors.verdeVivo,
+                            // verdeMenu (no verdeVivo) -- este círculo es un
+                            // botón real, pedido explícito de que los
+                            // botones del buscador lleven el mismo verde
+                            // que menús/chips. El ícono es textoPrincipal
+                            // (oscuro), blanco encima sería casi ilegible.
+                            color: NVColors.verdeMenu,
                             shape: const CircleBorder(),
                             child: InkWell(
                               onTap: () => _buscar(),
