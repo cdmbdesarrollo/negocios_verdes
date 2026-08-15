@@ -52,7 +52,13 @@ class ChipFiltro extends StatelessWidget {
           color: NVColors.primaryDark,
           fontWeight: seleccionado ? FontWeight.w600 : FontWeight.normal,
         ),
-        side: const BorderSide(color: NVColors.primary),
+        // verdeVivo cuando está seleccionado (no solo primary siempre) —
+        // el texto es primaryDark en los dos casos, así que no hay riesgo
+        // de contraste acá, es solo el contorno el que marca el estado.
+        side: BorderSide(
+          color: seleccionado ? NVColors.verdeVivo : NVColors.primary,
+          width: seleccionado ? 2 : 1,
+        ),
         checkmarkColor: NVColors.primaryDark,
       );
     } else {
@@ -66,7 +72,13 @@ class ChipFiltro extends StatelessWidget {
           color: seleccionado ? Colors.white : NVColors.textoPrincipal,
           fontWeight: seleccionado ? FontWeight.w600 : FontWeight.normal,
         ),
-        side: BorderSide.none,
+        // Anillo de verdeVivo sobre el relleno primary de siempre cuando
+        // está seleccionado — mismo criterio que el navbar y las tarjetas
+        // de categoría: el texto blanco se queda sobre primary (~4:1),
+        // verdeVivo entra solo como contorno.
+        side: seleccionado
+            ? const BorderSide(color: NVColors.verdeVivo, width: 2)
+            : BorderSide.none,
         checkmarkColor: Colors.white,
       );
     }
