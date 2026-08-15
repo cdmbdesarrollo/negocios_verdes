@@ -386,14 +386,15 @@ class _InicioPageState extends State<InicioPage> {
             scaleY: 1.1,
             alignment: Alignment.topCenter,
             child: const OndaDivisora(
-                colorFondo: NVColors.fondo, colorOnda: NVColors.primary),
+                colorFondo: NVColors.fondo, colorOnda: NVColors.verdeVivo),
           ),
           entrada(_seccionEstadisticas(context)),
           Transform.scale(
             scaleY: 1.1,
             alignment: Alignment.topCenter,
             child: const OndaDivisora(
-                colorFondo: NVColors.primary, colorOnda: NVColors.primaryLight),
+                colorFondo: NVColors.verdeVivo,
+                colorOnda: NVColors.primaryLight),
           ),
           entrada(_seccionQueSon(context)),
           const PiePagina(),
@@ -520,7 +521,7 @@ class _InicioPageState extends State<InicioPage> {
   Widget _seccionEstadisticas(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: NVColors.primary,
+      color: NVColors.verdeVivo,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
       child: Center(
         child: ConstrainedBox(
@@ -551,7 +552,7 @@ class _InicioPageState extends State<InicioPage> {
       width: 140,
       child: Column(
         children: [
-          Icon(icono, color: Colors.white.withValues(alpha: 0.85), size: 22),
+          Icon(icono, color: NVColors.textoPrincipal, size: 22),
           const SizedBox(height: 6),
           _NumeroAnimado(valor: valor),
           const SizedBox(height: 4),
@@ -559,7 +560,7 @@ class _InicioPageState extends State<InicioPage> {
             etiqueta,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Colors.white,
+              color: NVColors.textoPrincipal,
               fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
@@ -906,7 +907,7 @@ class _InicioPageState extends State<InicioPage> {
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
-            child: const Icon(Icons.eco, color: NVColors.primary, size: 30),
+            child: const Icon(Icons.eco, color: NVColors.verdeVivo, size: 30),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -1000,7 +1001,7 @@ class _InicioPageState extends State<InicioPage> {
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
-              child: Icon(icono, color: NVColors.primary, size: 24),
+              child: Icon(icono, color: NVColors.verdeVivo, size: 24),
             ),
             const SizedBox(height: 14),
             Text(titulo,
@@ -1035,7 +1036,7 @@ class _NumeroAnimado extends StatelessWidget {
       builder: (context, valorAnimado, _) => Text(
         valorAnimado.round().toString(),
         style: const TextStyle(
-          color: Colors.white,
+          color: NVColors.textoPrincipal,
           fontSize: 34,
           fontWeight: FontWeight.bold,
           height: 1,

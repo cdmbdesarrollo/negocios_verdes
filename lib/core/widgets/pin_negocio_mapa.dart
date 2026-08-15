@@ -50,7 +50,7 @@ class PinNegocioMapa extends StatelessWidget {
                 color: NVColors.primaryLight,
                 alignment: Alignment.center,
                 child: Icon(Icons.storefront,
-                    size: tamano * 0.5, color: NVColors.primary),
+                    size: tamano * 0.5, color: NVColors.verdeVivo),
               ),
       ),
     );

@@ -276,7 +276,7 @@ class _AdminAparienciaPageState extends State<AdminAparienciaPage> {
                                 imageUrl: url, fit: BoxFit.contain),
                           )
                         : const Icon(Icons.image_outlined,
-                            size: 28, color: NVColors.primary)),
+                            size: 28, color: NVColors.verdeVivo)),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -676,7 +676,7 @@ class _DialogoBannerState extends State<_DialogoBanner> {
                       imageUrl: _imagenUrl!, fit: BoxFit.cover)
                   : const Center(
                       child: Icon(Icons.add_photo_alternate_outlined,
-                          size: 32, color: NVColors.primary),
+                          size: 32, color: NVColors.verdeVivo),
                     )),
         ),
       ),
