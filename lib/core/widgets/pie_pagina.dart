@@ -110,6 +110,11 @@ class PiePagina extends StatelessWidget {
           'en los 13 municipios de la jurisdicción CDMB.',
           style: TextStyle(color: NVColors.textoSecundario, fontSize: 13),
         ),
+        const SizedBox(height: 10),
+        Image.asset(
+          'assets/images/iconografia/logo_feria_nv_diagonal.png',
+          height: 24,
+        ),
         const SizedBox(height: 18),
         const Divider(color: NVColors.borde, height: 1),
         const SizedBox(height: 16),
@@ -154,6 +159,11 @@ class PiePagina extends StatelessWidget {
                 'Ventanilla de Negocios Verdes · Directorio de negocios '
                 'verdes en los 13 municipios de la jurisdicción CDMB.',
                 style: TextStyle(color: NVColors.textoSecundario, fontSize: 13),
+              ),
+              const SizedBox(height: 10),
+              Image.asset(
+                'assets/images/iconografia/logo_feria_nv_diagonal.png',
+                height: 24,
               ),
             ],
           ),

@@ -59,3 +59,7 @@ flutter:
   # (idealmente con fondo transparente) sirve, no hace falta tocar código.
   assets:
     - assets/images/logo.png
+    # Iconografía de marca (colibrí, frailejón, oso de anteojos, logos de
+    # CDMB/Negocios Verdes/Feria Regional) para acentos decorativos en
+    # varias páginas -- ver cada Image.asset para el porqué de cada spot.
+    - assets/images/iconografia/

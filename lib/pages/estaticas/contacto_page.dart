@@ -43,10 +43,23 @@ class _ContactoPageState extends State<ContactoPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Contacto',
-                      style:
-                          TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Contacto',
+                            style: TextStyle(
+                                fontSize: 26, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        // Colibrí (iconografía de marca) -- esta página es
+                        // solo texto/íconos de Material, un toque de color
+                        // ayuda a que no se sienta tan "formulario".
+                        Image.asset(
+                          'assets/images/iconografia/colibri_2.png',
+                          height: 56,
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     const Text(

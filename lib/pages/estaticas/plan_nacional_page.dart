@@ -123,6 +123,18 @@ class _PlanNacionalPageState extends State<PlanNacionalPage> {
                     ),
                     const SizedBox(height: 8),
                     _seccion('Meta a 2030'),
+                    // Frailejón (iconografía de marca) centrado sobre las
+                    // cifras -- mismo tratamiento que la franja de
+                    // estadísticas del inicio, en flujo normal (nunca
+                    // superpuesto) para no arriesgar overlap en pantallas
+                    // angostas.
+                    Center(
+                      child: Image.asset(
+                        'assets/images/iconografia/frailejon_2.png',
+                        height: 64,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     _filaMetas(context),
                     const SizedBox(height: 8),
                     _seccion('Tres enfoques'),

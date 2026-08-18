@@ -36,8 +36,15 @@ class ResultadosLista extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
-                child: const Icon(Icons.search_off,
-                    color: NVColors.verdeVivo, size: 30),
+                // Oso de anteojos (iconografía de marca) en vez del ícono
+                // genérico -- misma idea del badge, pero con algo de
+                // personalidad para un estado que de otro modo es solo
+                // texto vacío.
+                child: Image.asset(
+                  'assets/images/iconografia/oso_anteojos_2.png',
+                  width: 42,
+                  height: 42,
+                ),
               ),
               const SizedBox(height: 16),
               const Text(

@@ -538,10 +538,22 @@ class _InicioPageState extends State<InicioPage> {
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 820),
-          child: Wrap(
-            alignment: WrapAlignment.spaceEvenly,
-            runSpacing: 20,
+          child: Column(
             children: [
+              // Mascota (iconografía de marca) en flujo normal, nunca
+              // superpuesta -- un Positioned en una esquina se solapaba con
+              // las cifras en pantallas angostas, donde el Wrap ocupa todo
+              // el ancho disponible (mismo tipo de bug que ya se corrigió
+              // esta sesión en el HeroSlider).
+              Image.asset(
+                'assets/images/iconografia/oso_anteojos_1.png',
+                height: 64,
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                alignment: WrapAlignment.spaceEvenly,
+                runSpacing: 20,
+                children: [
               _estadistica(
                   Icons.location_on_outlined, 'Municipios', kMunicipios.length),
               _estadistica(
@@ -552,6 +564,8 @@ class _InicioPageState extends State<InicioPage> {
                   _actividades.length),
               _estadistica(
                   Icons.storefront_outlined, 'Negocios verdes', _totalNegocios),
+                ],
+              ),
             ],
           ),
         ),
@@ -919,7 +933,14 @@ class _InicioPageState extends State<InicioPage> {
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
-            child: const Icon(Icons.eco, color: NVColors.verdeVivo, size: 30),
+            // Frailejón (iconografía de marca) en vez del ícono genérico de
+            // hoja -- especie insignia del páramo, más propia que un ícono
+            // de Material acá.
+            child: Image.asset(
+              'assets/images/iconografia/frailejon_1.png',
+              width: 34,
+              height: 34,
+            ),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -981,6 +1002,11 @@ class _InicioPageState extends State<InicioPage> {
             onPressed: () => context.go('/nosotros'),
             icon: const Icon(Icons.arrow_forward, size: 18),
             label: const Text('Conocer más'),
+          ),
+          const SizedBox(height: 28),
+          Image.asset(
+            'assets/images/iconografia/logo_feria_nv.png',
+            height: 48,
           ),
         ],
       ),

@@ -111,15 +111,30 @@ class _NosotrosPageState extends State<NosotrosPage> {
                     ),
                     Padding(
                       padding: const EdgeInsets.only(bottom: 20),
-                      child: Text(
-                        '— Definición oficial, Plan Nacional de Negocios '
-                        'Verdes 2022-2030 (Ministerio de Ambiente y '
-                        'Desarrollo Sostenible)',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontStyle: FontStyle.italic,
-                          color: NVColors.textoSecundario,
-                        ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Logo oficial del programa (iconografía de
+                          // marca) junto a la cita -- refuerza que la
+                          // definición de arriba es textual, no redactada.
+                          Image.asset(
+                            'assets/images/iconografia/logo_negocios_verdes.png',
+                            height: 40,
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Text(
+                              '— Definición oficial, Plan Nacional de '
+                              'Negocios Verdes 2022-2030 (Ministerio de '
+                              'Ambiente y Desarrollo Sostenible)',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontStyle: FontStyle.italic,
+                                color: NVColors.textoSecundario,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const Text(
