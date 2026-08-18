@@ -3,13 +3,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:negocios_verdes_cdmb/pages/inicio/widgets/hero_slider.dart';
 import 'package:negocios_verdes_cdmb/theme/nv_colors.dart';
 
-// Regresión de un bug real reportado en producción: en mobile (S22,
-// Motorola) el banner se veía "recortado"/con zoom. La causa era la altura
-// fija (300) del slider sin importar el ancho de pantalla -- al angostarse
-// en mobile, ese contenido (ícono+título+subtítulo+botón, pensado para
-// ~300px) desbordaba (RenderFlex overflow real, capturado en consola al
-// probar con el servidor de desarrollo). Este test fija un viewport angosto
-// y confirma que ninguna diapositiva de fábrica desborda.
+// Regresión de un bug real reportado en producción: con el ancho angosto de
+// un celular, el subtítulo de una diapositiva de fábrica envuelve a más
+// líneas que en desktop -- ese contenido (ícono+título+subtítulo+botón)
+// puede terminar necesitando más alto que los 300px fijos del slider
+// (RenderFlex overflow real, capturado en consola al probar con el servidor
+// de desarrollo). Este test fija un viewport angosto y confirma que ninguna
+// diapositiva de fábrica desborda (ver LayoutBuilder+SingleChildScrollView
+// en hero_slider.dart).
 void main() {
   testWidgets(
       'diapositiva de fábrica no desborda en un marco angosto (mobile)',

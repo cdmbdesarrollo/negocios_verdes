@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:image_picker/image_picker.dart';
 
@@ -9,6 +10,16 @@ const int kMaxBytesImagen = 1 * 1024 * 1024; // 1 MB
 /// más por naturaleza que un logo o un ícono, así que su tope es más alto
 /// que el resto de las imágenes del sitio (pedido explícito).
 const int kMaxBytesBanner = 1536 * 1024; // 1.5 MB
+/// Lado más largo permitido, en píxeles reales de la imagen (no bytes) --
+/// un JPEG muy comprimido puede pesar poco pero medir decenas de miles de
+/// píxeles de lado. Pasó en producción: un banner de 10000x2639 px pesaba
+/// 1.4 MB (pasaba el tope de bytes sin problema) pero no renderizaba en
+/// varios celulares reales porque excede el tamaño máximo de textura que
+/// soporta su GPU -- se veía perfecto en escritorio/emulador (GPUs más
+/// potentes) y en blanco en el teléfono. 2400px cubre de sobra un banner a
+/// 1200px de ancho mostrado a densidad 2x (retina) y queda bien por debajo
+/// del límite de textura de prácticamente cualquier GPU real.
+const int kMaxLadoPx = 2400;
 const Set<String> _extensionesNoSoportadas = {'heic', 'heif'};
 
 class ImagenElegida {
@@ -47,10 +58,33 @@ Future<ImagenElegida?> elegirImagenValidada({
     return null;
   }
 
+  final errorDimensiones = await _validarDimensiones(bytes);
+  if (errorDimensiones != null) {
+    onError(errorDimensiones);
+    return null;
+  }
+
   return ImagenElegida(
     bytes: bytes,
     extension: _extensionFinal(bytes, extensionOriginal),
   );
+}
+
+/// null si la imagen mide lo suficientemente poco como para mostrarse en
+/// cualquier GPU real; el mensaje de error (listo para [onError]) si no.
+Future<String?> _validarDimensiones(Uint8List bytes) async {
+  final codec = await ui.instantiateImageCodec(bytes);
+  final frame = await codec.getNextFrame();
+  final ancho = frame.image.width;
+  final alto = frame.image.height;
+  frame.image.dispose();
+  codec.dispose();
+  if (ancho > kMaxLadoPx || alto > kMaxLadoPx) {
+    return 'La imagen mide ${ancho}x$alto px (el máximo es ${kMaxLadoPx}px '
+        'de lado) — algunos celulares no la mostrarían. Reduce el tamaño '
+        'e intenta de nuevo.';
+  }
+  return null;
 }
 
 String _formatoMb(int bytes) {
@@ -93,6 +127,10 @@ Future<List<ImagenElegida>> elegirImagenesValidadas({
       rechazadas++;
       continue;
     }
+    if (await _validarDimensiones(bytes) != null) {
+      rechazadas++;
+      continue;
+    }
     validas.add(ImagenElegida(
       bytes: bytes,
       extension: _extensionFinal(bytes, extensionOriginal),
@@ -105,7 +143,7 @@ Future<List<ImagenElegida>> elegirImagenesValidadas({
   if (rechazadas > 0) {
     onError(
         '$rechazadas imagen${rechazadas == 1 ? '' : 'es'} no se ${rechazadas == 1 ? 'subió' : 'subieron'} '
-        '(formato HEIC/HEIF o pesa más de 1 MB).');
+        '(formato HEIC/HEIF, pesa más de 1 MB, o mide más de ${kMaxLadoPx}px de lado).');
   }
   return validas;
 }

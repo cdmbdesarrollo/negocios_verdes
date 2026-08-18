@@ -54,24 +54,25 @@ class SlideInfo {
 class HeroSlider extends StatefulWidget {
   final List<SlideInfo> slides;
   final double altura;
-  final double anchoMaximo;
   final Duration intervalo;
 
   const HeroSlider({
     super.key,
     required this.slides,
-    // 1200x300 (relación 4:1) es la medida acordada con CDMB para pedirle
-    // a diseño -- ahora el slider topa su propio ancho a esa misma medida
-    // (antes solo la altura, el ancho quedaba libre) para que la relación
-    // del contenedor calce casi exacta con la del banner real: con eso el
-    // recorte arriba/abajo que se venía reportando queda en unos pocos
-    // píxeles en vez de ~180px como con ancho completo de pantalla. Ya se
-    // había probado topar el ancho una vez (se descartó por verse
-    // "flotando" con márgenes vacíos a los lados) -- esta vez el fondo
-    // detrás del banner lleva color (ver build()), así esos márgenes se
-    // leen como marco, no como espacio roto.
+    // 300 es la medida acordada con CDMB. Ancho completo de pantalla
+    // siempre (pedido explícito: "los banners son muy importantes... pueden
+    // usar todo el ancho") -- ya se probó topar el ancho a 1200 con un
+    // fondo de color de marco, pero eso solo tiene sentido junto con
+    // BoxFit.cover, y cover fue justamente la causa de los recortes que se
+    // venían reportando (arriba/abajo en desktop, a los lados en mobile,
+    // según cuánto se pareciera el ancho de pantalla a la proporción real
+    // del banner subido). BoxFit.contain (ver _diapositiva) nunca recorta
+    // -- muestra el banner completo, centrado, a lo ancho que le
+    // corresponda según su propia proporción, con el fondo verdeMenu detrás
+    // llenando lo que sobre arriba/abajo o a los lados. Eso hace que el
+    // límite de ancho ya no haga falta: sin recorte posible, no hay riesgo
+    // de que "ancho completo" se vea mal.
     this.altura = 300,
-    this.anchoMaximo = 1200,
     this.intervalo = const Duration(seconds: 6),
   });
 
@@ -147,121 +148,100 @@ class _HeroSliderState extends State<HeroSlider> {
     if (widget.slides.isEmpty) return const SizedBox.shrink();
     final variasSlides = widget.slides.length > 1;
 
-    // widget.altura (300, medida acordada con CDMB) se respeta tal cual en
-    // pantallas anchas, pero nunca deja que el marco se vuelva más angosto
-    // que 2:1 -- con el alto siempre fijo, en mobile el marco terminaba casi
-    // cuadrado (ancho de pantalla x 300) mientras un banner real es bastante
-    // más ancho que alto, así que BoxFit.cover (en _diapositiva) recortaba
-    // los bordes izquierdo/derecho en vez de solo arriba/abajo -- se
-    // reportó como el banner "recortado"/con zoom en Android (S22,
-    // Motorola). Con este piso el recorte vuelve a ser siempre arriba/abajo,
-    // nunca a los lados, sea cual sea la proporción real del banner subido.
-    final anchoEfectivo = MediaQuery.sizeOf(context).width < widget.anchoMaximo
-        ? MediaQuery.sizeOf(context).width
-        : widget.anchoMaximo;
-    final altura =
-        anchoEfectivo / 2 < widget.altura ? anchoEfectivo / 2 : widget.altura;
-
     return Container(
       width: double.infinity,
-      // Fondo detrás del banner topado en ancho -- la vez anterior que se
-      // probó topar el ancho, los márgenes a los lados mostraban el fondo
-      // crema de la página y se veía "flotando"/roto. Con un color de
-      // marca detrás, esos márgenes se leen como marco a propósito.
-      // verdeMenu SIN degradado (pedido explícito) -- el mismo verde
-      // plano de los menús, para que menús y banners se lean como una
-      // sola continuidad de color, no colores distintos ni un degradado.
+      // verdeMenu SIN degradado (pedido explícito) -- el mismo verde plano
+      // de los menús, para que menús y banners se lean como una sola
+      // continuidad de color. Con BoxFit.contain en _diapositiva, este
+      // color también es el que llena el espacio que un banner no ocupe
+      // (arriba/abajo o a los lados, según su proporción real).
       color: NVColors.verdeMenu,
-      child: Center(
-        child: ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: widget.anchoMaximo),
       child: SizedBox(
-      height: altura,
-      child: Stack(
-        children: [
-          PageView.builder(
-            controller: _controller,
-            itemCount: widget.slides.length,
-            onPageChanged: (i) => setState(() => _indiceActual = i),
-            itemBuilder: (context, i) => _diapositiva(widget.slides[i]),
-          ),
-          if (variasSlides) ...[
-            Positioned(
-              left: 8,
-              top: 0,
-              bottom: 32,
-              child: Center(
-                child: _botonRedondo(Icons.chevron_left, _anterior),
-              ),
+        height: widget.altura,
+        child: Stack(
+          children: [
+            PageView.builder(
+              controller: _controller,
+              itemCount: widget.slides.length,
+              onPageChanged: (i) => setState(() => _indiceActual = i),
+              itemBuilder: (context, i) => _diapositiva(widget.slides[i]),
             ),
-            Positioned(
-              right: 8,
-              top: 0,
-              bottom: 32,
-              child: Center(
-                child: _botonRedondo(Icons.chevron_right, _siguiente),
-              ),
-            ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                color: Colors.black.withValues(alpha: 0.25),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: InkWell(
-                        onTap: _alternarReproduccion,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _reproduciendo
-                                  ? Icons.pause_circle_outline
-                                  : Icons.play_circle_outline,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _reproduciendo ? 'Detener' : 'Reanudar',
-                              style:
-                                  const TextStyle(color: Colors.white, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        for (var i = 0; i < widget.slides.length; i++)
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            margin: const EdgeInsets.symmetric(horizontal: 3),
-                            width: i == _indiceActual ? 22 : 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(
-                                  alpha: i == _indiceActual ? 0.95 : 0.5),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
+            if (variasSlides) ...[
+              Positioned(
+                left: 8,
+                top: 0,
+                bottom: 32,
+                child: Center(
+                  child: _botonRedondo(Icons.chevron_left, _anterior),
                 ),
               ),
-            ),
+              Positioned(
+                right: 8,
+                top: 0,
+                bottom: 32,
+                child: Center(
+                  child: _botonRedondo(Icons.chevron_right, _siguiente),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  color: Colors.black.withValues(alpha: 0.25),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: InkWell(
+                          onTap: _alternarReproduccion,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _reproduciendo
+                                    ? Icons.pause_circle_outline
+                                    : Icons.play_circle_outline,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _reproduciendo ? 'Detener' : 'Reanudar',
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (var i = 0; i < widget.slides.length; i++)
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              margin: const EdgeInsets.symmetric(horizontal: 3),
+                              width: i == _indiceActual ? 22 : 7,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(
+                                    alpha: i == _indiceActual ? 0.95 : 0.5),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
-        ],
-      ),
-      ),
-      ),
+        ),
       ),
     );
   }
@@ -287,9 +267,18 @@ class _HeroSliderState extends State<HeroSlider> {
       contenido = SizedBox(
         width: double.infinity,
         height: double.infinity,
+        // contain (no cover) -- pedido explícito tras reportarse el banner
+        // "achatado y acortado"/recortado en mobile. cover siempre recorta
+        // cuando la proporción de banner y contenedor no calzan EXACTO
+        // (arriba/abajo o a los lados, según cuál sea más ancho); contain
+        // nunca recorta, muestra el banner completo y dejar que el
+        // verdeMenu del fondo llene el resto. El costo es una franja de
+        // color si la proporción no calza perfecto -- se acepta a propósito
+        // porque ya es el mismo verde de marca, se lee como marco, no como
+        // espacio roto.
         child: CachedNetworkImage(
           imageUrl: slide.imagenUrl!,
-          fit: BoxFit.cover,
+          fit: BoxFit.contain,
         ),
       );
     } else {
@@ -298,13 +287,13 @@ class _HeroSliderState extends State<HeroSlider> {
       final colorSubtitulo =
           slide.textoOscuro ? NVColors.textoSecundario : Colors.white70;
       // LayoutBuilder + SingleChildScrollView + ConstrainedBox(minHeight:)
-      // -- con la altura del slider ahora variable (ver build(), piso de
-      // 2:1 en mobile), el alto disponible aquí puede ser bastante menor
-      // que los ~300px para los que este contenido (ícono+título+
-      // subtítulo+botón) fue pensado. minHeight mantiene el centrado
-      // vertical de siempre cuando sobra espacio; si no alcanza, se
-      // vuelve desplazable en vez de desbordar (antes tiraba un
-      // RenderFlex overflow real en pantallas angostas).
+      // -- el alto del slider es fijo (300), pero el ANCHO disponible no:
+      // en mobile el subtítulo envuelve a más líneas que en desktop, así
+      // que este contenido puede necesitar más alto del que hay (mismo
+      // RenderFlex overflow real que ya se vio una vez en pantallas
+      // angostas). minHeight mantiene el centrado vertical de siempre
+      // cuando sobra espacio; si no alcanza, se vuelve desplazable en vez
+      // de desbordar.
       contenido = Container(
         width: double.infinity,
         decoration: BoxDecoration(gradient: slide.fondo),

@@ -597,10 +597,13 @@ class _DialogoBannerState extends State<_DialogoBanner> {
             _slotImagen(),
             const SizedBox(height: 6),
             const Text(
-              'Tamaño estándar: 1200×300px (relación 4:1). El banner ocupa '
-              'todo el ancho de la pantalla, así que en monitores anchos '
-              'se recorta un poco arriba y abajo — evitá poner contenido '
-              'importante muy cerca del borde superior o inferior.',
+              'Tamaño recomendado: 1200×300px (relación 4:1) — cuanto más '
+              'se acerque el banner a esa proporción, mejor se ve. Nunca se '
+              'recorta: se muestra completo a todo el ancho de la pantalla, '
+              'con el verde de fondo llenando lo que sobre si la proporción '
+              'no calza exacto. Máximo 2400px de lado (además del límite de '
+              'peso de arriba) — una imagen más grande de lo necesario no '
+              'se ve mejor y no se muestra en algunos celulares.',
               style: TextStyle(color: NVColors.textoSecundario, fontSize: 11),
             ),
             if (_error != null) ...[
@@ -646,25 +649,26 @@ class _DialogoBannerState extends State<_DialogoBanner> {
     );
   }
 
-  /// Antes esta preview era una caja fija de 120px de alto — a lo ancho
-  /// del diálogo (~420px) eso da una relación ~3.5:1, casi idéntica a la
-  /// de una foto panorámica típica, así que el recorte real casi no se
-  /// notaba acá aunque en el sitio publicado sí fuera fuerte ("se ve
-  /// perfecto al subir, mal en el banner", reportado con capturas). El
-  /// HeroSlider real es ancho completo de pantalla x 300px fijo — 1920x300
-  /// (~6.4:1) representa un escritorio típico, no el ancho exacto de cada
-  /// visitante, pero acerca mucho más la preview a lo que se va a publicar
-  /// que una caja arbitraria.
+  /// El HeroSlider real (ver hero_slider.dart) nunca recorta el banner --
+  /// usa BoxFit.contain, así que la imagen se ve completa siempre, con el
+  /// verde de fondo llenando lo que sobre si su proporción no calza con el
+  /// marco. Antes esta preview usaba BoxFit.cover (recortaba), lo que
+  /// llevó justo al problema que quería evitar: "se ve perfecto al subir,
+  /// mal en el banner" (reportado con capturas), porque acá se recortaba
+  /// distinto a como se recortaba en el sitio publicado. Ahora la preview
+  /// usa el mismo fit que el sitio real -- el marco 1200x300 (4:1) es solo
+  /// una referencia visual de la proporción recomendada, nunca recorta la
+  /// imagen dentro de él.
   Widget _slotImagen() {
     return InkWell(
       onTap: _subiendoImagen ? null : _elegirImagen,
       borderRadius: BorderRadius.circular(12),
       child: AspectRatio(
-        aspectRatio: 1920 / 300,
+        aspectRatio: 1200 / 300,
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: NVColors.primaryLight,
+            color: NVColors.verdeMenu,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: NVColors.borde),
           ),
@@ -673,10 +677,10 @@ class _DialogoBannerState extends State<_DialogoBanner> {
               ? const Center(child: CircularProgressIndicator())
               : (_imagenUrl != null
                   ? CachedNetworkImage(
-                      imageUrl: _imagenUrl!, fit: BoxFit.cover)
+                      imageUrl: _imagenUrl!, fit: BoxFit.contain)
                   : const Center(
                       child: Icon(Icons.add_photo_alternate_outlined,
-                          size: 32, color: NVColors.verdeVivo),
+                          size: 32, color: NVColors.textoPrincipal),
                     )),
         ),
       ),
