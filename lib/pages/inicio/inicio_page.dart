@@ -318,6 +318,7 @@ class _InicioPageState extends State<InicioPage> {
           icono: Icons.eco,
           fondo: const LinearGradient(
               colors: [NVColors.verdeMenu, NVColors.verdeMenu]),
+          textoOscuro: true,
         ),
         SlideInfo.texto(
           titulo: '¿Qué son los Negocios Verdes?',
@@ -328,6 +329,7 @@ class _InicioPageState extends State<InicioPage> {
               colors: [NVColors.accent, NVColors.accent]),
           textoBoton: 'Conocer más',
           onTap: () => context.go('/nosotros'),
+          textoOscuro: true,
         ),
         SlideInfo.texto(
           titulo: 'Encuentra por categoría',
@@ -338,6 +340,7 @@ class _InicioPageState extends State<InicioPage> {
               colors: [NVColors.verdeVivo, NVColors.verdeVivo]),
           textoBoton: 'Ver categorías',
           onTap: () => _irA(const {}),
+          textoOscuro: true,
         ),
         SlideInfo.texto(
           titulo: '13 municipios, un solo directorio',

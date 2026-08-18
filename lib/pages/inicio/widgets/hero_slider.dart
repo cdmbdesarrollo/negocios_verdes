@@ -20,12 +20,19 @@ class SlideInfo {
   final Gradient? fondo;
   final String? textoBoton;
 
+  /// true para fondos claros (verdeMenu, accent, verdeVivo) -- blanco
+  /// encima queda con contraste pobre (~2-2.5:1), textoPrincipal da 6-7:1.
+  /// false (default) para fondos oscuros como neutroOscuro, donde blanco
+  /// sigue siendo lo correcto.
+  final bool textoOscuro;
+
   const SlideInfo.imagen({required this.imagenUrl, this.onTap})
       : titulo = null,
         subtitulo = null,
         icono = null,
         fondo = null,
-        textoBoton = null;
+        textoBoton = null,
+        textoOscuro = false;
 
   const SlideInfo.texto({
     required this.titulo,
@@ -34,6 +41,7 @@ class SlideInfo {
     required this.fondo,
     this.textoBoton,
     this.onTap,
+    this.textoOscuro = false,
   }) : imagenUrl = null;
 }
 
@@ -139,6 +147,21 @@ class _HeroSliderState extends State<HeroSlider> {
     if (widget.slides.isEmpty) return const SizedBox.shrink();
     final variasSlides = widget.slides.length > 1;
 
+    // widget.altura (300, medida acordada con CDMB) se respeta tal cual en
+    // pantallas anchas, pero nunca deja que el marco se vuelva más angosto
+    // que 2:1 -- con el alto siempre fijo, en mobile el marco terminaba casi
+    // cuadrado (ancho de pantalla x 300) mientras un banner real es bastante
+    // más ancho que alto, así que BoxFit.cover (en _diapositiva) recortaba
+    // los bordes izquierdo/derecho en vez de solo arriba/abajo -- se
+    // reportó como el banner "recortado"/con zoom en Android (S22,
+    // Motorola). Con este piso el recorte vuelve a ser siempre arriba/abajo,
+    // nunca a los lados, sea cual sea la proporción real del banner subido.
+    final anchoEfectivo = MediaQuery.sizeOf(context).width < widget.anchoMaximo
+        ? MediaQuery.sizeOf(context).width
+        : widget.anchoMaximo;
+    final altura =
+        anchoEfectivo / 2 < widget.altura ? anchoEfectivo / 2 : widget.altura;
+
     return Container(
       width: double.infinity,
       // Fondo detrás del banner topado en ancho -- la vez anterior que se
@@ -153,7 +176,7 @@ class _HeroSliderState extends State<HeroSlider> {
         child: ConstrainedBox(
       constraints: BoxConstraints(maxWidth: widget.anchoMaximo),
       child: SizedBox(
-      height: widget.altura,
+      height: altura,
       child: Stack(
         children: [
           PageView.builder(
@@ -270,45 +293,65 @@ class _HeroSliderState extends State<HeroSlider> {
         ),
       );
     } else {
+      final colorTitulo =
+          slide.textoOscuro ? NVColors.textoPrincipal : Colors.white;
+      final colorSubtitulo =
+          slide.textoOscuro ? NVColors.textoSecundario : Colors.white70;
+      // LayoutBuilder + SingleChildScrollView + ConstrainedBox(minHeight:)
+      // -- con la altura del slider ahora variable (ver build(), piso de
+      // 2:1 en mobile), el alto disponible aquí puede ser bastante menor
+      // que los ~300px para los que este contenido (ícono+título+
+      // subtítulo+botón) fue pensado. minHeight mantiene el centrado
+      // vertical de siempre cuando sobra espacio; si no alcanza, se
+      // vuelve desplazable en vez de desbordar (antes tiraba un
+      // RenderFlex overflow real en pantallas angostas).
       contenido = Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         decoration: BoxDecoration(gradient: slide.fondo),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(slide.icono, color: Colors.white, size: 40),
-            const SizedBox(height: 12),
-            Text(
-              slide.titulo!,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(slide.icono, color: colorTitulo, size: 40),
+                  const SizedBox(height: 12),
+                  Text(
+                    slide.titulo!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: colorTitulo,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 480),
+                    child: Text(
+                      slide.subtitulo!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: colorSubtitulo, fontSize: 15),
+                    ),
+                  ),
+                  if (slide.textoBoton != null) ...[
+                    const SizedBox(height: 16),
+                    OutlinedButton(
+                      onPressed: slide.onTap,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: colorTitulo,
+                        side: BorderSide(color: colorTitulo),
+                      ),
+                      child: Text(slide.textoBoton!),
+                    ),
+                  ],
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Text(
-                slide.subtitulo!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white70, fontSize: 15),
-              ),
-            ),
-            if (slide.textoBoton != null) ...[
-              const SizedBox(height: 16),
-              OutlinedButton(
-                onPressed: slide.onTap,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.white),
-                ),
-                child: Text(slide.textoBoton!),
-              ),
-            ],
-          ],
+          ),
         ),
       );
     }
