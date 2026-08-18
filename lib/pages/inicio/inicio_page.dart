@@ -429,11 +429,7 @@ class _InicioPageState extends State<InicioPage> {
       child: Column(
         children: [
           Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: ConstrainedBox(
+            child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 580),
               child: Material(
                 elevation: 6,
@@ -492,8 +488,7 @@ class _InicioPageState extends State<InicioPage> {
                             // verdeMenu (no verdeVivo) -- este círculo es un
                             // botón real, pedido explícito de que los
                             // botones del buscador lleven el mismo verde
-                            // que menús/chips. El ícono es textoPrincipal
-                            // (oscuro), blanco encima sería casi ilegible.
+                            // que menús/chips.
                             color: NVColors.verdeMenu,
                             shape: const CircleBorder(),
                             child: InkWell(
@@ -502,11 +497,20 @@ class _InicioPageState extends State<InicioPage> {
                               child: Semantics(
                                 button: true,
                                 label: 'Buscar',
+                                // Colibrí (iconografía de marca) en vez de
+                                // la flecha genérica -- pedido explícito.
+                                // La lupa al inicio del campo ya deja claro
+                                // que esto es "buscar", así que el círculo
+                                // puede ser firma de marca sin perder
+                                // claridad.
                                 child: const Padding(
-                                  padding: EdgeInsets.all(10),
-                                  child: Icon(Icons.arrow_forward,
-                                      color: NVColors.textoPrincipal,
-                                      size: 20),
+                                  padding: EdgeInsets.all(9),
+                                  child: Image(
+                                    image: AssetImage(
+                                        'assets/images/iconografia/colibri_1.png'),
+                                    width: 22,
+                                    height: 22,
+                                  ),
                                 ),
                               ),
                             ),
@@ -517,18 +521,6 @@ class _InicioPageState extends State<InicioPage> {
                   },
                 ),
               ),
-            ),
-                ),
-                const SizedBox(width: 10),
-                // Colibrí pequeño (iconografía de marca) junto al buscador
-                // -- pedido explícito de reubicarlo acá (antes estaba junto
-                // al contador de resultados en /buscar).
-                Image.asset(
-                  'assets/images/iconografia/colibri_1.png',
-                  width: 28,
-                  height: 28,
-                ),
-              ],
             ),
           ),
         ],
