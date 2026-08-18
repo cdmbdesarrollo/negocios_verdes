@@ -156,8 +156,25 @@ class _HeroSliderState extends State<HeroSlider> {
       // color también es el que llena el espacio que un banner no ocupe
       // (arriba/abajo o a los lados, según su proporción real).
       color: NVColors.verdeMenu,
-      child: SizedBox(
-        height: widget.altura,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // widget.altura (300) es el techo, no un valor fijo -- 1200x300
+          // (relación 4:1) es la medida recomendada, así que en pantallas
+          // de hasta 1200px de ancho el alto se calcula con esa misma
+          // proporción (ancho/4). Con alto siempre fijo en 300, un banner
+          // 1200x300 real (proporción exacta) quedaba con una franja verde
+          // de relleno arriba/abajo en cualquier pantalla angosta -- se
+          // reportó como "espacio" de más. Con el alto atado a la
+          // proporción recomendada, un banner que sí mida 1200x300 llena
+          // el marco completo sin ninguna franja, en cualquier ancho hasta
+          // 1200px; pantallas más anchas que eso se quedan en el techo de
+          // 300 (el mismo alto de siempre en desktop, sin cambios ahí).
+          final alturaPorProporcion = constraints.maxWidth / 4;
+          final altura = alturaPorProporcion > widget.altura
+              ? widget.altura
+              : alturaPorProporcion;
+          return SizedBox(
+        height: altura,
         child: Stack(
           children: [
             PageView.builder(
@@ -242,6 +259,8 @@ class _HeroSliderState extends State<HeroSlider> {
             ],
           ],
         ),
+          );
+        },
       ),
     );
   }
