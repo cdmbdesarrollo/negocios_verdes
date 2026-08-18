@@ -429,7 +429,11 @@ class _InicioPageState extends State<InicioPage> {
       child: Column(
         children: [
           Center(
-            child: ConstrainedBox(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 580),
               child: Material(
                 elevation: 6,
@@ -513,6 +517,18 @@ class _InicioPageState extends State<InicioPage> {
                   },
                 ),
               ),
+            ),
+                ),
+                const SizedBox(width: 10),
+                // Colibrí pequeño (iconografía de marca) junto al buscador
+                // -- pedido explícito de reubicarlo acá (antes estaba junto
+                // al contador de resultados en /buscar).
+                Image.asset(
+                  'assets/images/iconografia/colibri_1.png',
+                  width: 28,
+                  height: 28,
+                ),
+              ],
             ),
           ),
         ],

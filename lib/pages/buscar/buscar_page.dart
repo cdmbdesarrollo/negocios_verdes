@@ -283,16 +283,6 @@ class _BuscarPageState extends State<BuscarPage> {
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
           child: Row(
             children: [
-              // Colibrí pequeño (iconografía de marca), pedido explícito
-              // "dentro del buscador en tamaño pequeño".
-              Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: Image.asset(
-                  'assets/images/iconografia/colibri_1.png',
-                  width: 20,
-                  height: 20,
-                ),
-              ),
               Expanded(
                 child: Text(
                   '${negocios.length} ${negocios.length == 1 ? 'negocio encontrado' : 'negocios encontrados'}'
