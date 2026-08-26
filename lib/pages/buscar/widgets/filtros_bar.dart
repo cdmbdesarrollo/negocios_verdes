@@ -365,28 +365,28 @@ class _FiltrosBarState extends State<FiltrosBar> {
             spacing: 6,
             runSpacing: 6,
             children: [
+              // Avalado, Sello Marca y Aval de Confianza son 3 booleanos
+              // independientes entre sí (ninguno excluye a los otros) — por
+              // eso cada chip alterna su propio filtro en vez de formar un
+              // grupo "elegí uno solo". "Todos" limpia los 3 de una vez.
               ChipFiltro(
                 etiqueta: 'Todos',
-                seleccionado: widget.filtro.nivelDesarrollo == null,
-                onTap: () => widget.onCambio(
-                    widget.filtro.copyWith(limpiarNivelDesarrollo: true)),
+                seleccionado: widget.filtro.avalado == null &&
+                    widget.filtro.selloMarca == null &&
+                    widget.filtro.avalConfianza == null,
+                onTap: () => widget.onCambio(widget.filtro.copyWith(
+                  limpiarAvalado: true,
+                  limpiarSelloMarca: true,
+                  limpiarAvalConfianza: true,
+                )),
               ),
               ChipFiltro(
-                etiqueta: 'Verificado',
-                seleccionado: widget.filtro.nivelDesarrollo == 'verificado',
-                onTap: () => widget.onCambio(
-                    widget.filtro.copyWith(nivelDesarrollo: 'verificado')),
+                etiqueta: '✅ Avalado',
+                seleccionado: widget.filtro.avalado == true,
+                onTap: () => widget.onCambio(widget.filtro.avalado == true
+                    ? widget.filtro.copyWith(limpiarAvalado: true)
+                    : widget.filtro.copyWith(avalado: true)),
               ),
-              ChipFiltro(
-                etiqueta: 'Negocio ancla',
-                seleccionado: widget.filtro.nivelDesarrollo == 'negocio_ancla',
-                onTap: () => widget.onCambio(
-                    widget.filtro.copyWith(nivelDesarrollo: 'negocio_ancla')),
-              ),
-              // Sello Marca y Aval de Confianza son independientes entre sí
-              // y de nivelDesarrollo (mismo criterio de siempre) — por eso
-              // cada chip alterna su propio booleano en vez de ser parte
-              // del mismo grupo "elegí uno" que los chips de arriba.
               ChipFiltro(
                 etiqueta: '🎖️ Sello Marca',
                 seleccionado: widget.filtro.selloMarca == true,

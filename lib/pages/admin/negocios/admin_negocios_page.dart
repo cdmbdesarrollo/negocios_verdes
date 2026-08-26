@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../catalogos.dart';
 import '../../../core/admin_guard.dart';
-import '../../../core/widgets/badge_nivel.dart';
+import '../../../core/widgets/avalado_badge.dart';
 import '../../../core/widgets/chip_filtro.dart';
 import '../../../core/widgets/confirmar_eliminar_boton.dart';
 import '../../../core/widgets/error_dialog.dart';
@@ -226,10 +226,26 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
                   spacing: 6,
                   runSpacing: 6,
                   children: [
-                    BadgeNivel(nivel: n.nivelDesarrollo, tamanoFuente: 11),
+                    if (n.avalado) const AvaladoBadge(tamanoFuente: 11),
                     if (n.selloMarca) const SelloMarcaBadge(tamanoFuente: 10),
                     if (n.avalConfianza)
                       const AvalConfianzaBadge(tamanoFuente: 10),
+                    if (n.emprendimientoVerde)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: NVColors.borde,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Text(
+                          '🔒 Emprendimiento verde',
+                          style: TextStyle(
+                              fontSize: 10,
+                              color: NVColors.textoSecundario,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ),
                     if (n.destacado)
                       const Icon(Icons.star, color: NVColors.accent, size: 18),
                   ],

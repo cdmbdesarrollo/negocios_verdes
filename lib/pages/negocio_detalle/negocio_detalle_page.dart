@@ -9,7 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../catalogos.dart';
 import '../../core/seo_tags.dart';
-import '../../core/widgets/badge_nivel.dart';
+import '../../core/widgets/avalado_badge.dart';
 import '../../core/widgets/boton_whatsapp.dart';
 import '../../core/widgets/pie_pagina.dart';
 import '../../core/widgets/aval_confianza_badge.dart';
@@ -116,11 +116,11 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
                       runSpacing: 8,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        _tocable(
-                          onTap: () =>
-                              _irABuscar({'nivel': negocio.nivelDesarrollo}),
-                          child: BadgeNivel(nivel: negocio.nivelDesarrollo),
-                        ),
+                        if (negocio.avalado)
+                          _tocable(
+                            onTap: () => _irABuscar(const {'avalado': '1'}),
+                            child: const AvaladoBadge(),
+                          ),
                         if (negocio.selloMarca)
                           _tocable(
                             onTap: () => _irABuscar(const {'sello': '1'}),

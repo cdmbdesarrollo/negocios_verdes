@@ -70,11 +70,12 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
   String? _municipio;
   double? _latitud;
   double? _longitud;
-  String _nivelDesarrollo = 'en_verificacion';
   bool _destacado = false;
   bool _activo = false;
+  bool _avalado = false;
   bool _selloMarca = false;
   bool _avalConfianza = false;
+  bool _emprendimientoVerde = false;
   String? _fotoPortadaUrl;
   String? _fotoPortadaPath;
   List<NegocioFoto> _galeriaInicial = [];
@@ -132,11 +133,12 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
         _instagramCtrl.text = existente.instagramUrl ?? '';
         _fotoPortadaUrl = existente.fotoPortadaUrl;
         _fotoPortadaPath = existente.fotoPortadaPath;
-        _nivelDesarrollo = existente.nivelDesarrollo;
         _destacado = existente.destacado;
         _activo = existente.activo;
+        _avalado = existente.avalado;
         _selloMarca = existente.selloMarca;
         _avalConfianza = existente.avalConfianza;
+        _emprendimientoVerde = existente.emprendimientoVerde;
         _subcategoriaIds = existente.subcategorias.map((s) => s.id).toSet();
         _actividadIds =
             existente.actividadesProductivas.map((a) => a.id).toSet();
@@ -210,13 +212,14 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
         instagramUrl: _vacioANulo(_instagramCtrl.text),
         fotoPortadaUrl: _fotoPortadaUrl,
         fotoPortadaPath: _fotoPortadaPath,
-        nivelDesarrollo: _nivelDesarrollo,
         destacado: _destacado,
         activo: _activo,
         subcategoriaIds: _subcategoriaIds.toList(),
         actividadIds: _actividadIds.toList(),
         selloMarca: _selloMarca,
         avalConfianza: _avalConfianza,
+        avalado: _avalado,
+        emprendimientoVerde: _emprendimientoVerde,
       );
 
       await _sincronizarGaleria();
@@ -416,33 +419,19 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           ),
           const SizedBox(height: 20),
           _seccion('Publicación'),
-          DropdownButtonFormField<String>(
-            initialValue: _nivelDesarrollo,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Nivel de desarrollo'),
-            items: [
-              for (final entrada in kNivelesDesarrolloEtiqueta.entries)
-                DropdownMenuItem(
-                  value: entrada.key,
-                  child: Text(entrada.value),
-                ),
-            ],
-            onChanged: (v) => setState(() => _nivelDesarrollo = v!),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(top: 4, bottom: 8),
-            child: Text(
-              kNivelesDesarrolloAyuda[_nivelDesarrollo] ?? '',
-              style:
-                  const TextStyle(color: NVColors.textoSecundario, fontSize: 12),
-            ),
-          ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('Destacado'),
             subtitle: const Text('Aparece en la portada del sitio público.'),
             value: _destacado,
             onChanged: (v) => setState(() => _destacado = v),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('✅ Avalado'),
+            subtitle: const Text('Negocio avalado por la CDMB.'),
+            value: _avalado,
+            onChanged: (v) => setState(() => _avalado = v),
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
@@ -466,6 +455,17 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             ),
             value: _avalConfianza,
             onChanged: (v) => setState(() => _avalConfianza = v),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('🔒 Emprendimiento verde'),
+            subtitle: const Text(
+              'Uso interno de CDMB: negocio no avalado o en proceso. No se '
+              'muestra en la ficha pública ni en el buscador — solo queda '
+              'registrado en la base de datos.',
+            ),
+            value: _emprendimientoVerde,
+            onChanged: (v) => setState(() => _emprendimientoVerde = v),
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,

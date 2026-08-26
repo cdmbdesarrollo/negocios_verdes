@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/aval_confianza_badge.dart';
-import '../../../core/widgets/badge_nivel.dart';
+import '../../../core/widgets/avalado_badge.dart';
 import '../../../core/widgets/sello_marca_badge.dart';
 import '../../../models/categoria_oficial.dart';
 import '../../../models/negocio.dart';
@@ -136,13 +136,12 @@ class NegocioCard extends StatelessWidget {
                           spacing: 6,
                           runSpacing: 4,
                           children: [
-                            _tocable(
-                              onTap: () => _irABuscar(context,
-                                  {'nivel': negocio.nivelDesarrollo}),
-                              child: BadgeNivel(
-                                  nivel: negocio.nivelDesarrollo,
-                                  tamanoFuente: 10),
-                            ),
+                            if (negocio.avalado)
+                              _tocable(
+                                onTap: () => _irABuscar(
+                                    context, const {'avalado': '1'}),
+                                child: const AvaladoBadge(tamanoFuente: 10),
+                              ),
                             if (negocio.selloMarca)
                               _tocable(
                                 onTap: () => _irABuscar(

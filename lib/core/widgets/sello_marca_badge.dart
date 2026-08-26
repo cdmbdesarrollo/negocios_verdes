@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../../theme/nv_colors.dart';
 
 /// Insignia de negocios.sello_marca — deliberadamente distinta de
-/// BadgeNivel (degradado dorado + sombra en vez del pill plano con borde
-/// alfa): es un reconocimiento aparte, no un nivel más, así que no debe
-/// leerse como "otro valor de la misma lista" al lado de BadgeNivel.
+/// AvaladoBadge/AvalConfianzaBadge (degradado dorado + sombra en vez del
+/// pill plano con borde alfa): es un reconocimiento aparte, no debe leerse
+/// como "otro valor de la misma lista" al lado de las otras insignias.
 class SelloMarcaBadge extends StatelessWidget {
   final double tamanoFuente;
 

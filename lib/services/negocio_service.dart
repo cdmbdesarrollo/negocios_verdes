@@ -69,8 +69,8 @@ class NegocioService {
         query = query.inFilter('id', negocioIds);
       }
 
-      if (filtro.nivelDesarrollo != null) {
-        query = query.eq('nivel_desarrollo', filtro.nivelDesarrollo!);
+      if (filtro.avalado == true) {
+        query = query.eq('avalado', true);
       }
       if (filtro.selloMarca == true) {
         query = query.eq('sello_marca', true);
@@ -207,13 +207,14 @@ class NegocioService {
     String? instagramUrl,
     String? fotoPortadaUrl,
     String? fotoPortadaPath,
-    required String nivelDesarrollo,
     required bool destacado,
     required bool activo,
     required List<String> subcategoriaIds,
     required List<String> actividadIds,
     required bool selloMarca,
     required bool avalConfianza,
+    required bool avalado,
+    required bool emprendimientoVerde,
   }) async {
     try {
       final resultado = await _supabase.rpc('guardar_negocio', params: {
@@ -234,13 +235,14 @@ class NegocioService {
         'p_instagram_url': instagramUrl,
         'p_foto_portada_url': fotoPortadaUrl,
         'p_foto_portada_path': fotoPortadaPath,
-        'p_nivel_desarrollo': nivelDesarrollo,
         'p_destacado': destacado,
         'p_activo': activo,
         'p_subcategoria_ids': subcategoriaIds,
         'p_actividad_ids': actividadIds,
         'p_sello_marca': selloMarca,
         'p_aval_confianza': avalConfianza,
+        'p_avalado': avalado,
+        'p_emprendimiento_verde': emprendimientoVerde,
       });
       return resultado.toString();
     } catch (e) {

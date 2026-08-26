@@ -72,3 +72,16 @@ en un Supabase nuevo:
     resulta redundante que deshacer un cambio al enum central. Agrega
     `p_aval_confianza` a `guardar_negocio` — **correr ANTES de
     desplegar**, mismo motivo que 0015/0016/0018.
+20. `0020_avalado_y_emprendimiento_verde.sql` — **borra el enum
+    `nivel_desarrollo`** (en_verificacion/verificado/negocio_ancla, y su
+    desplegable en el admin) y lo reemplaza por dos columnas booleanas
+    independientes, mismo patrón que `sello_marca`/`aval_confianza`:
+    `avalado` (reconocimiento público, "Negocio avalado por la CDMB",
+    reemplaza a "Verificado"/"Negocio Ancla") y `emprendimiento_verde`
+    (uso interno únicamente — negocios no avalados o en proceso; nunca se
+    muestra en la ficha pública ni es filtrable en /buscar, a propósito).
+    Hace backfill desde `nivel_desarrollo` antes de borrar la columna
+    (verificado/negocio_ancla → avalado=true, en_verificacion →
+    emprendimiento_verde=true). Reemplaza `p_nivel_desarrollo` por
+    `p_avalado` + `p_emprendimiento_verde` en `guardar_negocio` —
+    **correr ANTES de desplegar**, mismo motivo que 0015/0016/0018/0019.

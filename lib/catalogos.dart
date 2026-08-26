@@ -22,22 +22,6 @@ const List<String> kMunicipios = [
   'Lebrija',
 ];
 
-/// Valores que puede tomar negocios.nivel_desarrollo (mismo CHECK en SQL) y
-/// su etiqueta visible para el público.
-const Map<String, String> kNivelesDesarrolloEtiqueta = {
-  'en_verificacion': 'En verificación',
-  'verificado': 'Verificado',
-  'negocio_ancla': 'Negocio Ancla',
-};
-
-/// Texto de apoyo para el admin al elegir el nivel en el formulario.
-const Map<String, String> kNivelesDesarrolloAyuda = {
-  'en_verificacion':
-      'Emprendimiento en proceso de verificación por parte de CDMB.',
-  'verificado': 'Cumple los criterios del programa y ya fue verificado.',
-  'negocio_ancla': 'Negocio verde consolidado, referente en su categoría.',
-};
-
 /// Mensaje precargado al abrir el botón de WhatsApp desde la ficha pública.
 String mensajeWhatsappPredeterminado(String nombreNegocio) =>
     'Hola, te vi en el directorio de Negocios Verdes CDMB ($nombreNegocio) '

@@ -6,7 +6,7 @@ import '../../theme/nv_colors.dart';
 /// tratamiento premium (degradado + sombra) que SelloMarcaBadge: son dos
 /// reconocimientos independientes entre sí, así que deben leerse como
 /// cosas distintas, no como "el mismo tipo de insignia en otro color".
-/// Pill con borde, más parecido a BadgeNivel, con su propio color e ícono
+/// Pill con borde, más parecido a AvaladoBadge, con su propio color e ícono
 /// (ninguno de los dos reutilizados de otra insignia).
 class AvalConfianzaBadge extends StatelessWidget {
   final double tamanoFuente;

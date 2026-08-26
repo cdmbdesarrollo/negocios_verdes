@@ -69,14 +69,16 @@ abstract final class NVColors {
   /// botón de contacto por WhatsApp, no se usa como acento del sitio.
   static const Color whatsapp = Color(0xFF25D366);
 
-  static const Color nivelEnVerificacion = Color(0xFF8C8C7A);
-  static const Color nivelVerificado = primary;
-  static const Color nivelAncla = Color(0xFFB8860B);
+  /// Reservado únicamente para la insignia "Avalado" (ver AvaladoBadge) —
+  /// mismo verde institucional que ya usaba el viejo nivel "Verificado":
+  /// sigue siendo el reconocimiento base otorgado directo por la CDMB, solo
+  /// que ahora es un booleano independiente en vez de un valor de enum.
+  static const Color avaladoColor = primary;
 
   /// Reservado únicamente para el Sello Marca de Negocios Verdes (ver
-  /// SelloMarcaBadge) — un reconocimiento aparte de nivel_desarrollo, por
-  /// eso necesita su propio color y no reusa nivelAncla ni accent (ese
-  /// sigue solo para CTAs de conversión).
+  /// SelloMarcaBadge) — reconocimiento independiente de avalado/
+  /// aval_confianza, por eso necesita su propio color y no reusa accent
+  /// (ese sigue solo para CTAs de conversión).
   static const Color selloMarcaDorado = Color(0xFFC9A227);
 
   /// Reservado únicamente para el Aval de Confianza (ver

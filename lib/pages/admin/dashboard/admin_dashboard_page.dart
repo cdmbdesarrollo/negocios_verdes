@@ -46,8 +46,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     }
 
     final activos = negocios.where((n) => n.activo).length;
-    final enVerificacion =
-        negocios.where((n) => n.nivelDesarrollo == 'en_verificacion').length;
+    final avalados = negocios.where((n) => n.avalado).length;
     final sinFoto = negocios
         .where((n) => n.fotoPortadaUrl == null || n.fotoPortadaUrl!.isEmpty)
         .length;
@@ -108,10 +107,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 ),
                 _tarjetaEstadistica(
                   context,
-                  etiqueta: 'En verificación',
-                  valor: enVerificacion,
-                  icono: Icons.hourglass_top,
-                  color: NVColors.nivelEnVerificacion,
+                  etiqueta: 'Avalados',
+                  valor: avalados,
+                  icono: Icons.verified_outlined,
+                  color: NVColors.avaladoColor,
                 ),
                 _tarjetaEstadistica(
                   context,

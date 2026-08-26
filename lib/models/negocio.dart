@@ -49,20 +49,29 @@ class Negocio {
   final String? instagramUrl;
   final String? fotoPortadaUrl;
   final String? fotoPortadaPath;
-  final String nivelDesarrollo;
   final bool destacado;
   final bool activo;
-  /// Reconocimiento adicional e independiente de [nivelDesarrollo] — un
-  /// negocio puede ser verificado o ancla Y tener el Sello Marca de
-  /// Negocios Verdes a la vez, no es un cuarto nivel excluyente (ver
+  /// Reconocimiento público — "Negocio avalado por la CDMB". Reemplaza al
+  /// viejo enum nivel_desarrollo (en_verificacion/verificado/negocio_ancla):
+  /// ahora es un booleano independiente, igual que [selloMarca] y
+  /// [avalConfianza] (ver 0020_avalado_y_emprendimiento_verde.sql).
+  final bool avalado;
+  /// Reconocimiento adicional e independiente de [avalado] — un negocio
+  /// puede estar avalado Y tener el Sello Marca de Negocios Verdes a la
+  /// vez, no es un nivel excluyente (ver
   /// 0018_sello_marca_negocios_verdes.sql).
   final bool selloMarca;
   /// Igual de independiente que [selloMarca] — CDMB usa "Aval de
   /// Confianza" en sus propios comunicados de prensa para el
   /// reconocimiento base, no confirmado todavía si es sinónimo exacto de
-  /// "Verificado" ([nivelDesarrollo]). Campo aparte a propósito (ver
+  /// [avalado]. Campo aparte a propósito (ver
   /// 0019_aval_confianza_negocios_verdes.sql).
   final bool avalConfianza;
+  /// SOLO uso interno de CDMB — negocios no avalados o en proceso.
+  /// Seleccionable desde /admin, pero a propósito NUNCA se muestra en la
+  /// ficha pública ni es filtrable en /buscar (ver
+  /// 0020_avalado_y_emprendimiento_verde.sql).
+  final bool emprendimientoVerde;
   final List<NegocioFoto> fotos;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -90,11 +99,12 @@ class Negocio {
     this.instagramUrl,
     this.fotoPortadaUrl,
     this.fotoPortadaPath,
-    this.nivelDesarrollo = 'en_verificacion',
     this.destacado = false,
     this.activo = false,
+    this.avalado = false,
     this.selloMarca = false,
     this.avalConfianza = false,
+    this.emprendimientoVerde = false,
     this.fotos = const [],
     this.createdAt,
     this.updatedAt,
@@ -145,11 +155,12 @@ class Negocio {
       instagramUrl: json['instagram_url']?.toString(),
       fotoPortadaUrl: json['foto_portada_url']?.toString(),
       fotoPortadaPath: json['foto_portada_path']?.toString(),
-      nivelDesarrollo: json['nivel_desarrollo']?.toString() ?? 'en_verificacion',
       destacado: json['destacado'] as bool? ?? false,
       activo: json['activo'] as bool? ?? false,
+      avalado: json['avalado'] as bool? ?? false,
       selloMarca: json['sello_marca'] as bool? ?? false,
       avalConfianza: json['aval_confianza'] as bool? ?? false,
+      emprendimientoVerde: json['emprendimiento_verde'] as bool? ?? false,
       fotos: fotosJson.map(NegocioFoto.fromJson).toList()
         ..sort((a, b) => a.orden.compareTo(b.orden)),
       createdAt: DateTime.tryParse(json['created_at']?.toString() ?? ''),
@@ -185,11 +196,12 @@ class Negocio {
       instagramUrl: instagramUrl,
       fotoPortadaUrl: fotoPortadaUrl,
       fotoPortadaPath: fotoPortadaPath,
-      nivelDesarrollo: nivelDesarrollo,
       destacado: destacado ?? this.destacado,
       activo: activo ?? this.activo,
+      avalado: avalado,
       selloMarca: selloMarca,
       avalConfianza: avalConfianza,
+      emprendimientoVerde: emprendimientoVerde,
       fotos: fotos,
       createdAt: createdAt,
       updatedAt: updatedAt,

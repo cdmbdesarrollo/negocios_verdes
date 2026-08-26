@@ -39,21 +39,22 @@ void main() {
       expect(filtro.toQueryParameters().containsKey('vista'), isFalse);
     });
 
-    test('nivel/sello/aval — nivel es texto plano, sello/aval son "1" solo si son true', () {
+    test('avalado/sello/aval son "1" solo si son true', () {
       const filtro = FiltroBusqueda(
-        nivelDesarrollo: 'verificado',
+        avalado: true,
         selloMarca: true,
         avalConfianza: true,
       );
       expect(filtro.toQueryParameters(), {
-        'nivel': 'verificado',
+        'avalado': '1',
         'sello': '1',
         'aval': '1',
       });
-      // false no es "lo contrario de true" para estos dos — es lo mismo
-      // que no filtrar, así que no debe aparecer en la URL en absoluto
+      // false no es "lo contrario de true" para estos 3 — es lo mismo
+      // que no filtrar, así que no deben aparecer en la URL en absoluto
       // (nadie comparte un link pidiendo "sin Sello Marca").
-      const filtroFalse = FiltroBusqueda(selloMarca: false, avalConfianza: false);
+      const filtroFalse =
+          FiltroBusqueda(avalado: false, selloMarca: false, avalConfianza: false);
       expect(filtroFalse.toQueryParameters(), isEmpty);
     });
   });
@@ -80,13 +81,15 @@ void main() {
       );
     });
 
-    test('"sello=1"/"aval=1" activan el filtro, cualquier otro valor (incluido ausente) no', () {
-      final filtro =
-          FiltroBusqueda.fromQueryParameters(const {'sello': '1', 'aval': '1'});
+    test('"avalado=1"/"sello=1"/"aval=1" activan el filtro, cualquier otro valor (incluido ausente) no', () {
+      final filtro = FiltroBusqueda.fromQueryParameters(
+          const {'avalado': '1', 'sello': '1', 'aval': '1'});
+      expect(filtro.avalado, isTrue);
       expect(filtro.selloMarca, isTrue);
       expect(filtro.avalConfianza, isTrue);
 
       final sinInsignias = FiltroBusqueda.fromQueryParameters(const {});
+      expect(sinInsignias.avalado, isNull);
       expect(sinInsignias.selloMarca, isNull);
       expect(sinInsignias.avalConfianza, isNull);
     });
