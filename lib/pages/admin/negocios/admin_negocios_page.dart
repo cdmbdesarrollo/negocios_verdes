@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../catalogos.dart';
 import '../../../core/admin_guard.dart';
+import '../../../core/descargar_archivo_web.dart';
 import '../../../core/widgets/avalado_badge.dart';
 import '../../../core/widgets/chip_filtro.dart';
 import '../../../core/widgets/confirmar_eliminar_boton.dart';
@@ -159,6 +160,19 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
                     DropdownMenuItem(value: m, child: Text(m)),
                 ],
                 onChanged: (v) => setState(() => _filtroMunicipio = v),
+              ),
+              // Carga masiva: exporta TODOS los negocios (no solo los que
+              // dejan pasar los filtros de arriba) e importa desde el mismo
+              // formato de columnas — ver AdminNegociosImportarPage.
+              OutlinedButton.icon(
+                onPressed: () => exportarNegociosComoCsv(_negocios!),
+                icon: const Icon(Icons.download_outlined, size: 18),
+                label: const Text('Exportar CSV'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => context.go('/admin/negocios/importar'),
+                icon: const Icon(Icons.upload_file_outlined, size: 18),
+                label: const Text('Importar CSV'),
               ),
             ],
           ),

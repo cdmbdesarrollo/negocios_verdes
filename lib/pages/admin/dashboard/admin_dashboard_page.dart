@@ -47,6 +47,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
     final activos = negocios.where((n) => n.activo).length;
     final avalados = negocios.where((n) => n.avalado).length;
+    final conSelloMarca = negocios.where((n) => n.selloMarca).length;
+    final conAvalConfianza = negocios.where((n) => n.avalConfianza).length;
+    final emprendimientoVerde =
+        negocios.where((n) => n.emprendimientoVerde).length;
     final sinFoto = negocios
         .where((n) => n.fotoPortadaUrl == null || n.fotoPortadaUrl!.isEmpty)
         .length;
@@ -111,6 +115,27 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   valor: avalados,
                   icono: Icons.verified_outlined,
                   color: NVColors.avaladoColor,
+                ),
+                _tarjetaEstadistica(
+                  context,
+                  etiqueta: 'Sello Marca',
+                  valor: conSelloMarca,
+                  icono: Icons.military_tech,
+                  color: NVColors.selloMarcaVerde,
+                ),
+                _tarjetaEstadistica(
+                  context,
+                  etiqueta: 'Aval de Confianza',
+                  valor: conAvalConfianza,
+                  icono: Icons.shield_outlined,
+                  color: NVColors.avalConfianzaDorado,
+                ),
+                _tarjetaEstadistica(
+                  context,
+                  etiqueta: 'Emprendimiento verde',
+                  valor: emprendimientoVerde,
+                  icono: Icons.hourglass_top,
+                  color: NVColors.textoSecundario,
                 ),
                 _tarjetaEstadistica(
                   context,
