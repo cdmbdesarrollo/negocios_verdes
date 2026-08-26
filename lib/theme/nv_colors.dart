@@ -76,16 +76,17 @@ abstract final class NVColors {
   static const Color avaladoColor = primary;
 
   /// Reservado únicamente para el Sello Marca de Negocios Verdes (ver
-  /// SelloMarcaBadge) — reconocimiento independiente de avalado/
-  /// aval_confianza, por eso necesita su propio color y no reusa accent
-  /// (ese sigue solo para CTAs de conversión).
-  static const Color selloMarcaDorado = Color(0xFFC9A227);
+  /// SelloMarcaBadge) — pedido explícito de acercarlo al verde del sello
+  /// oficial "Sello Ambiental Colombiano / Negocios Verdes" (el círculo
+  /// verde con mariposa/hoja), en vez del dorado que tenía antes. Reusa
+  /// [verdeVivo] (ya documentado como el verde pensado para íconos) en vez
+  /// de inventar un tono nuevo.
+  static const Color selloMarcaVerde = verdeVivo;
 
   /// Reservado únicamente para el Aval de Confianza (ver
-  /// AvalConfianzaBadge) — mismo criterio que selloMarcaDorado: un
-  /// reconocimiento aparte, necesita su propio color. Deliberadamente
-  /// distinto de govCoAzul (esa es la franja institucional obligatoria,
-  /// nunca se reusa) y de selloMarcaDorado (para no verse como "el mismo
-  /// tipo de insignia" cuando son dos reconocimientos independientes).
-  static const Color avalConfianzaAzul = Color(0xFF2A6F97);
+  /// AvalConfianzaBadge) — antes azul, pedido explícito de un tono
+  /// dorado/metálico (el azul se leía "poco atractivo" junto al resto de
+  /// insignias). Libre de reusar el dorado que antes tenía Sello Marca:
+  /// ese reconocimiento ya no lo usa.
+  static const Color avalConfianzaDorado = Color(0xFFC9A227);
 }

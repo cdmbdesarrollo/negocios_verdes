@@ -18,22 +18,22 @@ class AvalConfianzaBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: NVColors.avalConfianzaAzul.withValues(alpha: 0.12),
+        color: NVColors.avalConfianzaDorado.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: NVColors.avalConfianzaAzul.withValues(alpha: 0.4)),
+        border: Border.all(color: NVColors.avalConfianzaDorado.withValues(alpha: 0.4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.shield_outlined,
-              size: tamanoFuente + 2, color: NVColors.avalConfianzaAzul),
+              size: tamanoFuente + 2, color: NVColors.avalConfianzaDorado),
           const SizedBox(width: 4),
           Text(
             'Aval de Confianza',
             style: TextStyle(
               fontSize: tamanoFuente,
               fontWeight: FontWeight.w600,
-              color: NVColors.avalConfianzaAzul,
+              color: NVColors.avalConfianzaDorado,
             ),
           ),
         ],

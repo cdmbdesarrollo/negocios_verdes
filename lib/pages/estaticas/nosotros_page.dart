@@ -227,11 +227,10 @@ class _NosotrosPageState extends State<NosotrosPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            '✅ Avalado',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w600, fontSize: 15),
-                          ),
+                          _encabezadoReconocimiento(
+                              Icons.verified_outlined,
+                              NVColors.avaladoColor,
+                              'Avalado'),
                           const SizedBox(height: 6),
                           const Text(
                             'Negocio avalado por la CDMB: cumple los '
@@ -258,11 +257,10 @@ class _NosotrosPageState extends State<NosotrosPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            '🎖️ Sello Marca de Negocios Verdes',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w600, fontSize: 15),
-                          ),
+                          _encabezadoReconocimiento(
+                              Icons.military_tech,
+                              NVColors.selloMarcaVerde,
+                              'Sello Marca de Negocios Verdes'),
                           const SizedBox(height: 6),
                           const Text(
                             'Certificación oficial que reconoce a las '
@@ -292,11 +290,10 @@ class _NosotrosPageState extends State<NosotrosPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            '🛡️ Aval de Confianza',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w600, fontSize: 15),
-                          ),
+                          _encabezadoReconocimiento(
+                              Icons.shield_outlined,
+                              NVColors.avalConfianzaDorado,
+                              'Aval de Confianza'),
                           const SizedBox(height: 6),
                           const Text(
                             'Reconocimiento oficial otorgado por la '
@@ -383,6 +380,23 @@ class _NosotrosPageState extends State<NosotrosPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Text(texto, style: const TextStyle(fontSize: 15, height: 1.5)),
+    );
+  }
+
+  /// Ícono + título de cada caja de la sección "Reconocimientos" — antes
+  /// era un emoji suelto dentro del Text, pero el renderer de Flutter Web
+  /// lo pintaba en blanco y negro (se veía "feo"/sin color, reportado con
+  /// captura real); un Icon de Material sí respeta el color de marca de
+  /// cada insignia.
+  Widget _encabezadoReconocimiento(IconData icono, Color color, String titulo) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icono, color: color, size: 20),
+        const SizedBox(width: 8),
+        Text(titulo,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+      ],
     );
   }
 
