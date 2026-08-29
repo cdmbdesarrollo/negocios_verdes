@@ -34,6 +34,25 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
   String? _filtroMunicipio;
   String? _filtroCategoriaId;
   bool? _filtroActivo;
+  /// Estado CDMB (novedad) — independiente de [_filtroActivo] (que es el
+  /// flag de publicación). Deja ver los negocios que están RETIRADO /
+  /// SUSPENDIDO / INACTIVO, que igual no salen en el sitio público.
+  String? _filtroNovedad;
+
+  static const _porPagina = 25;
+  int _pagina = 0;
+
+  /// Cualquier cambio de filtro o búsqueda vuelve a la primera página — si
+  /// no, se puede quedar "viendo la página 4" de una lista que ahora tiene
+  /// 2 páginas y parecería vacía.
+  void _cambiarFiltro(VoidCallback cambio) {
+    setState(() {
+      cambio();
+      _pagina = 0;
+    });
+  }
+
+  static const _novedadOpciones = ['ACTIVO', 'INACTIVO', 'RETIRADO', 'SUSPENDIDO'];
 
   @override
   void initState() {
@@ -71,6 +90,9 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
     }
     if (_filtroActivo != null) {
       lista = lista.where((n) => n.activo == _filtroActivo).toList();
+    }
+    if (_filtroNovedad != null) {
+      lista = lista.where((n) => (n.novedad ?? '') == _filtroNovedad).toList();
     }
     if (_busqueda.trim().isNotEmpty) {
       final termino = _busqueda.trim().toLowerCase();
@@ -133,6 +155,12 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
     }
 
     final visibles = _visibles;
+    final totalPaginas =
+        visibles.isEmpty ? 1 : ((visibles.length - 1) ~/ _porPagina) + 1;
+    final pagina = _pagina.clamp(0, totalPaginas - 1);
+    final desde = pagina * _porPagina;
+    final hasta = (desde + _porPagina).clamp(0, visibles.length);
+    final pagVisibles = visibles.sublist(desde, hasta);
 
     return Column(
       children: [
@@ -143,7 +171,7 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
               prefixIcon: Icon(Icons.search),
               hintText: 'Buscar por nombre...',
             ),
-            onChanged: (v) => setState(() => _busqueda = v),
+            onChanged: (v) => _cambiarFiltro(() => _busqueda = v),
           ),
         ),
         Padding(
@@ -156,17 +184,28 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
               ChipFiltro(
                 etiqueta: 'Todos',
                 seleccionado: _filtroActivo == null,
-                onTap: () => setState(() => _filtroActivo = null),
+                onTap: () => _cambiarFiltro(() => _filtroActivo = null),
               ),
               ChipFiltro(
-                etiqueta: 'Activos',
+                etiqueta: 'Publicados',
                 seleccionado: _filtroActivo == true,
-                onTap: () => setState(() => _filtroActivo = true),
+                onTap: () => _cambiarFiltro(() => _filtroActivo = true),
               ),
               ChipFiltro(
-                etiqueta: 'Inactivos',
+                etiqueta: 'No publicados',
                 seleccionado: _filtroActivo == false,
-                onTap: () => setState(() => _filtroActivo = false),
+                onTap: () => _cambiarFiltro(() => _filtroActivo = false),
+              ),
+              DropdownButton<String?>(
+                value: _filtroNovedad,
+                hint: const Text('Estado CDMB'),
+                items: [
+                  const DropdownMenuItem(
+                      value: null, child: Text('Todos los estados')),
+                  for (final e in _novedadOpciones)
+                    DropdownMenuItem(value: e, child: Text(e)),
+                ],
+                onChanged: (v) => _cambiarFiltro(() => _filtroNovedad = v),
               ),
               DropdownButton<String?>(
                 value: _filtroMunicipio,
@@ -177,7 +216,7 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
                   for (final m in kMunicipios)
                     DropdownMenuItem(value: m, child: Text(m)),
                 ],
-                onChanged: (v) => setState(() => _filtroMunicipio = v),
+                onChanged: (v) => _cambiarFiltro(() => _filtroMunicipio = v),
               ),
               DropdownButton<String?>(
                 value: _filtroCategoriaId,
@@ -188,23 +227,17 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
                   for (final c in _categorias)
                     DropdownMenuItem(value: c.id, child: Text(c.nombre)),
                 ],
-                onChanged: (v) => setState(() => _filtroCategoriaId = v),
+                onChanged: (v) => _cambiarFiltro(() => _filtroCategoriaId = v),
               ),
-              // Carga masiva: exporta TODOS los negocios (no solo los que
-              // dejan pasar los filtros de arriba) e importa desde el mismo
-              // formato de columnas — ver AdminNegociosImportarPage. Pensado
-              // para altas futuras en lote, no se usó para los 295 reales
-              // de CDMB (esos entraron por migración SQL, ver
-              // lib/migraciones/0026_datos_cdmb_negocios_verdes_*.sql).
+              // Exporta lo que dejan pasar los filtros de arriba (no toda la
+              // base). Incluye negocios en cualquier estado y sin publicar —
+              // por eso este CSV nunca se sube tal cual al sitio.
               OutlinedButton.icon(
-                onPressed: () => exportarNegociosComoCsv(_negocios!),
+                onPressed: visibles.isEmpty
+                    ? null
+                    : () => exportarNegociosComoCsv(visibles),
                 icon: const Icon(Icons.download_outlined, size: 18),
-                label: const Text('Exportar CSV'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => context.go('/admin/negocios/importar'),
-                icon: const Icon(Icons.upload_file_outlined, size: 18),
-                label: const Text('Importar CSV'),
+                label: Text('Exportar CSV (${visibles.length})'),
               ),
             ],
           ),
@@ -215,12 +248,58 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
               ? const Center(child: Text('No hay negocios con estos filtros.'))
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 90),
-                  itemCount: visibles.length,
+                  itemCount: pagVisibles.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 10),
-                  itemBuilder: (context, i) => _tarjetaNegocio(visibles[i]),
+                  itemBuilder: (context, i) => _tarjetaNegocio(pagVisibles[i]),
                 ),
         ),
+        if (visibles.isNotEmpty)
+          _barraPaginacion(
+            desde: desde + 1,
+            hasta: hasta,
+            total: visibles.length,
+            pagina: pagina,
+            totalPaginas: totalPaginas,
+          ),
       ],
+    );
+  }
+
+  Widget _barraPaginacion({
+    required int desde,
+    required int hasta,
+    required int total,
+    required int pagina,
+    required int totalPaginas,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: NVColors.borde)),
+      ),
+      child: Row(
+        children: [
+          Text('$desde–$hasta de $total',
+              style: const TextStyle(
+                  color: NVColors.textoSecundario, fontSize: 13)),
+          const Spacer(),
+          IconButton(
+            tooltip: 'Página anterior',
+            icon: const Icon(Icons.chevron_left),
+            onPressed:
+                pagina > 0 ? () => setState(() => _pagina = pagina - 1) : null,
+          ),
+          Text('${pagina + 1} / $totalPaginas',
+              style: const TextStyle(fontSize: 13)),
+          IconButton(
+            tooltip: 'Página siguiente',
+            icon: const Icon(Icons.chevron_right),
+            onPressed: pagina < totalPaginas - 1
+                ? () => setState(() => _pagina = pagina + 1)
+                : null,
+          ),
+        ],
+      ),
     );
   }
 

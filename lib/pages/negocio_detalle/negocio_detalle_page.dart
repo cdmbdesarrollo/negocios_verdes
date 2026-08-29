@@ -217,6 +217,14 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
                             icon: const Icon(Icons.call_outlined),
                             label: Text(negocio.telefono!),
                           ),
+                        if (negocio.telefonoSecundario != null &&
+                            negocio.telefonoSecundario!.isNotEmpty)
+                          OutlinedButton.icon(
+                            onPressed: () =>
+                                _llamar(negocio.telefonoSecundario!),
+                            icon: const Icon(Icons.call_outlined),
+                            label: Text(negocio.telefonoSecundario!),
+                          ),
                         if (negocio.facebookUrl != null &&
                             negocio.facebookUrl!.isNotEmpty)
                           OutlinedButton.icon(
@@ -457,6 +465,9 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
         (Icons.chat_bubble_outline, '+${negocio.whatsapp} (WhatsApp)'),
       if (negocio.telefono != null && negocio.telefono!.isNotEmpty)
         (Icons.call_outlined, negocio.telefono!),
+      if (negocio.telefonoSecundario != null &&
+          negocio.telefonoSecundario!.isNotEmpty)
+        (Icons.call_outlined, negocio.telefonoSecundario!),
       if (negocio.email != null && negocio.email!.isNotEmpty)
         (Icons.email_outlined, negocio.email!),
       if (negocio.representanteLegal != null &&

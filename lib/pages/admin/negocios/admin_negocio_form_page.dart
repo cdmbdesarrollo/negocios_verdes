@@ -120,6 +120,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
   final _descripcionCtrl = TextEditingController();
   final _productoCtrl = TextEditingController();
   final _telefonoCtrl = TextEditingController();
+  final _telefonoSecundarioCtrl = TextEditingController();
   final _whatsappCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _sitioWebCtrl = TextEditingController();
@@ -210,6 +211,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
     _descripcionCtrl.dispose();
     _productoCtrl.dispose();
     _telefonoCtrl.dispose();
+    _telefonoSecundarioCtrl.dispose();
     _whatsappCtrl.dispose();
     _emailCtrl.dispose();
     _sitioWebCtrl.dispose();
@@ -261,6 +263,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
         _descripcionCtrl.text = existente.descripcion ?? '';
         _productoCtrl.text = existente.producto ?? '';
         _telefonoCtrl.text = existente.telefono ?? '';
+        _telefonoSecundarioCtrl.text = existente.telefonoSecundario ?? '';
         _whatsappCtrl.text = existente.whatsapp ?? '';
         _emailCtrl.text = existente.email ?? '';
         _sitioWebCtrl.text = existente.sitioWeb ?? '';
@@ -391,26 +394,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
 
     setState(() => _guardando = true);
     try {
-      // Solo dígitos — un número guardado con espacios/guiones/+ produce un
-      // link wa.me roto (ver comentario en negocios.whatsapp / BotonWhatsapp).
-      var whatsappLimpio =
-          _whatsappCtrl.text.replaceAll(RegExp(r'[^0-9]'), '');
-      // "El teléfono fijo, como en muchos casos ES el WhatsApp, se debe
-      // llevar a WhatsApp para que el botón funcione" (pedido explícito).
-      // Solo si WhatsApp quedó vacío y el teléfono es UN número plausible
-      // (no dos pegados con separador) — así no se arma un wa.me roto con
-      // "3001112233 - 3004445566".
-      if (whatsappLimpio.isEmpty) {
-        final telTexto = _telefonoCtrl.text.trim();
-        final telDigitos = telTexto.replaceAll(RegExp(r'[^0-9]'), '');
-        final dosNumeros = RegExp(r'\d[\s/,;-]+\d{6,}').hasMatch(telTexto);
-        if (!dosNumeros && telDigitos.length >= 7 && telDigitos.length <= 12) {
-          whatsappLimpio =
-              (telDigitos.length == 10 && telDigitos.startsWith('3'))
-                  ? '57$telDigitos'
-                  : telDigitos;
-        }
-      }
+      final (whatsappNorm, telefonoNorm, secundarioNorm) = _normalizarContacto();
 
       await _negocioService.guardar(
         id: _negocioId,
@@ -423,8 +407,9 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
         longitud: _longitud,
         descripcionCorta: _vacioANulo(_descripcionCortaCtrl.text),
         descripcion: _vacioANulo(_descripcionCtrl.text),
-        telefono: _vacioANulo(_telefonoCtrl.text),
-        whatsapp: whatsappLimpio.isEmpty ? null : whatsappLimpio,
+        telefono: telefonoNorm,
+        telefonoSecundario: secundarioNorm,
+        whatsapp: whatsappNorm,
         email: _vacioANulo(_emailCtrl.text),
         sitioWeb: _vacioANulo(_sitioWebCtrl.text),
         facebookUrl: _vacioANulo(_facebookCtrl.text),
@@ -543,6 +528,55 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
 
   String? _vacioANulo(String texto) =>
       texto.trim().isEmpty ? null : texto.trim();
+
+  /// Reparte lo escrito en WhatsApp / Teléfono fijo / Teléfono secundario en
+  /// esos mismos 3 campos ya normalizados, siguiendo las reglas que pidió
+  /// CDMB: un celular colombiano (10 dígitos, empieza por 3) va a WhatsApp
+  /// con indicativo `57` adelante para que `wa.me` funcione; un número que
+  /// no es celular se queda como teléfono fijo; y si hay más de uno, el
+  /// resto va a secundario (antes se pegaban dos con un guion en un solo
+  /// campo, rompiendo el link). Devuelve (whatsapp, telefono, secundario).
+  (String?, String?, String?) _normalizarContacto() {
+    String dig(String s) => s.replaceAll(RegExp(r'[^0-9]'), '');
+    bool celular(String d) => d.length == 10 && d.startsWith('3');
+    bool celularConPais(String d) => d.length == 12 && d.startsWith('573');
+    String aWhatsapp(String d) => celular(d) ? '57$d' : d;
+
+    // Un campo puede traer dos números pegados ("300… - 301…").
+    List<String> partes(String s) => s
+        .split(RegExp(r'\s*[-/,;]+\s*'))
+        .map(dig)
+        .where((d) => d.length >= 7)
+        .toList();
+
+    final escritoWhatsapp = partes(_whatsappCtrl.text);
+    final pendientes = <String>[
+      ...escritoWhatsapp.skip(1),
+      ...partes(_telefonoCtrl.text),
+      ...partes(_telefonoSecundarioCtrl.text),
+    ];
+
+    String? whatsapp = escritoWhatsapp.isNotEmpty
+        ? aWhatsapp(escritoWhatsapp.first)
+        : null;
+    // Si no se escribió WhatsApp pero hay un celular entre los demás, se usa.
+    if (whatsapp == null) {
+      final idx = pendientes.indexWhere((d) => celular(d) || celularConPais(d));
+      if (idx >= 0) whatsapp = aWhatsapp(pendientes.removeAt(idx));
+    }
+
+    final vistos = <String>{if (whatsapp != null) dig(whatsapp)};
+    final restantes = <String>[];
+    for (final d in pendientes) {
+      if (vistos.add(d)) restantes.add(d);
+    }
+
+    return (
+      whatsapp,
+      restantes.isEmpty ? null : restantes.first,
+      restantes.length > 1 ? restantes.sublist(1).join(' / ') : null,
+    );
+  }
 
   /// Grados decimales (siempre positivos) desde un texto Este/Norte, o null
   /// si no calza con ningún formato reconocible — mismo criterio que
@@ -1064,16 +1098,28 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           TextFormField(
             controller: _whatsappCtrl,
             decoration: const InputDecoration(
-              labelText: 'WhatsApp (opcional)',
-              helperText: 'Con indicativo de país, ej. 573001234567. '
-                  'Si se deja vacío se usa el teléfono fijo.',
+              labelText: 'WhatsApp / celular (opcional)',
+              helperText: 'Al guardar: un celular (10 dígitos, empieza por 3) '
+                  'se guarda como 57… para que el botón de WhatsApp funcione.',
             ),
             keyboardType: TextInputType.phone,
           ),
           const SizedBox(height: 12),
           TextFormField(
             controller: _telefonoCtrl,
-            decoration: const InputDecoration(labelText: 'Teléfono fijo (opcional)'),
+            decoration: const InputDecoration(
+              labelText: 'Teléfono fijo (opcional)',
+              helperText: 'Números que no son celular. Si hay más de uno, el '
+                  'resto pasa a "Teléfono secundario" al guardar.',
+            ),
+            keyboardType: TextInputType.phone,
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _telefonoSecundarioCtrl,
+            decoration:
+                const InputDecoration(labelText: 'Teléfono secundario (opcional)'),
+            keyboardType: TextInputType.phone,
           ),
           const SizedBox(height: 12),
           TextFormField(

@@ -219,6 +219,15 @@ en un Supabase nuevo:
     chequeo `es_admin()` interno) para poder quitar desde el formulario un
     año de puntaje cargado por error. Sin dependencias, correr en cualquier
     momento.
+28. `0028_telefono_secundario.sql` — columna `negocios.telefono_secundario`
+    (segundo número de contacto) y firma nueva de la RPC `guardar_negocio`
+    (agrega `p_telefono_secundario` al final). Borra las versiones previas
+    de la función y recrea una sola, igual que hizo 0025 con
+    `guardar_ficha_tecnica_negocio`. El formulario reparte lo escrito entre
+    WhatsApp (celular con `57` adelante), teléfono fijo y secundario.
+    En este mismo commit se quitó la UI de importar CSV
+    (`/admin/negocios/importar`) — la lógica de `negocios_csv.dart` y su
+    test siguen; el exportar CSV ahora respeta los filtros de la lista.
 
 ## Sobre trabajo concurrente de dos sesiones
 

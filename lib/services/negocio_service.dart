@@ -34,7 +34,7 @@ const String _selectConEmbeds = '*, $_embeds';
 const String _selectPublico =
     'id, nombre, slug, categoria_oficial_id, municipio, vereda_id, '
     'direccion, latitud, longitud, descripcion_corta, descripcion, producto, '
-    'telefono, whatsapp, email, sitio_web, facebook_url, instagram_url, '
+    'telefono, telefono_secundario, whatsapp, email, sitio_web, facebook_url, instagram_url, '
     'foto_portada_url, foto_portada_path, representante_legal, '
     'emprendimiento_verde, sello_marca, avalado, destacado, activo, '
     'created_at, updated_at, $_embeds';
@@ -222,6 +222,7 @@ class NegocioService {
     String? descripcionCorta,
     String? descripcion,
     String? telefono,
+    String? telefonoSecundario,
     String? whatsapp,
     String? email,
     String? sitioWeb,
@@ -254,6 +255,7 @@ class NegocioService {
         'p_descripcion_corta': descripcionCorta,
         'p_descripcion': descripcion,
         'p_telefono': telefono,
+        'p_telefono_secundario': telefonoSecundario,
         'p_whatsapp': whatsapp,
         'p_email': email,
         'p_sitio_web': sitioWeb,

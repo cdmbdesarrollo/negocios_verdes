@@ -53,9 +53,14 @@ class Negocio {
   /// 300 cc"), más específico que [descripcion].
   final String? producto;
   final String? telefono;
+  /// Segundo número de contacto (ver 0028_telefono_secundario.sql) — antes
+  /// se pegaban los dos en [telefono] con un guion, lo que rompía el link
+  /// de WhatsApp.
+  final String? telefonoSecundario;
   /// Ya no es obligatorio (ver 0022_ficha_ampliada_negocios.sql): la base
   /// real de CDMB trae muchos negocios sin WhatsApp capturado todavía, se
-  /// completa después desde /admin/negocios.
+  /// completa después desde /admin/negocios. Se guarda con indicativo país
+  /// (57…) para que el botón de WhatsApp funcione.
   final String? whatsapp;
   final String? email;
   final String? sitioWeb;
@@ -113,6 +118,7 @@ class Negocio {
     this.descripcion,
     this.producto,
     this.telefono,
+    this.telefonoSecundario,
     this.whatsapp,
     this.email,
     this.sitioWeb,
@@ -178,6 +184,7 @@ class Negocio {
       descripcion: json['descripcion']?.toString(),
       producto: json['producto']?.toString(),
       telefono: json['telefono']?.toString(),
+      telefonoSecundario: json['telefono_secundario']?.toString(),
       whatsapp: json['whatsapp']?.toString(),
       email: json['email']?.toString(),
       sitioWeb: json['sitio_web']?.toString(),
@@ -227,6 +234,7 @@ class Negocio {
       descripcion: descripcion,
       producto: producto,
       telefono: telefono,
+      telefonoSecundario: telefonoSecundario,
       whatsapp: whatsapp,
       email: email,
       sitioWeb: sitioWeb,
