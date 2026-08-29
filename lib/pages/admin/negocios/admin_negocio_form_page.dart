@@ -5,11 +5,13 @@ import 'package:uuid/uuid.dart';
 import '../../../catalogos.dart';
 import '../../../core/admin_guard.dart';
 import '../../../core/widgets/selector_con_catalogo.dart';
+import '../../../core/widgets/selector_persona.dart';
 import '../../../models/actividad_productiva.dart';
 import '../../../models/categoria_oficial.dart';
 import '../../../models/ficha_tecnica_negocio.dart';
 import '../../../models/negocio_foto.dart';
 import '../../../models/opcion_campo.dart';
+import '../../../models/persona.dart';
 import '../../../models/subcategoria.dart';
 import '../../../models/vereda.dart';
 import '../../../services/actividad_productiva_service.dart';
@@ -17,6 +19,7 @@ import '../../../services/categoria_service.dart';
 import '../../../services/negocio_foto_service.dart';
 import '../../../services/negocio_service.dart';
 import '../../../services/opcion_campo_service.dart';
+import '../../../services/personas_service.dart';
 import '../../../services/subcategoria_service.dart';
 import '../../../services/vereda_service.dart';
 import '../../../theme/nv_colors.dart';
@@ -107,6 +110,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
   final _negocioService = NegocioService();
   final _negocioFotoService = NegocioFotoService();
   final _opcionCampoService = OpcionCampoService();
+  final _personasService = PersonasService();
 
   late final String _negocioId;
   bool get _esEdicion => widget.negocioId != null;
@@ -127,7 +131,6 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
   final _facebookCtrl = TextEditingController();
   final _instagramCtrl = TextEditingController();
   final _direccionCtrl = TextEditingController();
-  final _representanteLegalCtrl = TextEditingController();
   final _nitCtrl = TextEditingController();
   final _anioRegistroCtrl = TextEditingController();
   final _observacionesCtrl = TextEditingController();
@@ -165,6 +168,25 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
   List<Subcategoria> _subcategorias = [];
   List<ActividadProductiva> _actividades = [];
   List<Vereda> _veredas = [];
+
+  /// Bases de personas (ver PersonasService / 0029) + la asignación vigente
+  /// de cada una a este negocio. `_xIdOriginal` es lo que había al abrir el
+  /// formulario — si al guardar cambió, se llama a la RPC asignar/quitar que
+  /// deja la traza.
+  List<Persona> _responsables = [];
+  List<Persona> _delegados = [];
+  List<Persona> _representantes = [];
+  String? _responsableId;
+  String? _delegadoId;
+  String? _representanteId;
+  String? _responsableIdOriginal;
+  String? _delegadoIdOriginal;
+  String? _representanteIdOriginal;
+  String? _nitOriginal;
+  String? _naturalezaOriginal;
+  List<AsignacionPersona> _histResp = [];
+  List<AsignacionPersona> _histDeleg = [];
+  List<AsignacionPersona> _histRepr = [];
   /// Hasta 3 — orden de selección, la primera es la "principal" (la que
   /// queda en negocios.categoria_oficial_id para todo lo que ya filtra o
   /// muestra por una sola categoría). Lista, no Set, para que ese orden sea
@@ -218,7 +240,6 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
     _facebookCtrl.dispose();
     _instagramCtrl.dispose();
     _direccionCtrl.dispose();
-    _representanteLegalCtrl.dispose();
     _nitCtrl.dispose();
     _anioRegistroCtrl.dispose();
     _observacionesCtrl.dispose();
@@ -242,6 +263,9 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
       final actividades = await _actividadService.listarTodas();
       final veredas = await _veredaService.listarTodas();
       final opciones = await _opcionCampoService.listarTodas();
+      _responsables = await _personasService.listar(TipoPersona.responsable);
+      _delegados = await _personasService.listar(TipoPersona.delegado);
+      _representantes = await _personasService.listar(TipoPersona.representante);
 
       _aniosPuntaje.add(DateTime.now().year);
 
@@ -269,7 +293,6 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
         _sitioWebCtrl.text = existente.sitioWeb ?? '';
         _facebookCtrl.text = existente.facebookUrl ?? '';
         _instagramCtrl.text = existente.instagramUrl ?? '';
-        _representanteLegalCtrl.text = existente.representanteLegal ?? '';
         _nitCtrl.text = existente.nit ?? '';
         _naturalezaJuridica = existente.naturalezaJuridica;
         _fotoPortadaUrl = existente.fotoPortadaUrl;
@@ -297,6 +320,19 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
 
         final ficha = await _negocioService.obtenerFichaTecnica(_negocioId);
         _poblarFicha(ficha);
+
+        final actuales = await _personasService.actuales(_negocioId);
+        _responsableId = _responsableIdOriginal = actuales.responsableId;
+        _delegadoId = _delegadoIdOriginal = actuales.delegadoId;
+        _representanteId = _representanteIdOriginal = actuales.representanteId;
+        _nitOriginal = actuales.nit;
+        _naturalezaOriginal = actuales.naturalezaJuridica;
+        _histResp = await _personasService.historial(
+            TipoPersona.responsable, _negocioId);
+        _histDeleg =
+            await _personasService.historial(TipoPersona.delegado, _negocioId);
+        _histRepr = await _personasService.historial(
+            TipoPersona.representante, _negocioId);
       }
 
       if (!mounted) return;
@@ -323,8 +359,8 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
     _valoresSelector['tipo_negocio_verde'] = f.tipoNegocioVerde;
     _valoresSelector['aplicacion_ficha_2025'] = f.aplicacionFicha2025;
     _valoresSelector['rut_camara_comercio'] = f.rutCamaraComercio;
-    _valoresSelector['responsable_cdmb'] = f.responsableCdmb;
-    _valoresSelector['delegado'] = f.delegado;
+    // responsable_cdmb / delegado ya no son texto libre: se manejan como
+    // personas (ver _responsableId/_delegadoId + SelectorPersona).
     _valoresSelector['registro_nacional_turismo'] = f.registroNacionalTurismo;
     _valoresSelector['uso_suelo'] = f.usoSuelo;
     _valoresSelector['concesion_aguas'] = f.concesionAguas;
@@ -416,7 +452,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
         instagramUrl: _vacioANulo(_instagramCtrl.text),
         fotoPortadaUrl: _fotoPortadaUrl,
         fotoPortadaPath: _fotoPortadaPath,
-        representanteLegal: _vacioANulo(_representanteLegalCtrl.text),
+        representanteLegal: _personaNombre(_representantes, _representanteId),
         producto: _vacioANulo(_productoCtrl.text),
         nit: _vacioANulo(_nitCtrl.text),
         naturalezaJuridica: _naturalezaJuridica,
@@ -430,6 +466,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
       );
 
       await _guardarFichaTecnica();
+      await _sincronizarAsignaciones();
       await _sincronizarGaleria();
 
       if (mounted) {
@@ -453,9 +490,12 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
       cotaMsnm: _vacioANulo(_cotaCtrl.text),
       aplicacionFicha2025: _valoresSelector['aplicacion_ficha_2025'],
       observaciones: _vacioANulo(_observacionesCtrl.text),
-      delegado: _valoresSelector['delegado'],
+      // responsable_cdmb / delegado: se pasan como texto (copia
+      // denormalizada) para no romper la RPC, pero la fuente de verdad y la
+      // traza son las tablas de personas (ver _sincronizarAsignaciones).
+      delegado: _personaNombre(_delegados, _delegadoId),
       rutCamaraComercio: _valoresSelector['rut_camara_comercio'],
-      responsableCdmb: _valoresSelector['responsable_cdmb'],
+      responsableCdmb: _personaNombre(_responsables, _responsableId),
       registroNacionalTurismo: _valoresSelector['registro_nacional_turismo'],
       usoSuelo: _valoresSelector['uso_suelo'],
       concesionAguas: _valoresSelector['concesion_aguas'],
@@ -501,6 +541,56 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
       if (puntaje != null) {
         await _negocioService.guardarPuntaje(_negocioId, anio, puntaje);
       }
+    }
+  }
+
+  String? _personaNombre(List<Persona> lista, String? id) {
+    if (id == null) return null;
+    for (final p in lista) {
+      if (p.id == id) return p.nombreCompleto;
+    }
+    return null;
+  }
+
+  /// Si cambió el responsable / delegado / representante (o, para
+  /// representante, el NIT o la naturaleza jurídica), llama a la RPC
+  /// asignar/quitar que cierra la asignación vigente y abre otra — así queda
+  /// la traza (quién, cuándo). Corre DESPUÉS de guardar_negocio para que el
+  /// negocio ya exista.
+  Future<void> _sincronizarAsignaciones() async {
+    if (_responsableId != _responsableIdOriginal) {
+      if (_responsableId == null) {
+        await _personasService.quitar(TipoPersona.responsable,
+            negocioId: _negocioId);
+      } else {
+        await _personasService.asignar(TipoPersona.responsable,
+            negocioId: _negocioId, personaId: _responsableId!);
+      }
+    }
+    if (_delegadoId != _delegadoIdOriginal) {
+      if (_delegadoId == null) {
+        await _personasService.quitar(TipoPersona.delegado,
+            negocioId: _negocioId);
+      } else {
+        await _personasService.asignar(TipoPersona.delegado,
+            negocioId: _negocioId, personaId: _delegadoId!);
+      }
+    }
+    final nit = _vacioANulo(_nitCtrl.text);
+    if (_representanteId == null) {
+      // Sin representante: solo hay que hacer algo si antes había uno.
+      if (_representanteIdOriginal != null) {
+        await _personasService.quitar(TipoPersona.representante,
+            negocioId: _negocioId);
+      }
+    } else if (_representanteId != _representanteIdOriginal ||
+        nit != _nitOriginal ||
+        _naturalezaJuridica != _naturalezaOriginal) {
+      await _personasService.asignar(TipoPersona.representante,
+          negocioId: _negocioId,
+          personaId: _representanteId!,
+          nit: nit,
+          naturalezaJuridica: _naturalezaJuridica);
     }
   }
 
@@ -867,11 +957,22 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           ),
           const SizedBox(height: 20),
           _seccion('Identificación'),
-          TextFormField(
-            controller: _representanteLegalCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Representante legal (opcional)',
-              helperText: 'Público en la ficha.',
+          SelectorPersona(
+            tipo: TipoPersona.representante,
+            personas: _representantes,
+            seleccionadaId: _representanteId,
+            servicio: _personasService,
+            onSeleccion: (p) => setState(() => _representanteId = p?.id),
+            onPersonasCambiaron: (lista) =>
+                setState(() => _representantes = lista),
+          ),
+          const Padding(
+            padding: EdgeInsets.only(top: 4, left: 4),
+            child: Text(
+              'El nombre se muestra en la ficha pública. El NIT y la '
+              'naturaleza jurídica son de este negocio (la misma persona '
+              'puede representar varios, cada uno con su NIT).',
+              style: TextStyle(fontSize: 12, color: NVColors.textoSecundario),
             ),
           ),
           const SizedBox(height: 12),
@@ -1335,21 +1436,24 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
               onAgregarOpcion: (ctx) => _agregarOpcion(ctx, 'rut_camara_comercio'),
             ),
             const SizedBox(height: 12),
-            SelectorConCatalogo(
-              etiqueta: 'Responsable CDMB',
-              valor: _valoresSelector['responsable_cdmb'],
-              opciones: _valoresDe('responsable_cdmb'),
-              onCambio: (v) =>
-                  setState(() => _valoresSelector['responsable_cdmb'] = v),
-              onAgregarOpcion: (ctx) => _agregarOpcion(ctx, 'responsable_cdmb'),
+            SelectorPersona(
+              tipo: TipoPersona.responsable,
+              personas: _responsables,
+              seleccionadaId: _responsableId,
+              servicio: _personasService,
+              onSeleccion: (p) => setState(() => _responsableId = p?.id),
+              onPersonasCambiaron: (lista) =>
+                  setState(() => _responsables = lista),
             ),
             const SizedBox(height: 12),
-            SelectorConCatalogo(
-              etiqueta: 'Delegado',
-              valor: _valoresSelector['delegado'],
-              opciones: _valoresDe('delegado'),
-              onCambio: (v) => setState(() => _valoresSelector['delegado'] = v),
-              onAgregarOpcion: (ctx) => _agregarOpcion(ctx, 'delegado'),
+            SelectorPersona(
+              tipo: TipoPersona.delegado,
+              personas: _delegados,
+              seleccionadaId: _delegadoId,
+              servicio: _personasService,
+              onSeleccion: (p) => setState(() => _delegadoId = p?.id),
+              onPersonasCambiaron: (lista) =>
+                  setState(() => _delegados = lista),
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -1477,6 +1581,90 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             ),
           ],
         ),
+        if (_esEdicion) ...[
+          const SizedBox(height: 14),
+          _tarjetaGrupo(
+            icono: Icons.history,
+            titulo: 'Historial de responsable / delegado / representante',
+            hijos: [
+              const Text(
+                'Cada vez que cambia el responsable, el delegado o el '
+                'representante queda registrado quién estaba antes y hasta '
+                'cuándo. Se puede cambiar en cualquier momento.',
+                style: TextStyle(fontSize: 12, color: NVColors.textoSecundario),
+              ),
+              const SizedBox(height: 12),
+              _bloqueHistorial('Responsable CDMB', _histResp),
+              const SizedBox(height: 12),
+              _bloqueHistorial('Delegado', _histDeleg),
+              const SizedBox(height: 12),
+              _bloqueHistorial('Representante legal', _histRepr),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _bloqueHistorial(String titulo, List<AsignacionPersona> filas) {
+    String fecha(DateTime? d) => d == null
+        ? '—'
+        : '${d.day.toString().padLeft(2, '0')}/'
+            '${d.month.toString().padLeft(2, '0')}/${d.year}';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(titulo,
+            style: const TextStyle(
+                fontWeight: FontWeight.w600, fontSize: 13)),
+        const SizedBox(height: 4),
+        if (filas.isEmpty)
+          const Text('Sin asignaciones registradas.',
+              style: TextStyle(fontSize: 12, color: NVColors.textoSecundario))
+        else
+          for (final f in filas)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    f.vigente ? Icons.check_circle : Icons.circle_outlined,
+                    size: 14,
+                    color: f.vigente
+                        ? NVColors.verdeVivo
+                        : NVColors.textoSecundario,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text.rich(TextSpan(children: [
+                      TextSpan(
+                          text: f.personaNombre,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                      if ((f.documento ?? '').isNotEmpty)
+                        TextSpan(text: '  ·  CC ${f.documento}'),
+                      if ((f.nit ?? '').isNotEmpty)
+                        TextSpan(text: '  ·  NIT ${f.nit}'),
+                      TextSpan(
+                        text: f.vigente
+                            ? '\nDesde ${fecha(f.vigenteDesde)} — actual'
+                            : '\n${fecha(f.vigenteDesde)} → ${fecha(f.vigenteHasta)}',
+                        style: const TextStyle(
+                            fontSize: 12, color: NVColors.textoSecundario),
+                      ),
+                      if ((f.nota ?? '').isNotEmpty)
+                        TextSpan(
+                          text: '\n“${f.nota}”',
+                          style: const TextStyle(
+                              fontSize: 12,
+                              fontStyle: FontStyle.italic,
+                              color: NVColors.textoSecundario),
+                        ),
+                    ])),
+                  ),
+                ],
+              ),
+            ),
       ],
     );
   }

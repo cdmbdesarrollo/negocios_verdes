@@ -228,6 +228,21 @@ en un Supabase nuevo:
     En este mismo commit se quitó la UI de importar CSV
     (`/admin/negocios/importar`) — la lógica de `negocios_csv.dart` y su
     test siguen; el exportar CSV ahora respeta los filtros de la lista.
+29. `0029_personas_responsable_delegado_representante.sql` — convierte
+    `negocios.responsable_cdmb` / `.delegado` / `.representante_legal` (texto
+    libre) en tres bases de personas (`responsables_cdmb`, `delegados`,
+    `representantes`: nombres, apellidos, documento, teléfono, correo) con
+    asignación por negocio EN TABLAS PUENTE CON HISTORIAL
+    (`negocio_responsable` / `negocio_delegado` / `negocio_representante`,
+    `vigente_hasta` null = actual; `negocio_representante` además lleva `nit`
+    y `naturaleza_juridica` por negocio — una persona puede representar
+    varios). RLS solo-admin, RPCs `guardar_*` / `asignar_*_negocio` /
+    `quitar_*_negocio` (SECURITY DEFINER + `es_admin()`). Backfill idempotente
+    desde los textos actuales. Las columnas de texto en `negocios` NO se
+    borran: quedan como copia denormalizada del valor vigente (las RPC de
+    asignación la mantienen sincronizada) para no tocar el `select` público
+    ni el modelo `Negocio`. Correr después de que exista `negocios` y
+    `es_admin`; sin más dependencias de orden.
 
 ## Sobre trabajo concurrente de dos sesiones
 
