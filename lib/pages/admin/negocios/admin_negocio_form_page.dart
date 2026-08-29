@@ -155,6 +155,10 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
   /// "+ Agregar año" deja escribir cualquier otro.
   final Set<int> _aniosPuntaje = {};
   final Map<int, TextEditingController> _puntajeCtrls = {};
+  /// Años que ya venían guardados en negocio_puntajes al abrir el formulario
+  /// — para saber, al quitar un año o dejarlo en blanco, si hay que llamar a
+  /// la RPC `eliminar_puntaje_negocio` o basta con sacarlo del estado local.
+  final Set<int> _aniosPuntajeGuardados = {};
 
   List<CategoriaOficial> _categorias = [];
   List<Subcategoria> _subcategorias = [];
@@ -352,6 +356,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
     _norteCtrl.text = f.norte ?? '';
     _cotaCtrl.text = f.cotaMsnm ?? '';
     _aniosPuntaje.addAll(f.puntajes.keys);
+    _aniosPuntajeGuardados.addAll(f.puntajes.keys);
     for (final anio in _aniosPuntaje) {
       _puntajeCtrls[anio] =
           TextEditingController(text: f.puntajes[anio]?.toString() ?? '');
@@ -388,8 +393,24 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
     try {
       // Solo dígitos — un número guardado con espacios/guiones/+ produce un
       // link wa.me roto (ver comentario en negocios.whatsapp / BotonWhatsapp).
-      final whatsappLimpio =
+      var whatsappLimpio =
           _whatsappCtrl.text.replaceAll(RegExp(r'[^0-9]'), '');
+      // "El teléfono fijo, como en muchos casos ES el WhatsApp, se debe
+      // llevar a WhatsApp para que el botón funcione" (pedido explícito).
+      // Solo si WhatsApp quedó vacío y el teléfono es UN número plausible
+      // (no dos pegados con separador) — así no se arma un wa.me roto con
+      // "3001112233 - 3004445566".
+      if (whatsappLimpio.isEmpty) {
+        final telTexto = _telefonoCtrl.text.trim();
+        final telDigitos = telTexto.replaceAll(RegExp(r'[^0-9]'), '');
+        final dosNumeros = RegExp(r'\d[\s/,;-]+\d{6,}').hasMatch(telTexto);
+        if (!dosNumeros && telDigitos.length >= 7 && telDigitos.length <= 12) {
+          whatsappLimpio =
+              (telDigitos.length == 10 && telDigitos.startsWith('3'))
+                  ? '57$telDigitos'
+                  : telDigitos;
+        }
+      }
 
       await _negocioService.guardar(
         id: _negocioId,
@@ -483,7 +504,14 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
 
     for (final anio in _aniosPuntaje) {
       final texto = _puntajeCtrls[anio]?.text.trim() ?? '';
-      if (texto.isEmpty) continue;
+      if (texto.isEmpty) {
+        // Un año que quedó en blanco: si estaba guardado, se elimina de la
+        // base (si no, no había nada que hacer).
+        if (_aniosPuntajeGuardados.contains(anio)) {
+          await _negocioService.eliminarPuntaje(_negocioId, anio);
+        }
+        continue;
+      }
       final puntaje = double.tryParse(texto.replaceAll(',', '.'));
       if (puntaje != null) {
         await _negocioService.guardarPuntaje(_negocioId, anio, puntaje);
@@ -699,6 +727,59 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
       _aniosPuntaje.add(anio);
       _puntajeCtrls.putIfAbsent(anio, () => TextEditingController());
     });
+  }
+
+  /// Quitar un año del historial. Si ya estaba guardado en la base se borra
+  /// de una vez (no se espera al "Guardar" general) — así el historial que
+  /// se muestra siempre coincide con lo que hay en negocio_puntajes.
+  Future<void> _eliminarAnioPuntaje(int anio) async {
+    final estabaGuardado = _aniosPuntajeGuardados.contains(anio);
+    if (estabaGuardado) {
+      final confirmar = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text('Quitar el puntaje $anio'),
+          content: Text(
+              'Se eliminará el puntaje de seguimiento del año $anio para este '
+              'negocio. Esta acción no se puede deshacer.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Quitar'),
+            ),
+          ],
+        ),
+      );
+      if (confirmar != true) return;
+      try {
+        await _negocioService.eliminarPuntaje(_negocioId, anio);
+      } catch (e) {
+        _avisar(e.toString().replaceFirst('Exception: ', ''));
+        return;
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _aniosPuntaje.remove(anio);
+      _aniosPuntajeGuardados.remove(anio);
+      _puntajeCtrls.remove(anio)?.dispose();
+    });
+  }
+
+  /// Historial año→puntaje tal cual está escrito ahora en los campos, para
+  /// dibujar la mini-gráfica de barras (solo los años con un número válido).
+  Map<int, double> get _puntajesActuales {
+    final m = <int, double>{};
+    for (final anio in _aniosPuntaje) {
+      final t = _puntajeCtrls[anio]?.text.trim().replaceAll(',', '.') ?? '';
+      final v = double.tryParse(t);
+      if (v != null) m[anio] = v;
+    }
+    return m;
   }
 
   @override
@@ -984,7 +1065,8 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             controller: _whatsappCtrl,
             decoration: const InputDecoration(
               labelText: 'WhatsApp (opcional)',
-              helperText: 'Con indicativo de país, ej. 573001234567',
+              helperText: 'Con indicativo de país, ej. 573001234567. '
+                  'Si se deja vacío se usa el teléfono fijo.',
             ),
             keyboardType: TextInputType.phone,
           ),
@@ -1114,27 +1196,52 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
   }
 
   /// Sección "Ficha técnica CDMB" — gestión interna, nunca pública (ver
-  /// NegocioService._selectPublico). Colapsada por defecto: son varias
-  /// docenas de campos que la mayoría de las ediciones del día a día no
-  /// toca. Rediseñada como tarjetas con ícono por grupo (pedido explícito:
-  /// "que se vea muy moderno y fácil gestión") — cada campo categórico usa
-  /// SelectorConCatalogo en vez de texto libre, así el valor siempre es
-  /// exactamente el mismo sin importar quién edite ("no hardcodeada": las
-  /// opciones viven en la base, no en este archivo).
+  /// NegocioService._selectPublico). Antes iba dentro de un ExpansionTile
+  /// que se abría/cerraba con cualquier toque y dejaba todo escondido
+  /// (pedido explícito de corrección: "es muy incómodo la ficha se abra al
+  /// dar clic... esté toda la información disponible sin abrirla y más
+  /// agrupada"). Ahora es una sección fija, siempre visible, con las mismas
+  /// tarjetas por grupo (ícono + campos categóricos vía SelectorConCatalogo,
+  /// las opciones viven en la base, no en este archivo).
   Widget _fichaTecnica() {
-    return ExpansionTile(
-      tilePadding: EdgeInsets.zero,
-      title: const Text(
-        'Ficha técnica CDMB (gestión interna)',
-        style: TextStyle(fontWeight: FontWeight.bold, color: NVColors.primaryDark),
-      ),
-      subtitle: const Text(
-        'Permisos, fortalezas y puntajes — nunca visible en el sitio público. '
-        'Puede ir quedando incompleta: la actualiza el personal de campo.',
-        style: TextStyle(fontSize: 12, color: NVColors.textoSecundario),
-      ),
-      childrenPadding: const EdgeInsets.only(top: 8, bottom: 12),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: NVColors.primaryLight,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.assignment_outlined,
+                  size: 20, color: NVColors.primaryDark),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text('Ficha técnica CDMB (gestión interna)',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: NVColors.primaryDark)),
+                    SizedBox(height: 2),
+                    Text(
+                      'Permisos, fortalezas y puntajes — nunca visible en el '
+                      'sitio público. Puede ir quedando incompleta: la '
+                      'actualiza el personal de campo.',
+                      style: TextStyle(
+                          fontSize: 12, color: NVColors.textoSecundario),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
         _tarjetaGrupo(
           icono: Icons.badge_outlined,
           titulo: 'Identificación y seguimiento',
@@ -1160,8 +1267,12 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
               onAgregarOpcion: (ctx) => _agregarOpcion(ctx, 'tipo_negocio_verde'),
             ),
             const SizedBox(height: 12),
+            // La columna sigue llamándose `aplicacion_ficha_2025` en la base
+            // (no vale la pena una migración de rename solo por la etiqueta),
+            // pero de cara al admin es "de la vigencia", no de un año fijo —
+            // así 2026, 2027… no obligan a tocar nada.
             SelectorConCatalogo(
-              etiqueta: 'Aplicación de ficha 2025',
+              etiqueta: 'Aplicación de ficha (vigencia actual)',
               valor: _valoresSelector['aplicacion_ficha_2025'],
               opciones: _valoresDe('aplicacion_ficha_2025'),
               onCambio: (v) =>
@@ -1271,29 +1382,52 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           icono: Icons.leaderboard_outlined,
           titulo: 'Puntajes de seguimiento por año',
           hijos: [
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                for (final anio in (_aniosPuntaje.toList()..sort()))
-                  SizedBox(
-                    width: 110,
-                    child: TextFormField(
-                      controller: _puntajeCtrls[anio],
-                      decoration: InputDecoration(labelText: '$anio'),
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+            const Text(
+              'Historial completo de la calificación de seguimiento de este '
+              'negocio. Agrega los años que necesites (2026, 2027…); cada año '
+              'se guarda por separado.',
+              style: TextStyle(fontSize: 12, color: NVColors.textoSecundario),
+            ),
+            const SizedBox(height: 14),
+            _GraficaPuntajes(puntajes: _puntajesActuales),
+            const SizedBox(height: 16),
+            for (final anio in (_aniosPuntaje.toList()..sort()))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 96,
+                      child: TextFormField(
+                        controller: _puntajeCtrls[anio],
+                        onChanged: (_) => setState(() {}),
+                        decoration: InputDecoration(
+                          labelText: '$anio',
+                          isDense: true,
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                      ),
                     ),
-                  ),
-                SizedBox(
-                  height: 56,
-                  child: OutlinedButton.icon(
-                    onPressed: _agregarAnioPuntaje,
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Agregar año'),
-                  ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _BarraPuntaje(
+                          valor: _puntajesActuales[anio], maximo: 100),
+                    ),
+                    IconButton(
+                      tooltip: 'Quitar el año $anio',
+                      icon: const Icon(Icons.close, size: 18),
+                      color: NVColors.textoSecundario,
+                      onPressed: () => _eliminarAnioPuntaje(anio),
+                    ),
+                  ],
                 ),
-              ],
+              ),
+            const SizedBox(height: 4),
+            OutlinedButton.icon(
+              onPressed: _agregarAnioPuntaje,
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Agregar año'),
             ),
           ],
         ),
@@ -1401,6 +1535,102 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           fontSize: 16,
           color: NVColors.primaryDark,
         ),
+      ),
+    );
+  }
+}
+
+/// Mini-gráfica de barras del historial de puntajes (un CustomPaint liviano,
+/// sin dependencias nuevas — el stack del proyecto no trae librería de
+/// charts, ver pubspec). Escala fija 0–100 porque los puntajes de
+/// seguimiento de CDMB van en esa escala.
+class _GraficaPuntajes extends StatelessWidget {
+  final Map<int, double> puntajes;
+  const _GraficaPuntajes({required this.puntajes});
+
+  @override
+  Widget build(BuildContext context) {
+    final anios = puntajes.keys.toList()..sort();
+    if (anios.isEmpty) {
+      return Container(
+        height: 120,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: NVColors.fondo,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: NVColors.borde),
+        ),
+        child: const Text('Sin puntajes cargados todavía.',
+            style: TextStyle(fontSize: 12, color: NVColors.textoSecundario)),
+      );
+    }
+    return Container(
+      height: 150,
+      padding: const EdgeInsets.fromLTRB(8, 12, 8, 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: NVColors.borde),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          for (final anio in anios)
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    (puntajes[anio] ?? 0).toStringAsFixed(1),
+                    style: const TextStyle(
+                        fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Expanded(
+                    child: FractionallySizedBox(
+                      alignment: Alignment.bottomCenter,
+                      heightFactor:
+                          ((puntajes[anio] ?? 0) / 100).clamp(0.02, 1.0),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 6),
+                        decoration: BoxDecoration(
+                          color: NVColors.verdeVivo,
+                          borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(4)),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text('$anio',
+                      style: const TextStyle(
+                          fontSize: 11, color: NVColors.textoSecundario)),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Barra fina al lado de cada campo de año — refuerzo visual de la gráfica
+/// de arriba, para leer de un vistazo cuál año subió o bajó.
+class _BarraPuntaje extends StatelessWidget {
+  final double? valor;
+  final double maximo;
+  const _BarraPuntaje({required this.valor, required this.maximo});
+
+  @override
+  Widget build(BuildContext context) {
+    final v = valor;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(5),
+      child: LinearProgressIndicator(
+        value: v == null ? 0 : (v / maximo).clamp(0.0, 1.0),
+        minHeight: 8,
+        backgroundColor: NVColors.fondo,
+        valueColor: const AlwaysStoppedAnimation(NVColors.verdeVivo),
       ),
     );
   }

@@ -242,6 +242,25 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   ],
                 ),
               ),
+              const SizedBox(height: 28),
+              Text('Combinaciones de reconocimientos',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 4),
+              const Text(
+                'Los 3 reconocimientos son independientes: un negocio puede '
+                'tener 1, 2 o los 3. Aquí están las 8 combinaciones posibles.',
+                style: TextStyle(fontSize: 12, color: NVColors.textoSecundario),
+              ),
+              const SizedBox(height: 12),
+              NVCard(
+                child: Column(
+                  children: [
+                    for (final combo in _combosReconocimiento(todos))
+                      _filaCombo(combo.$1, combo.$2,
+                          todos.isEmpty ? 1 : todos.length),
+                  ],
+                ),
+              ),
             ],
             if (_topPuntajes != null && _topPuntajes!.isNotEmpty) ...[
               const SizedBox(height: 28),
@@ -263,6 +282,29 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         ),
       ),
     );
+  }
+
+  /// Las 8 combinaciones posibles de (Emprendimiento Verde, Sello Marca,
+  /// Avalado) con su conteo — se muestran todas, incluso las que hoy dan 0,
+  /// para que el admin vea de un vistazo qué mezclas realmente existen en la
+  /// base ("debe tener todas las combinaciones posibles", pedido explícito).
+  List<(String, int)> _combosReconocimiento(List<Negocio> negocios) {
+    int cuenta(bool ev, bool sm, bool av) => negocios
+        .where((n) =>
+            n.emprendimientoVerde == ev &&
+            n.selloMarca == sm &&
+            n.avalado == av)
+        .length;
+    return [
+      ('Emprendimiento Verde + Sello Marca + Avalado', cuenta(true, true, true)),
+      ('Emprendimiento Verde + Sello Marca', cuenta(true, true, false)),
+      ('Emprendimiento Verde + Avalado', cuenta(true, false, true)),
+      ('Sello Marca + Avalado', cuenta(false, true, true)),
+      ('Solo Emprendimiento Verde', cuenta(true, false, false)),
+      ('Solo Sello Marca', cuenta(false, true, false)),
+      ('Solo Avalado', cuenta(false, false, true)),
+      ('Sin ningún reconocimiento', cuenta(false, false, false)),
+    ];
   }
 
   Widget _filaTopPuntaje(
@@ -338,6 +380,40 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Igual que _filaMunicipio pero con la etiqueta arriba en su propia línea
+  /// (los nombres de combinación son largos y no caben en la columna fija de
+  /// 110 px de _filaMunicipio).
+  Widget _filaCombo(String etiqueta, int valor, int maximo) {
+    final proporcion = maximo == 0 ? 0.0 : valor / maximo;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text(etiqueta, style: const TextStyle(fontSize: 13))),
+              const SizedBox(width: 8),
+              Text('$valor',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: proporcion,
+              minHeight: 8,
+              backgroundColor: NVColors.fondo,
+              valueColor: AlwaysStoppedAnimation(
+                  valor == 0 ? NVColors.borde : NVColors.verdeVivo),
+            ),
+          ),
+        ],
       ),
     );
   }

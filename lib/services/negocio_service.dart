@@ -413,6 +413,20 @@ class NegocioService {
     }
   }
 
+  /// Quitar un año de puntaje cargado por error (ver
+  /// 0027_eliminar_puntaje_negocio.sql). Idempotente: borrar un año que no
+  /// existe no es error.
+  Future<void> eliminarPuntaje(String negocioId, int anio) async {
+    try {
+      await _supabase.rpc('eliminar_puntaje_negocio', params: {
+        'p_negocio_id': negocioId,
+        'p_anio': anio,
+      });
+    } catch (e) {
+      throw Exception('No se pudo eliminar el puntaje: $e');
+    }
+  }
+
   /// Todos los años con al menos un puntaje cargado — para que el
   /// selector de años del formulario ("Puntajes de seguimiento") no
   /// dependa de una lista fija en el código: si ya hay un 2026 cargado,

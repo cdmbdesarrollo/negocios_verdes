@@ -214,6 +214,11 @@ en un Supabase nuevo:
     municipio en el Excel que quedaron fuera y necesitan completarse a
     mano, y de los ~89 que quedaron en "Pendiente de clasificar" para
     revisión manual desde `/admin/negocios`.
+27. `0027_eliminar_puntaje_negocio.sql` — RPC `eliminar_puntaje_negocio`
+    (mismo patrón que `guardar_puntaje_negocio`: SECURITY DEFINER +
+    chequeo `es_admin()` interno) para poder quitar desde el formulario un
+    año de puntaje cargado por error. Sin dependencias, correr en cualquier
+    momento.
 
 ## Sobre trabajo concurrente de dos sesiones
 
