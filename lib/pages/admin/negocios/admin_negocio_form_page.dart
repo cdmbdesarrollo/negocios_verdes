@@ -601,8 +601,21 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           negocioId: _negocioId,
           personaId: _representanteId!,
           nit: nit,
-          naturalezaJuridica: _naturalezaJuridica);
+          naturalezaJuridica: _naturalezaJuridica,
+          // Razón social: la del negocio si es jurídico (su nombre), si no
+          // la que el representante ya tenga registrada.
+          razonSocial: _naturalezaJuridica == 'Jurídica'
+              ? _nombreCtrl.text.trim()
+              : _persona(_representantes, _representanteId)?.razonSocial);
     }
+  }
+
+  Persona? _persona(List<Persona> lista, String? id) {
+    if (id == null) return null;
+    for (final p in lista) {
+      if (p.id == id) return p;
+    }
+    return null;
   }
 
   /// Borrar+reinsertar, igual que negocios_subcategorias en la RPC — a esta
@@ -1249,75 +1262,107 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             ),
           const SizedBox(height: 20),
           _seccion('Contacto y redes sociales'),
-          TextFormField(
-            controller: _whatsappCtrl,
-            decoration: const InputDecoration(
-              labelText: 'WhatsApp / celular (opcional)',
-              helperText: 'Al guardar: un celular (10 dígitos, empieza por 3) '
-                  'se guarda como 57… para que el botón de WhatsApp funcione.',
-              prefixIcon: Icon(Icons.chat_outlined,
-                  size: 20, color: NVColors.primary),
-            ),
-            keyboardType: TextInputType.phone,
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _telefonoCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Teléfono fijo (opcional)',
-              helperText: 'Números que no son celular. Si hay más de uno, el '
-                  'resto pasa a "Teléfono secundario" al guardar.',
-              prefixIcon: Icon(Icons.call_outlined,
-                  size: 20, color: NVColors.primary),
-            ),
-            keyboardType: TextInputType.phone,
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _telefonoSecundarioCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Teléfono secundario (opcional)',
-              prefixIcon: Icon(Icons.call_outlined,
-                  size: 20, color: NVColors.primary),
-            ),
-            keyboardType: TextInputType.phone,
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _emailCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Correo (opcional)',
-              prefixIcon: Icon(Icons.email_outlined,
-                  size: 20, color: NVColors.primary),
-            ),
-            keyboardType: TextInputType.emailAddress,
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _sitioWebCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Sitio web (opcional)',
-              prefixIcon: Icon(Icons.language_outlined,
-                  size: 20, color: NVColors.primary),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _facebookCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Facebook (opcional)',
-              prefixIcon: Icon(Icons.facebook_outlined,
-                  size: 20, color: NVColors.primary),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _instagramCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Instagram (opcional)',
-              prefixIcon: Icon(Icons.camera_alt_outlined,
-                  size: 20, color: NVColors.primary),
-            ),
+          LayoutBuilder(
+            builder: (context, c) {
+              final ancho = c.maxWidth < 460
+                  ? c.maxWidth
+                  : (c.maxWidth - 12) / 2;
+              return Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  SizedBox(
+                    width: ancho,
+                    child: TextFormField(
+                      controller: _whatsappCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'WhatsApp / celular (opcional)',
+                        helperText: 'Al guardar: un celular (10 dígitos, '
+                            'empieza por 3) se guarda como 57… para que el '
+                            'botón de WhatsApp funcione.',
+                        helperMaxLines: 3,
+                        prefixIcon: Icon(Icons.chat_outlined,
+                            size: 20, color: NVColors.primary),
+                      ),
+                      keyboardType: TextInputType.phone,
+                    ),
+                  ),
+                  SizedBox(
+                    width: ancho,
+                    child: TextFormField(
+                      controller: _telefonoCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Teléfono fijo (opcional)',
+                        helperText: 'Números que no son celular. Si hay más '
+                            'de uno, el resto pasa a "Teléfono secundario" '
+                            'al guardar.',
+                        helperMaxLines: 3,
+                        prefixIcon: Icon(Icons.call_outlined,
+                            size: 20, color: NVColors.primary),
+                      ),
+                      keyboardType: TextInputType.phone,
+                    ),
+                  ),
+                  SizedBox(
+                    width: ancho,
+                    child: TextFormField(
+                      controller: _telefonoSecundarioCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Teléfono secundario (opcional)',
+                        prefixIcon: Icon(Icons.call_outlined,
+                            size: 20, color: NVColors.primary),
+                      ),
+                      keyboardType: TextInputType.phone,
+                    ),
+                  ),
+                  SizedBox(
+                    width: ancho,
+                    child: TextFormField(
+                      controller: _emailCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Correo (opcional)',
+                        prefixIcon: Icon(Icons.email_outlined,
+                            size: 20, color: NVColors.primary),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                  ),
+                  SizedBox(
+                    width: ancho,
+                    child: TextFormField(
+                      controller: _sitioWebCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Sitio web (opcional)',
+                        prefixIcon: Icon(Icons.language_outlined,
+                            size: 20, color: NVColors.primary),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: ancho,
+                    child: TextFormField(
+                      controller: _facebookCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Facebook (opcional)',
+                        prefixIcon: Icon(Icons.facebook_outlined,
+                            size: 20, color: NVColors.primary),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: ancho,
+                    child: TextFormField(
+                      controller: _instagramCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Instagram (opcional)',
+                        prefixIcon: Icon(Icons.camera_alt_outlined,
+                            size: 20, color: NVColors.primary),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 20),
           _seccion('Fotos'),
@@ -1469,54 +1514,96 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           icono: Icons.badge_outlined,
           titulo: 'Identificación y seguimiento',
           hijos: [
-            DropdownButtonFormField<String?>(
-              initialValue: _novedad,
-              isExpanded: true,
-              decoration: const InputDecoration(
-                labelText: 'Estado (novedad CDMB)',
-                prefixIcon: Icon(Icons.flag_outlined,
-                    size: 20, color: NVColors.primary),
-              ),
-              items: [
-                const DropdownMenuItem(value: null, child: Text('—')),
-                for (final o in _kNovedadOpciones)
-                  DropdownMenuItem(value: o, child: Text(o)),
-              ],
-              onChanged: (v) => setState(() => _novedad = v),
-            ),
-            const SizedBox(height: 12),
-            SelectorConCatalogo(
-              etiqueta: 'Tipo / madurez de negocio verde',
-              icono: Icons.trending_up,
-              valor: _valoresSelector['tipo_negocio_verde'],
-              opciones: _valoresDe('tipo_negocio_verde'),
-              onCambio: (v) =>
-                  setState(() => _valoresSelector['tipo_negocio_verde'] = v),
-              onAgregarOpcion: (ctx) => _agregarOpcion(ctx, 'tipo_negocio_verde'),
-            ),
-            const SizedBox(height: 12),
-            // La columna sigue llamándose `aplicacion_ficha_2025` en la base
-            // (no vale la pena una migración de rename solo por la etiqueta),
-            // pero de cara al admin es "de la vigencia", no de un año fijo —
-            // así 2026, 2027… no obligan a tocar nada.
-            SelectorConCatalogo(
-              etiqueta: 'Aplicación de ficha (vigencia actual)',
-              icono: Icons.fact_check_outlined,
-              valor: _valoresSelector['aplicacion_ficha_2025'],
-              opciones: _valoresDe('aplicacion_ficha_2025'),
-              onCambio: (v) =>
-                  setState(() => _valoresSelector['aplicacion_ficha_2025'] = v),
-              onAgregarOpcion: (ctx) => _agregarOpcion(ctx, 'aplicacion_ficha_2025'),
-            ),
-            const SizedBox(height: 12),
-            SelectorConCatalogo(
-              etiqueta: 'RUT / Cámara de comercio',
-              icono: Icons.description_outlined,
-              valor: _valoresSelector['rut_camara_comercio'],
-              opciones: _valoresDe('rut_camara_comercio'),
-              onCambio: (v) =>
-                  setState(() => _valoresSelector['rut_camara_comercio'] = v),
-              onAgregarOpcion: (ctx) => _agregarOpcion(ctx, 'rut_camara_comercio'),
+            // Dos columnas para los campos cortos — el resto (personas,
+            // observaciones) sigue a ancho completo.
+            LayoutBuilder(
+              builder: (context, c) {
+                final ancho = c.maxWidth < 460
+                    ? c.maxWidth
+                    : (c.maxWidth - 12) / 2;
+                return Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    SizedBox(
+                      width: ancho,
+                      child: DropdownButtonFormField<String?>(
+                        initialValue: _novedad,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Estado (novedad CDMB)',
+                          prefixIcon: Icon(Icons.flag_outlined,
+                              size: 20, color: NVColors.primary),
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                              value: null, child: Text('—')),
+                          for (final o in _kNovedadOpciones)
+                            DropdownMenuItem(value: o, child: Text(o)),
+                        ],
+                        onChanged: (v) => setState(() => _novedad = v),
+                      ),
+                    ),
+                    SizedBox(
+                      width: ancho,
+                      child: SelectorConCatalogo(
+                        etiqueta: 'Tipo / madurez de negocio verde',
+                        icono: Icons.trending_up,
+                        valor: _valoresSelector['tipo_negocio_verde'],
+                        opciones: _valoresDe('tipo_negocio_verde'),
+                        onCambio: (v) => setState(
+                            () => _valoresSelector['tipo_negocio_verde'] = v),
+                        onAgregarOpcion: (ctx) =>
+                            _agregarOpcion(ctx, 'tipo_negocio_verde'),
+                      ),
+                    ),
+                    // La columna sigue llamándose `aplicacion_ficha_2025` en
+                    // la base (no vale la pena una migración de rename solo
+                    // por la etiqueta), pero de cara al admin es "de la
+                    // vigencia", no de un año fijo — así 2026, 2027… no
+                    // obligan a tocar nada.
+                    SizedBox(
+                      width: ancho,
+                      child: SelectorConCatalogo(
+                        etiqueta: 'Aplicación de ficha (vigencia actual)',
+                        icono: Icons.fact_check_outlined,
+                        valor: _valoresSelector['aplicacion_ficha_2025'],
+                        opciones: _valoresDe('aplicacion_ficha_2025'),
+                        onCambio: (v) => setState(() =>
+                            _valoresSelector['aplicacion_ficha_2025'] = v),
+                        onAgregarOpcion: (ctx) =>
+                            _agregarOpcion(ctx, 'aplicacion_ficha_2025'),
+                      ),
+                    ),
+                    SizedBox(
+                      width: ancho,
+                      child: SelectorConCatalogo(
+                        etiqueta: 'RUT / Cámara de comercio',
+                        icono: Icons.description_outlined,
+                        valor: _valoresSelector['rut_camara_comercio'],
+                        opciones: _valoresDe('rut_camara_comercio'),
+                        onCambio: (v) => setState(() =>
+                            _valoresSelector['rut_camara_comercio'] = v),
+                        onAgregarOpcion: (ctx) =>
+                            _agregarOpcion(ctx, 'rut_camara_comercio'),
+                      ),
+                    ),
+                    SizedBox(
+                      width: ancho,
+                      child: TextFormField(
+                        controller: _anioRegistroCtrl,
+                        decoration: InputDecoration(
+                          labelText: 'Año de registro',
+                          helperText: _anioTrayectoria(),
+                          prefixIcon: const Icon(Icons.event_outlined,
+                              size: 20, color: NVColors.primary),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 12),
             SelectorPersona(
@@ -1540,17 +1627,6 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             ),
             const SizedBox(height: 12),
             TextFormField(
-              controller: _anioRegistroCtrl,
-              decoration: InputDecoration(
-                labelText: 'Año de registro',
-                helperText: _anioTrayectoria(),
-                prefixIcon: const Icon(Icons.event_outlined,
-                    size: 20, color: NVColors.primary),
-              ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
               controller: _observacionesCtrl,
               decoration: const InputDecoration(
                 labelText: 'Observaciones',
@@ -1568,33 +1644,63 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             child: _tarjetaGrupo(
               icono: entrada.key == 'Mercado'
                   ? Icons.trending_up
-                  : Icons.eco_outlined,
+                  : Icons.verified_user_outlined,
               titulo: entrada.key,
               hijos: [
-                for (final campo in entrada.value) ...[
-                  SelectorConCatalogo(
-                    etiqueta: campo.etiqueta,
-                    icono: campo.icono,
-                    valor: _valoresSelector[campo.campo],
-                    opciones: _valoresDe(campo.campo),
-                    onCambio: (v) =>
-                        setState(() => _valoresSelector[campo.campo] = v),
-                    onAgregarOpcion: (ctx) => _agregarOpcion(ctx, campo.campo),
-                  ),
-                  if (_kPermisosConVencimiento.any((p) => p.campo == campo.campo))
-                    _campoVencimiento(_kPermisosConVencimiento
-                        .firstWhere((p) => p.campo == campo.campo)),
-                  const SizedBox(height: 12),
-                ],
-                if (entrada.key == 'Mercado')
-                  TextFormField(
-                    controller: _huellaCarbonoCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Huella de carbono',
-                      prefixIcon: Icon(Icons.cloud_outlined,
-                          size: 20, color: NVColors.primary),
-                    ),
-                  ),
+                // Dos columnas para no hacer una pared de desplegables
+                // (pedido explícito: "más compacto, hago mucho scroll").
+                LayoutBuilder(
+                  builder: (context, c) {
+                    final ancho = c.maxWidth < 460
+                        ? c.maxWidth
+                        : (c.maxWidth - 12) / 2;
+                    return Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        for (final campo in entrada.value)
+                          SizedBox(
+                            width: ancho,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SelectorConCatalogo(
+                                  etiqueta: campo.etiqueta,
+                                  icono: campo.icono,
+                                  valor: _valoresSelector[campo.campo],
+                                  opciones: _valoresDe(campo.campo),
+                                  onCambio: (v) => setState(() =>
+                                      _valoresSelector[campo.campo] = v),
+                                  onAgregarOpcion: (ctx) =>
+                                      _agregarOpcion(ctx, campo.campo),
+                                ),
+                                // El vencimiento solo aparece si el permiso
+                                // dice "Sí" — si no, es una fila vacía de más.
+                                if (_valoresSelector[campo.campo] == 'Sí' &&
+                                    _kPermisosConVencimiento
+                                        .any((p) => p.campo == campo.campo))
+                                  _campoVencimiento(_kPermisosConVencimiento
+                                      .firstWhere(
+                                          (p) => p.campo == campo.campo)),
+                              ],
+                            ),
+                          ),
+                        if (entrada.key == 'Mercado')
+                          SizedBox(
+                            width: ancho,
+                            child: TextFormField(
+                              controller: _huellaCarbonoCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Huella de carbono',
+                                prefixIcon: Icon(Icons.cloud_outlined,
+                                    size: 20, color: NVColors.primary),
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
               ],
             ),
           ),

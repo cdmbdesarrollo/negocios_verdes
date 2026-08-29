@@ -48,6 +48,11 @@ class SelectorConCatalogo extends StatelessWidget {
     return DropdownButtonFormField<String>(
       initialValue: valor != null && items.contains(valor) ? valor : null,
       isExpanded: true,
+      // Sin valor todavía: se dice explícitamente "Sin diligenciar" para que
+      // el admin sepa que falta llenarlo (antes el campo se veía en blanco y
+      // parecía que ya estaba resuelto).
+      hint: const Text('Sin diligenciar',
+          style: TextStyle(color: NVColors.textoSecundario)),
       decoration: InputDecoration(
         labelText: etiqueta,
         prefixIcon: icono == null

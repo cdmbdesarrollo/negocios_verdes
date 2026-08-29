@@ -89,7 +89,7 @@ class PersonasService {
   Future<List<Persona>> listarConConteo(TipoPersona tipo) async {
     try {
       final extra = tipo == TipoPersona.representante
-          ? ', negocios_total, negocios_vigentes, nits_negocios'
+          ? ', negocios_total, negocios_vigentes, nits_negocios, razones_negocios'
           : ', negocios_total, negocios_vigentes';
       final data = await _supabase
           .from(_vista(tipo))
@@ -103,15 +103,24 @@ class PersonasService {
     }
   }
 
-  /// Los negocios que representa (o representó) un representante, con el NIT
-  /// y la naturaleza con que quedó registrado en cada uno — para ver la
-  /// asociación representante ↔ razón social ↔ NIT.
-  Future<List<({String negocio, String? nit, String? naturaleza, bool vigente})>>
-      negociosDeRepresentante(String representanteId) async {
+  /// Los negocios que representa (o representó) un representante, con el NIT,
+  /// la naturaleza y la razón social con que quedó registrado en cada uno —
+  /// para ver y editar la asociación representante ↔ razón social ↔ NIT.
+  Future<
+      List<
+          ({
+            String negocioId,
+            String negocio,
+            String? nit,
+            String? naturaleza,
+            String? razonSocial,
+            bool vigente
+          })>> negociosDeRepresentante(String representanteId) async {
     try {
       final data = await _supabase
           .from('negocio_representante')
-          .select('nit, naturaleza_juridica, vigente_hasta, negocios(nombre)')
+          .select(
+              'negocio_id, nit, naturaleza_juridica, razon_social, vigente_hasta, negocios(nombre)')
           .eq('representante_id', representanteId)
           .order('vigente_desde', ascending: false);
       return (data as List).map((e) {
@@ -123,9 +132,11 @@ class PersonasService {
                 ? (neg.first as Map)['nombre']?.toString() ?? '(negocio borrado)'
                 : '(negocio borrado)');
         return (
+          negocioId: fila['negocio_id']?.toString() ?? '',
           negocio: nombre,
           nit: fila['nit']?.toString(),
           naturaleza: fila['naturaleza_juridica']?.toString(),
+          razonSocial: fila['razon_social']?.toString(),
           vigente: fila['vigente_hasta'] == null,
         );
       }).toList();
@@ -183,6 +194,7 @@ class PersonasService {
     required String personaId,
     String? nit,
     String? naturalezaJuridica,
+    String? razonSocial,
     String? nota,
   }) async {
     try {
@@ -194,6 +206,7 @@ class PersonasService {
         params['p_representante_id'] = personaId;
         params['p_nit'] = nit;
         params['p_naturaleza_juridica'] = naturalezaJuridica;
+        params['p_razon_social'] = razonSocial;
       } else if (tipo == TipoPersona.responsable) {
         params['p_responsable_id'] = personaId;
       } else {

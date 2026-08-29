@@ -438,24 +438,34 @@ class _BarrasHorizontales extends StatelessWidget {
   Widget build(BuildContext context) {
     final entradas = datos.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-    final maxY = (entradas.first.value.toDouble() * 1.15)
-        .ceilToDouble()
-        .clamp(1.0, 1e9);
+    final maxVal = entradas.first.value;
+    final maxY = (maxVal * 1.18).ceilToDouble().clamp(4.0, 1e9);
+    final paso = (maxY / 4).ceilToDouble().clamp(1.0, 1e9);
     return BarChart(
       BarChartData(
         maxY: maxY,
         alignment: BarChartAlignment.spaceAround,
+        // Los valores se muestran SIEMPRE (arriba de cada barra), no solo al
+        // tocar (pedido explícito).
         barTouchData: BarTouchData(
+          enabled: false,
           touchTooltipData: BarTouchTooltipData(
+            getTooltipColor: (_) => Colors.transparent,
+            tooltipPadding: EdgeInsets.zero,
+            tooltipMargin: 2,
             getTooltipItem: (group, groupIdx, rod, rodIdx) => BarTooltipItem(
-              '${entradas[group.x].key}\n${rod.toY.toInt()}',
-              const TextStyle(color: Colors.white, fontSize: 12),
+              '${rod.toY.toInt()}',
+              const TextStyle(
+                  color: NVColors.textoPrincipal,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold),
             ),
           ),
         ),
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
+          horizontalInterval: paso,
           getDrawingHorizontalLine: (_) =>
               const FlLine(color: NVColors.borde, strokeWidth: 1),
         ),
@@ -465,8 +475,9 @@ class _BarrasHorizontales extends StatelessWidget {
               const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           rightTitles:
               const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          leftTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: true, reservedSize: 28)),
+          leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                  showTitles: true, reservedSize: 30, interval: paso)),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -488,15 +499,19 @@ class _BarrasHorizontales extends StatelessWidget {
         ),
         barGroups: [
           for (final (i, e) in entradas.indexed)
-            BarChartGroupData(x: i, barRods: [
-              BarChartRodData(
-                toY: e.value.toDouble(),
-                color: NVColors.primary,
-                width: 16,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(4)),
-              ),
-            ]),
+            BarChartGroupData(
+              x: i,
+              showingTooltipIndicators: const [0],
+              barRods: [
+                BarChartRodData(
+                  toY: e.value.toDouble(),
+                  color: NVColors.primary,
+                  width: 16,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(4)),
+                ),
+              ],
+            ),
         ],
       ),
     );
@@ -588,10 +603,26 @@ class _LineaPromedio extends StatelessWidget {
     final spots = [
       for (final a in anios) FlSpot(a.toDouble(), promedio[a]!),
     ];
+    final linea = LineChartBarData(
+      spots: spots,
+      isCurved: true,
+      color: NVColors.primary,
+      barWidth: 3,
+      dotData: const FlDotData(show: true),
+      belowBarData: BarAreaData(
+        show: true,
+        color: NVColors.primary.withValues(alpha: 0.12),
+      ),
+    );
     return LineChart(
       LineChartData(
         minY: 0,
         maxY: 100,
+        // El valor de cada año se muestra SIEMPRE, no solo al tocar.
+        showingTooltipIndicators: [
+          for (var i = 0; i < spots.length; i++)
+            ShowingTooltipIndicators([LineBarSpot(linea, 0, spots[i])]),
+        ],
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
@@ -623,29 +654,23 @@ class _LineaPromedio extends StatelessWidget {
           ),
         ),
         lineTouchData: LineTouchData(
+          enabled: false,
           touchTooltipData: LineTouchTooltipData(
+            getTooltipColor: (_) => Colors.transparent,
+            tooltipPadding: EdgeInsets.zero,
             getTooltipItems: (touched) => [
               for (final t in touched)
                 LineTooltipItem(
-                  '${t.x.toInt()}: ${t.y.toStringAsFixed(1)}',
-                  const TextStyle(color: Colors.white, fontSize: 12),
+                  t.y.toStringAsFixed(1),
+                  const TextStyle(
+                      color: NVColors.textoPrincipal,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold),
                 ),
             ],
           ),
         ),
-        lineBarsData: [
-          LineChartBarData(
-            spots: spots,
-            isCurved: true,
-            color: NVColors.primary,
-            barWidth: 3,
-            dotData: const FlDotData(show: true),
-            belowBarData: BarAreaData(
-              show: true,
-              color: NVColors.primary.withValues(alpha: 0.12),
-            ),
-          ),
-        ],
+        lineBarsData: [linea],
       ),
     );
   }

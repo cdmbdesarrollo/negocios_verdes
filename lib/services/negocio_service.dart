@@ -456,8 +456,14 @@ class NegocioService {
   /// miles) y promedia en el cliente.
   Future<Map<int, double>> promedioPuntajePorAnio() async {
     try {
-      final data =
-          await _supabase.from('negocio_puntajes').select('anio, puntaje');
+      // `puntaje > 0`: un 0 en `negocio_puntajes` casi siempre es un negocio
+      // que NO se calificó ese año (quedó en 0 en el Excel de origen), no un
+      // seguimiento con resultado real de cero — meterlo en el promedio lo
+      // hunde sin motivo (pedido explícito).
+      final data = await _supabase
+          .from('negocio_puntajes')
+          .select('anio, puntaje')
+          .gt('puntaje', 0);
       final sumas = <int, double>{};
       final cuentas = <int, int>{};
       for (final e in data as List) {

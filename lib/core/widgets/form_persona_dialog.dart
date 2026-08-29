@@ -43,9 +43,16 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
   String? _error;
 
   /// Solo representante en modo edición: los negocios que representa, con su
-  /// NIT — la "asociación representante ↔ razón social ↔ NIT".
-  List<({String negocio, String? nit, String? naturaleza, bool vigente})>?
-      _negocios;
+  /// NIT y razón social — la "asociación representante ↔ razón social ↔ NIT".
+  List<
+      ({
+        String negocioId,
+        String negocio,
+        String? nit,
+        String? naturaleza,
+        String? razonSocial,
+        bool vigente
+      })>? _negocios;
 
   bool get _esRepr => widget.tipo == TipoPersona.representante;
   bool get _esJuridica => _esRepr && _naturaleza == 'Jurídica';
@@ -70,9 +77,91 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
         ? (i!.esJuridica ? 'Jurídica' : 'Natural')
         : 'Natural';
     if (_esRepr && i != null && i.id.isNotEmpty) {
-      widget.servicio.negociosDeRepresentante(i.id).then((r) {
-        if (mounted) setState(() => _negocios = r);
-      }).catchError((_) {});
+      _cargarNegocios();
+    }
+  }
+
+  Future<void> _cargarNegocios() async {
+    try {
+      final r = await widget.servicio
+          .negociosDeRepresentante(widget.inicial!.id);
+      if (mounted) setState(() => _negocios = r);
+    } catch (_) {}
+  }
+
+  Future<void> _editarVinculo(
+      ({
+        String negocioId,
+        String negocio,
+        String? nit,
+        String? naturaleza,
+        String? razonSocial,
+        bool vigente
+      }) v) async {
+    final nitCtrl = TextEditingController(text: v.nit ?? '');
+    final rsCtrl = TextEditingController(text: v.razonSocial ?? '');
+    var nat = v.naturaleza ?? 'Natural';
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dc) => StatefulBuilder(
+        builder: (dc, setD) => AlertDialog(
+          title: Text('Datos en ${v.negocio}'),
+          content: SizedBox(
+            width: 380,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  initialValue: nat,
+                  decoration:
+                      const InputDecoration(labelText: 'Naturaleza jurídica'),
+                  items: const [
+                    DropdownMenuItem(value: 'Natural', child: Text('Natural')),
+                    DropdownMenuItem(value: 'Jurídica', child: Text('Jurídica')),
+                  ],
+                  onChanged: (x) => setD(() => nat = x ?? 'Natural'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: nitCtrl,
+                  decoration: const InputDecoration(labelText: 'NIT / cédula'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: rsCtrl,
+                  decoration: const InputDecoration(
+                      labelText: 'Razón social (si es jurídica)'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(dc, false),
+                child: const Text('Cancelar')),
+            FilledButton(
+                onPressed: () => Navigator.pop(dc, true),
+                child: const Text('Guardar')),
+          ],
+        ),
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await widget.servicio.asignar(
+        TipoPersona.representante,
+        negocioId: v.negocioId,
+        personaId: widget.inicial!.id,
+        nit: nitCtrl.text.trim().isEmpty ? null : nitCtrl.text.trim(),
+        naturalezaJuridica: nat,
+        razonSocial: rsCtrl.text.trim().isEmpty ? null : rsCtrl.text.trim(),
+      );
+      await _cargarNegocios();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', ''))));
+      }
     }
   }
 
@@ -297,56 +386,61 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
                 const SizedBox(height: 14),
                 const Divider(height: 1),
                 const SizedBox(height: 10),
-                const Text('Representa a',
+                const Text('Representa a  (toca una fila para editar su NIT / razón social)',
                     style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: NVColors.textoSecundario)),
                 const SizedBox(height: 6),
                 for (final n in _negocios!)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 3),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          n.vigente
-                              ? Icons.check_circle
-                              : Icons.history_toggle_off,
-                          size: 14,
-                          color: n.vigente
-                              ? NVColors.verdeVivo
-                              : NVColors.textoSecundario,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text.rich(TextSpan(children: [
-                            TextSpan(
-                                text: n.negocio,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600, fontSize: 13)),
-                            TextSpan(
-                              text: [
-                                if ((n.nit ?? '').isNotEmpty) 'NIT ${n.nit}',
-                                if ((n.naturaleza ?? '').isNotEmpty)
-                                  n.naturaleza!,
-                                if (!n.vigente) 'anterior',
-                              ].isEmpty
-                                  ? ''
-                                  : '  ·  ${[
-                                      if ((n.nit ?? '').isNotEmpty)
-                                        'NIT ${n.nit}',
-                                      if ((n.naturaleza ?? '').isNotEmpty)
-                                        n.naturaleza!,
-                                      if (!n.vigente) 'anterior',
-                                    ].join('  ·  ')}',
-                              style: const TextStyle(
-                                  fontSize: 12,
-                                  color: NVColors.textoSecundario),
+                  InkWell(
+                    onTap: n.vigente ? () => _editarVinculo(n) : null,
+                    borderRadius: BorderRadius.circular(6),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 5),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            n.vigente
+                                ? Icons.check_circle
+                                : Icons.history_toggle_off,
+                            size: 14,
+                            color: n.vigente
+                                ? NVColors.verdeVivo
+                                : NVColors.textoSecundario,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(n.negocio,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13)),
+                                Text(
+                                  [
+                                    if ((n.razonSocial ?? '').isNotEmpty)
+                                      'Razón social: ${n.razonSocial}',
+                                    if ((n.nit ?? '').isNotEmpty)
+                                      'NIT ${n.nit}',
+                                    if ((n.naturaleza ?? '').isNotEmpty)
+                                      n.naturaleza!,
+                                    if (!n.vigente) 'anterior',
+                                  ].join('  ·  '),
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      color: NVColors.textoSecundario),
+                                ),
+                              ],
                             ),
-                          ])),
-                        ),
-                      ],
+                          ),
+                          if (n.vigente)
+                            const Icon(Icons.edit_outlined,
+                                size: 14, color: NVColors.textoSecundario),
+                        ],
+                      ),
                     ),
                   ),
               ],

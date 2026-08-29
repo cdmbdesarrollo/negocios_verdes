@@ -65,6 +65,7 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
           p.nombreMostrado,
           p.nombreCompleto,
           p.razonSocial ?? '',
+          p.razonesNegocios ?? '',
           p.documento ?? '',
           p.nitsNegocios ?? '',
           p.telefono ?? '',

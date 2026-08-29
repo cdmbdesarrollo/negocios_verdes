@@ -229,6 +229,7 @@ class _BuscadorPersonaDialogState extends State<_BuscadorPersonaDialog> {
         p.nombreMostrado,
         p.nombreCompleto,
         p.razonSocial ?? '',
+        p.razonesNegocios ?? '',
         p.documento ?? '',
         p.nitsNegocios ?? '',
         p.telefono ?? '',

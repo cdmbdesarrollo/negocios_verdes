@@ -45,10 +45,11 @@ class Persona {
   final int? negociosTotal;
   final int? negociosVigentes;
 
-  /// Solo representantes, solo desde `v_representantes` (0034): todos los
-  /// NITs que tiene en sus negocios, separados por espacio — para poder
-  /// buscar por NIT aunque `documento` esté vacío.
+  /// Solo representantes, solo desde `v_representantes` (0034/0035): todos
+  /// los NITs / razones sociales que tiene en sus negocios — para buscar por
+  /// ahí aunque el campo propio esté vacío.
   final String? nitsNegocios;
+  final String? razonesNegocios;
 
   const Persona({
     required this.id,
@@ -66,6 +67,7 @@ class Persona {
     this.negociosTotal,
     this.negociosVigentes,
     this.nitsNegocios,
+    this.razonesNegocios,
   });
 
   bool get esJuridica => (naturalezaJuridica ?? '').toLowerCase() == 'jurídica' ||
@@ -118,6 +120,7 @@ class Persona {
         negociosTotal: (json['negocios_total'] as num?)?.toInt(),
         negociosVigentes: (json['negocios_vigentes'] as num?)?.toInt(),
         nitsNegocios: json['nits_negocios']?.toString(),
+        razonesNegocios: json['razones_negocios']?.toString(),
       );
 }
 

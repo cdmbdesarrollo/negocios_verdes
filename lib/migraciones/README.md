@@ -279,6 +279,14 @@ en un Supabase nuevo:
     (+ `tipo_documento` según naturaleza). La vista `v_representantes` gana
     `nits_negocios` (todos los NITs de sus negocios) para que el buscador
     filtre por NIT aunque `documento` siga vacío. Depende de 0031/0033.
+35. `0035_representante_razon_social_por_negocio.sql` — la razón social es
+    **del negocio**, no de la persona: columna `negocio_representante.razon_social`
+    (backfill = nombre del negocio cuando la naturaleza es Jurídica).
+    `representantes.razon_social` (0031) queda como cache del valor único.
+    `asignar_representante_negocio` gana `p_razon_social` (firma nueva,
+    se borra y recrea). `v_representantes` gana `razones_negocios` para el
+    buscador. `negocios.representante_legal` (público) sigue siendo el
+    nombre de la persona, no la razón social. Depende de 0034.
 
 ## Sobre trabajo concurrente de dos sesiones
 
