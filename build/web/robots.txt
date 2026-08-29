@@ -1,6 +1,0 @@
-# Negocios Verdes CDMB
-User-agent: *
-Allow: /
-Disallow: /admin
-
-Sitemap: /sitemap.xml

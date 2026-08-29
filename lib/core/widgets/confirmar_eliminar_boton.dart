@@ -21,11 +21,17 @@ class ConfirmarEliminarBoton extends StatefulWidget {
   final Future<String?> Function()? validarAntes;
   final String tooltip;
 
+  /// Texto de advertencia que se muestra al pasar a modo confirmación
+  /// (p. ej. "se borra el negocio con TODAS sus fotos, puntajes e
+  /// historial"). Si es null, solo aparecen los botones de confirmar.
+  final String? advertencia;
+
   const ConfirmarEliminarBoton({
     super.key,
     required this.onConfirmado,
     this.validarAntes,
     this.tooltip = 'Eliminar',
+    this.advertencia,
   });
 
   @override
@@ -67,12 +73,12 @@ class _ConfirmarEliminarBotonState extends State<ConfirmarEliminarBoton> {
       );
     }
     if (_confirmando) {
-      return Row(
+      final botones = Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
             icon: const Icon(Icons.check_circle, color: NVColors.error),
-            tooltip: 'Confirmar borrado',
+            tooltip: 'Sí, eliminar definitivamente',
             onPressed: () {
               setState(() => _confirmando = false);
               widget.onConfirmado();
@@ -85,6 +91,27 @@ class _ConfirmarEliminarBotonState extends State<ConfirmarEliminarBoton> {
             onPressed: () => setState(() => _confirmando = false),
           ),
         ],
+      );
+      if (widget.advertencia == null) return botones;
+      return Container(
+        constraints: const BoxConstraints(maxWidth: 320),
+        padding: const EdgeInsets.fromLTRB(10, 6, 6, 6),
+        decoration: BoxDecoration(
+          color: NVColors.error.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: NVColors.error),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(widget.advertencia!,
+                  style: const TextStyle(
+                      fontSize: 12, color: NVColors.error)),
+            ),
+            botones,
+          ],
+        ),
       );
     }
     return IconButton(

@@ -42,6 +42,18 @@ class _BuscarPageState extends State<BuscarPage> {
   final _actividadService = ActividadProductivaService();
   final _mapController = MapController();
   final Map<String, GlobalKey> _clavesPorNegocio = {};
+  final _claveGrilla = GlobalKey();
+
+  void _irAPagina(int nueva) {
+    setState(() => _pagina = nueva);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _claveGrilla.currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(ctx,
+            duration: const Duration(milliseconds: 300), alignment: 0.0);
+      }
+    });
+  }
   final _claveMapa = GlobalKey();
 
   /// Los resultados se muestran en grilla horizontal; si son muchos se
@@ -294,6 +306,7 @@ class _BuscarPageState extends State<BuscarPage> {
             ),
           ),
           Padding(
+            key: _claveGrilla,
             padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
             child: Align(
               alignment: Alignment.centerLeft,
@@ -392,21 +405,24 @@ class _BuscarPageState extends State<BuscarPage> {
   Widget _pager(int total, int pagina, int totalPaginas) {
     return Padding(
       padding: const EdgeInsets.only(top: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 8,
+        alignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            onPressed: pagina > 0
-                ? () => setState(() => _pagina = pagina - 1)
-                : null,
+          OutlinedButton.icon(
+            icon: const Icon(Icons.chevron_left, size: 18),
+            label: const Text('Anterior'),
+            onPressed: pagina > 0 ? () => _irAPagina(pagina - 1) : null,
           ),
-          Text('${pagina + 1} / $totalPaginas',
+          Text('Página ${pagina + 1} de $totalPaginas',
               style: const TextStyle(fontWeight: FontWeight.w600)),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.chevron_right, size: 18),
+            label: const Text('Siguiente'),
             onPressed: pagina < totalPaginas - 1
-                ? () => setState(() => _pagina = pagina + 1)
+                ? () => _irAPagina(pagina + 1)
                 : null,
           ),
         ],

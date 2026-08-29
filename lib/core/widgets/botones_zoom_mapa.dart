@@ -31,30 +31,33 @@ class BotonesZoomMapa extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _boton(Icons.add, 'Acercar', () => _cambiar(1)),
-        const SizedBox(height: 6),
-        _boton(Icons.remove, 'Alejar', () => _cambiar(-1)),
+        _boton(Icons.add, 'Acercar', () => _cambiar(1),
+            const BorderRadius.vertical(top: Radius.circular(10))),
+        const SizedBox(height: 2),
+        _boton(Icons.remove, 'Alejar', () => _cambiar(-1),
+            const BorderRadius.vertical(bottom: Radius.circular(10))),
       ],
     );
   }
 
-  Widget _boton(IconData icono, String tooltip, VoidCallback onTap) {
+  Widget _boton(IconData icono, String tooltip, VoidCallback onTap,
+      BorderRadius radio) {
     return Material(
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: const BorderSide(color: NVColors.borde),
+        borderRadius: radio,
+        side: const BorderSide(color: NVColors.primaryDark, width: 1.5),
       ),
-      elevation: 2,
+      elevation: 4,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: radio,
         child: Tooltip(
           message: tooltip,
           child: SizedBox(
-            width: 36,
-            height: 36,
-            child: Icon(icono, size: 20, color: NVColors.primaryDark),
+            width: 44,
+            height: 44,
+            child: Icon(icono, size: 26, color: NVColors.primaryDark),
           ),
         ),
       ),

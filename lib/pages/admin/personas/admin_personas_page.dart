@@ -4,6 +4,7 @@ import '../../../catalogos.dart';
 import '../../../core/admin_guard.dart';
 import '../../../core/texto_utils.dart';
 import '../../../core/widgets/chip_filtro.dart';
+import '../../../core/widgets/dialogo_confirmar_borrado.dart';
 import '../../../core/widgets/form_persona_dialog.dart';
 import '../../../models/persona.dart';
 import '../../../services/personas_service.dart';
@@ -62,10 +63,8 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
     if (q.isNotEmpty) {
       lista = lista.where((p) {
         final texto = quitarTildes([
-          p.nombreMostrado,
           p.nombreCompleto,
-          p.razonSocial ?? '',
-          p.razonesNegocios ?? '',
+          p.negociosNombres ?? '',
           p.documento ?? '',
           p.nitsNegocios ?? '',
           p.telefono ?? '',
@@ -93,19 +92,13 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
   Future<void> _eliminar(Persona persona) async {
     final confirmar = await showDialog<bool>(
       context: context,
-      builder: (dc) => AlertDialog(
-        title: Text('Eliminar a ${persona.nombreMostrado}'),
-        content: const Text(
-            'Se borra la persona de esta base. Solo se puede si nunca estuvo '
-            'asignada a un negocio.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(dc, false),
-              child: const Text('Cancelar')),
-          FilledButton(
-              onPressed: () => Navigator.pop(dc, true),
-              child: const Text('Eliminar')),
-        ],
+      builder: (dc) => DialogoConfirmarBorrado(
+        titulo: 'Eliminar a ${persona.nombreCompleto}',
+        advertencia:
+            'Se borra a ${persona.nombreCompleto} de la base de '
+            '${_tipo.etiqueta.toLowerCase()}s. Esto no se puede deshacer. '
+            'Solo funciona si nunca estuvo asignada a un negocio.',
+        etiquetaConfirmar: 'Eliminar',
       ),
     );
     if (confirmar != true) return;
@@ -290,7 +283,9 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
       child: Row(
         children: [
           h('Identificación', _wIdent),
-          h('Nombre / razón social', _wNombre),
+          h(_tipo == TipoPersona.representante
+              ? 'Representante legal / razón social'
+              : 'Nombre', _wNombre),
           h('Municipio', _wMunicipio),
           h('Negocios', _wNegocios),
           h('', _wAcciones),
@@ -303,92 +298,103 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
     final total = p.negociosTotal ?? 0;
     final vigentes = p.negociosVigentes ?? 0;
     final sePuedeEliminar = total == 0;
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: NVColors.borde)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            flex: _wIdent,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(_identificacion(p)),
-                Text(
-                  _tipo == TipoPersona.representante
-                      ? (p.naturalezaJuridica ?? '—')
-                      : (p.tipoDocumento ?? ''),
-                  style: const TextStyle(
-                      fontSize: 11, color: NVColors.textoSecundario),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            flex: _wNombre,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(p.nombreMostrado,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-                if ([p.cargo, p.telefono, p.correo]
-                    .any((e) => (e ?? '').isNotEmpty))
+    final esRepr = _tipo == TipoPersona.representante;
+    final razones = (p.negociosNombres ?? '').replaceAll(' | ', ', ');
+    return InkWell(
+      onTap: () => _crearOEditar(persona: p),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: NVColors.borde)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              flex: _wIdent,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(_identificacion(p)),
                   Text(
-                    [
-                      if ((p.cargo ?? '').isNotEmpty) p.cargo!,
-                      if ((p.telefono ?? '').isNotEmpty) p.telefono!,
-                      if ((p.correo ?? '').isNotEmpty) p.correo!,
-                    ].join(' · '),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    esRepr
+                        ? (p.naturalezaJuridica ?? '—')
+                        : (p.tipoDocumento ?? ''),
                     style: const TextStyle(
                         fontSize: 11, color: NVColors.textoSecundario),
                   ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Expanded(
-              flex: _wMunicipio,
-              child: Text(p.municipio ?? '—',
-                  style: const TextStyle(fontSize: 13))),
-          Expanded(
-            flex: _wNegocios,
-            child: Text(
-              total == 0
-                  ? '—'
-                  : '$vigentes${total > vigentes ? ' ($total hist.)' : ''}',
-              style: const TextStyle(fontSize: 13),
+            Expanded(
+              flex: _wNombre,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(p.nombreCompleto,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  if (esRepr && razones.isNotEmpty)
+                    Text('Razón social: $razones',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 11, color: NVColors.textoSecundario)),
+                  if ([p.cargo, p.telefono, p.correo]
+                      .any((e) => (e ?? '').isNotEmpty))
+                    Text(
+                      [
+                        if ((p.cargo ?? '').isNotEmpty) p.cargo!,
+                        if ((p.telefono ?? '').isNotEmpty) p.telefono!,
+                        if ((p.correo ?? '').isNotEmpty) p.correo!,
+                      ].join(' · '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 11, color: NVColors.textoSecundario),
+                    ),
+                ],
+              ),
             ),
-          ),
-          Expanded(
-            flex: _wAcciones,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                IconButton(
-                  tooltip: 'Editar',
-                  visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.edit_outlined, size: 18),
-                  onPressed: () => _crearOEditar(persona: p),
-                ),
-                IconButton(
-                  tooltip: sePuedeEliminar
-                      ? 'Eliminar'
-                      : 'Tiene negocios en el historial',
-                  visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.delete_outline, size: 18),
-                  color: sePuedeEliminar
-                      ? NVColors.error
-                      : NVColors.textoSecundario,
-                  onPressed: sePuedeEliminar ? () => _eliminar(p) : null,
-                ),
-              ],
+            Expanded(
+                flex: _wMunicipio,
+                child: Text(p.municipio ?? '—',
+                    style: const TextStyle(fontSize: 13))),
+            Expanded(
+              flex: _wNegocios,
+              child: Text(
+                total == 0
+                    ? '—'
+                    : '$vigentes${total > vigentes ? ' ($total hist.)' : ''}',
+                style: const TextStyle(fontSize: 13),
+              ),
             ),
-          ),
-        ],
+            Expanded(
+              flex: _wAcciones,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                    tooltip: 'Editar',
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    onPressed: () => _crearOEditar(persona: p),
+                  ),
+                  IconButton(
+                    tooltip: sePuedeEliminar
+                        ? 'Eliminar'
+                        : 'Tiene negocios en el historial',
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.delete_outline, size: 18),
+                    color: sePuedeEliminar
+                        ? NVColors.error
+                        : NVColors.textoSecundario,
+                    onPressed: sePuedeEliminar ? () => _eliminar(p) : null,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -401,25 +407,29 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
     required int totalPaginas,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      // Padding derecho grande: el FloatingActionButton flota justo encima
+      // de esta esquina y tapaba los botones de página.
+      padding: const EdgeInsets.fromLTRB(20, 8, 96, 12),
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(color: NVColors.borde)),
       ),
-      child: Row(
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          Text('$desde–$hasta de $total',
+          Text('$desde–$hasta de $total  ·  página ${pagina + 1} de $totalPaginas',
               style: const TextStyle(
                   color: NVColors.textoSecundario, fontSize: 13)),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.chevron_left, size: 18),
+            label: const Text('Anterior'),
             onPressed:
                 pagina > 0 ? () => setState(() => _pagina = pagina - 1) : null,
           ),
-          Text('${pagina + 1} / $totalPaginas',
-              style: const TextStyle(fontSize: 13)),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.chevron_right, size: 18),
+            label: const Text('Siguiente'),
             onPressed: pagina < totalPaginas - 1
                 ? () => setState(() => _pagina = pagina + 1)
                 : null,

@@ -4,6 +4,7 @@ import '../../models/persona.dart';
 import '../../services/personas_service.dart';
 import '../../theme/nv_colors.dart';
 import '../texto_utils.dart';
+import 'dialogo_confirmar_borrado.dart';
 import 'form_persona_dialog.dart';
 
 /// Campo para elegir un responsable CDMB / delegado / representante desde su
@@ -58,6 +59,12 @@ class SelectorPersona extends StatelessWidget {
       if ((p.telefono ?? '').isNotEmpty) p.telefono!,
       if ((p.correo ?? '').isNotEmpty) p.correo!,
     ].join('  ·  ');
+  }
+
+  /// Los negocios que representa = sus razones sociales (ver 0036).
+  static String _razonesSociales(Persona p) {
+    final n = (p.negociosNombres ?? '').trim();
+    return n.isEmpty ? '' : 'Razón social: ${n.replaceAll(' | ', ', ')}';
   }
 
   static Widget _pill(String texto) => Container(
@@ -130,7 +137,7 @@ class SelectorPersona extends StatelessWidget {
                       Row(
                         children: [
                           Flexible(
-                            child: Text(sel.nombreMostrado,
+                            child: Text(sel.nombreCompleto,
                                 style: const TextStyle(
                                     fontWeight: FontWeight.w600)),
                           ),
@@ -146,12 +153,20 @@ class SelectorPersona extends StatelessWidget {
                             style: const TextStyle(
                                 fontSize: 12,
                                 color: NVColors.textoSecundario)),
+                      if (tipo == TipoPersona.representante &&
+                          _razonesSociales(sel).isNotEmpty)
+                        Text(_razonesSociales(sel),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontSize: 12,
+                                color: NVColors.textoSecundario)),
                     ],
                   ),
           ),
           if (sel != null)
             IconButton(
-              tooltip: 'Editar datos de ${sel.nombreMostrado}',
+              tooltip: 'Editar datos de ${sel.nombreCompleto}',
               icon: const Icon(Icons.edit_outlined, size: 18),
               onPressed: () => _editar(context, sel),
             ),
@@ -211,9 +226,9 @@ class _BuscadorPersonaDialogState extends State<_BuscadorPersonaDialog> {
     _lista = List.of(widget.personas);
   }
 
-  void _ordenar() => _lista.sort((a, b) => a.nombreMostrado
+  void _ordenar() => _lista.sort((a, b) => a.nombreCompleto
       .toLowerCase()
-      .compareTo(b.nombreMostrado.toLowerCase()));
+      .compareTo(b.nombreCompleto.toLowerCase()));
 
   @override
   void dispose() {
@@ -226,10 +241,8 @@ class _BuscadorPersonaDialogState extends State<_BuscadorPersonaDialog> {
     if (q.isEmpty) return _lista;
     return _lista.where((p) {
       final texto = quitarTildes([
-        p.nombreMostrado,
         p.nombreCompleto,
-        p.razonSocial ?? '',
-        p.razonesNegocios ?? '',
+        p.negociosNombres ?? '',
         p.documento ?? '',
         p.nitsNegocios ?? '',
         p.telefono ?? '',
@@ -281,18 +294,12 @@ class _BuscadorPersonaDialogState extends State<_BuscadorPersonaDialog> {
   Future<void> _eliminar(Persona p) async {
     final ok = await showDialog<bool>(
       context: context,
-      builder: (dc) => AlertDialog(
-        title: Text('Eliminar a ${p.nombreMostrado}'),
-        content: const Text(
-            'Solo se puede si nunca estuvo asignada a un negocio.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(dc, false),
-              child: const Text('Cancelar')),
-          FilledButton(
-              onPressed: () => Navigator.pop(dc, true),
-              child: const Text('Eliminar')),
-        ],
+      builder: (dc) => DialogoConfirmarBorrado(
+        titulo: 'Eliminar a ${p.nombreCompleto}',
+        advertencia:
+            'Se borra a ${p.nombreCompleto} de la base de ${widget.tipo.etiqueta.toLowerCase()}s. '
+            'Esto no se puede deshacer. Solo funciona si nunca estuvo asignada a un negocio.',
+        etiquetaConfirmar: 'Eliminar',
       ),
     );
     if (ok != true || !mounted) return;
@@ -347,14 +354,18 @@ class _BuscadorPersonaDialogState extends State<_BuscadorPersonaDialog> {
                       itemCount: filtradas.length,
                       itemBuilder: (context, i) {
                         final p = filtradas[i];
-                        final subtitulo =
-                            SelectorPersona._subtitulo(p);
+                        final subtitulo = [
+                          SelectorPersona._subtitulo(p),
+                          if (widget.tipo == TipoPersona.representante)
+                            SelectorPersona._razonesSociales(p),
+                        ].where((s) => s.isNotEmpty).join('\n');
                         final sePuedeEliminar = (p.negociosTotal ?? 0) == 0;
                         return ListTile(
                           dense: true,
+                          isThreeLine: subtitulo.contains('\n'),
                           title: Row(
                             children: [
-                              Flexible(child: Text(p.nombreMostrado)),
+                              Flexible(child: Text(p.nombreCompleto)),
                               if (widget.tipo == TipoPersona.representante &&
                                   (p.naturalezaJuridica ?? '').isNotEmpty) ...[
                                 const SizedBox(width: 6),

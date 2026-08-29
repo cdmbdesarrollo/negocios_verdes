@@ -365,11 +365,24 @@ class _FiltrosBarState extends State<FiltrosBar> {
             spacing: 6,
             runSpacing: 6,
             children: [
-              // Las 3 categorías de CDMB son independientes entre sí (un
-              // negocio puede tener 1, 2 o las 3) — cada chip alterna su
-              // propio booleano, no son un grupo "elegí uno".
+              // "Todos" limpia los 3 (como en Municipio / Categoría). Las 3
+              // categorías de CDMB son independientes entre sí (un negocio
+              // puede tener 1, 2 o las 3) — cada chip alterna su propio
+              // booleano, no son un grupo "elegí uno".
               ChipFiltro(
-                etiqueta: 'Emprendimiento Verde',
+                etiqueta: 'Todos los reconocimientos',
+                seleccionado: widget.filtro.emprendimientoVerde != true &&
+                    widget.filtro.selloMarca != true &&
+                    widget.filtro.avalado != true,
+                onTap: () => widget.onCambio(widget.filtro.copyWith(
+                  limpiarEmprendimientoVerde: true,
+                  limpiarSelloMarca: true,
+                  limpiarAvalado: true,
+                )),
+                anchoMinimo: 190,
+              ),
+              ChipFiltro(
+                etiqueta: '🌱 Emprendimiento Verde',
                 seleccionado: widget.filtro.emprendimientoVerde == true,
                 onTap: () => widget.onCambio(
                     widget.filtro.emprendimientoVerde == true

@@ -458,8 +458,8 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
               ],
             ),
             Positioned(
-              right: 10,
-              bottom: 10,
+              right: 12,
+              top: 12,
               child: BotonesZoomMapa(controlador: _mapController),
             ),
           ],

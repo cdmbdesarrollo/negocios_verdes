@@ -6,9 +6,13 @@ import '../../services/personas_service.dart';
 import '../../theme/nv_colors.dart';
 
 /// Diálogo para crear o editar una persona de cualquiera de las 3 bases
-/// (responsable CDMB / delegado / representante legal — ver 0029 / 0031).
-/// Devuelve la [Persona] guardada, o null si se canceló. Lo usan
+/// (responsable CDMB / delegado / representante legal — ver 0029 / 0031 /
+/// 0036). Devuelve la [Persona] guardada, o null si se canceló. Lo usan
 /// SelectorPersona (dentro del formulario de un negocio) y /admin/personas.
+///
+/// El representante legal es SIEMPRE una persona; `naturaleza` solo dice si
+/// firma como persona natural o por una entidad jurídica. La razón social
+/// NO es un dato de la persona: es el nombre del negocio verde (ver 0036).
 class FormPersonaDialog extends StatefulWidget {
   final TipoPersona tipo;
   final PersonasService servicio;
@@ -30,7 +34,6 @@ class FormPersonaDialog extends StatefulWidget {
 class _FormPersonaDialogState extends State<FormPersonaDialog> {
   late final TextEditingController _nombres;
   late final TextEditingController _apellidos;
-  late final TextEditingController _razonSocial;
   late final TextEditingController _documento;
   late final TextEditingController _telefono;
   late final TextEditingController _correo;
@@ -43,19 +46,17 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
   String? _error;
 
   /// Solo representante en modo edición: los negocios que representa, con su
-  /// NIT y razón social — la "asociación representante ↔ razón social ↔ NIT".
+  /// NIT y naturaleza. El nombre del negocio ES su razón social.
   List<
       ({
         String negocioId,
         String negocio,
         String? nit,
         String? naturaleza,
-        String? razonSocial,
         bool vigente
       })>? _negocios;
 
   bool get _esRepr => widget.tipo == TipoPersona.representante;
-  bool get _esJuridica => _esRepr && _naturaleza == 'Jurídica';
 
   @override
   void initState() {
@@ -64,8 +65,6 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
     _nombres =
         TextEditingController(text: i?.nombres ?? widget.nombreSugerido ?? '');
     _apellidos = TextEditingController(text: i?.apellidos ?? '');
-    _razonSocial = TextEditingController(
-        text: i?.razonSocial ?? (i == null ? widget.nombreSugerido ?? '' : ''));
     _documento = TextEditingController(text: i?.documento ?? '');
     _telefono = TextEditingController(text: i?.telefono ?? '');
     _correo = TextEditingController(text: i?.correo ?? '');
@@ -73,9 +72,7 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
     _cargo = TextEditingController(text: i?.cargo ?? '');
     _tipoDocumento = i?.tipoDocumento;
     _municipio = i?.municipio;
-    _naturaleza = i?.naturalezaJuridica != null
-        ? (i!.esJuridica ? 'Jurídica' : 'Natural')
-        : 'Natural';
+    _naturaleza = i != null && i.esJuridica ? 'Jurídica' : 'Natural';
     if (_esRepr && i != null && i.id.isNotEmpty) {
       _cargarNegocios();
     }
@@ -83,8 +80,8 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
 
   Future<void> _cargarNegocios() async {
     try {
-      final r = await widget.servicio
-          .negociosDeRepresentante(widget.inicial!.id);
+      final r =
+          await widget.servicio.negociosDeRepresentante(widget.inicial!.id);
       if (mounted) setState(() => _negocios = r);
     } catch (_) {}
   }
@@ -95,11 +92,9 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
         String negocio,
         String? nit,
         String? naturaleza,
-        String? razonSocial,
         bool vigente
       }) v) async {
     final nitCtrl = TextEditingController(text: v.nit ?? '');
-    final rsCtrl = TextEditingController(text: v.razonSocial ?? '');
     var nat = v.naturaleza ?? 'Natural';
     final ok = await showDialog<bool>(
       context: context,
@@ -110,11 +105,16 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
             width: 380,
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text('Razón social: ${v.negocio}',
+                    style: const TextStyle(
+                        fontSize: 12, color: NVColors.textoSecundario)),
+                const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: nat,
-                  decoration:
-                      const InputDecoration(labelText: 'Naturaleza jurídica'),
+                  decoration: const InputDecoration(
+                      labelText: 'Naturaleza jurídica del negocio'),
                   items: const [
                     DropdownMenuItem(value: 'Natural', child: Text('Natural')),
                     DropdownMenuItem(value: 'Jurídica', child: Text('Jurídica')),
@@ -124,13 +124,8 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
                 const SizedBox(height: 10),
                 TextField(
                   controller: nitCtrl,
-                  decoration: const InputDecoration(labelText: 'NIT / cédula'),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: rsCtrl,
-                  decoration: const InputDecoration(
-                      labelText: 'Razón social (si es jurídica)'),
+                  decoration:
+                      const InputDecoration(labelText: 'NIT / cédula del negocio'),
                 ),
               ],
             ),
@@ -146,15 +141,16 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
         ),
       ),
     );
+    final nitEditado = nitCtrl.text.trim();
+    nitCtrl.dispose();
     if (ok != true) return;
     try {
       await widget.servicio.asignar(
         TipoPersona.representante,
         negocioId: v.negocioId,
         personaId: widget.inicial!.id,
-        nit: nitCtrl.text.trim().isEmpty ? null : nitCtrl.text.trim(),
+        nit: nitEditado.isEmpty ? null : nitEditado,
         naturalezaJuridica: nat,
-        razonSocial: rsCtrl.text.trim().isEmpty ? null : rsCtrl.text.trim(),
       );
       await _cargarNegocios();
     } catch (e) {
@@ -179,7 +175,6 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
   void dispose() {
     _nombres.dispose();
     _apellidos.dispose();
-    _razonSocial.dispose();
     _documento.dispose();
     _telefono.dispose();
     _correo.dispose();
@@ -192,12 +187,8 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
       c.text.trim().isEmpty ? null : c.text.trim();
 
   Future<void> _guardar() async {
-    if (_esJuridica && _razonSocial.text.trim().isEmpty) {
-      setState(() => _error = 'La razón social es obligatoria.');
-      return;
-    }
-    if (!_esJuridica && _nombres.text.trim().isEmpty) {
-      setState(() => _error = 'Los nombres son obligatorios.');
+    if (_nombres.text.trim().isEmpty) {
+      setState(() => _error = 'El nombre es obligatorio.');
       return;
     }
     setState(() {
@@ -209,7 +200,6 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
         id: widget.inicial?.id ?? '',
         nombres: _nombres.text.trim(),
         apellidos: _nn(_apellidos),
-        razonSocial: _esRepr ? _nn(_razonSocial) : null,
         naturalezaJuridica: _esRepr ? _naturaleza : null,
         documento: _nn(_documento),
         tipoDocumento: _tipoDocumento,
@@ -227,7 +217,6 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
           id: id,
           nombres: propuesta.nombres,
           apellidos: propuesta.apellidos,
-          razonSocial: propuesta.razonSocial,
           naturalezaJuridica: propuesta.naturalezaJuridica,
           documento: propuesta.documento,
           tipoDocumento: propuesta.tipoDocumento,
@@ -254,7 +243,7 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
     return AlertDialog(
       title: Text(esNueva
           ? 'Nuevo ${widget.tipo.etiqueta.toLowerCase()}'
-          : 'Editar ${widget.inicial!.nombreMostrado}'),
+          : 'Editar ${widget.inicial!.nombreCompleto}'),
       content: SizedBox(
         width: 460,
         child: SingleChildScrollView(
@@ -263,10 +252,11 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (_esRepr) ...[
-                _rotulo('Naturaleza jurídica'),
+                _rotulo('¿Firma como persona natural o por una entidad jurídica?'),
                 SegmentedButton<String>(
                   segments: const [
-                    ButtonSegment(value: 'Natural', label: Text('Persona natural')),
+                    ButtonSegment(
+                        value: 'Natural', label: Text('Persona natural')),
                     ButtonSegment(value: 'Jurídica', label: Text('Jurídica')),
                   ],
                   selected: {_naturaleza},
@@ -275,33 +265,28 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
                 ),
                 const SizedBox(height: 12),
               ],
-              if (_esJuridica) ...[
-                TextField(
-                  controller: _razonSocial,
-                  autofocus: true,
-                  textCapitalization: TextCapitalization.words,
-                  decoration:
-                      const InputDecoration(labelText: 'Razón social *'),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _nombres,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
-                      labelText: 'Nombres del representante (opcional)'),
-                ),
-              ] else
-                TextField(
-                  controller: _nombres,
-                  autofocus: true,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(labelText: 'Nombres *'),
-                ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _apellidos,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(labelText: 'Apellidos'),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _nombres,
+                      autofocus: true,
+                      textCapitalization: TextCapitalization.words,
+                      decoration:
+                          const InputDecoration(labelText: 'Nombres *'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _apellidos,
+                      textCapitalization: TextCapitalization.words,
+                      decoration:
+                          const InputDecoration(labelText: 'Apellidos'),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
               Row(
@@ -327,8 +312,7 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
                     flex: 2,
                     child: TextField(
                       controller: _documento,
-                      decoration:
-                          const InputDecoration(labelText: 'Número'),
+                      decoration: const InputDecoration(labelText: 'Número'),
                       keyboardType: TextInputType.number,
                     ),
                   ),
@@ -343,16 +327,25 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
                 ),
                 const SizedBox(height: 10),
               ],
-              TextField(
-                controller: _telefono,
-                decoration: const InputDecoration(labelText: 'Teléfono'),
-                keyboardType: TextInputType.phone,
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _correo,
-                decoration: const InputDecoration(labelText: 'Correo'),
-                keyboardType: TextInputType.emailAddress,
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _telefono,
+                      decoration:
+                          const InputDecoration(labelText: 'Teléfono'),
+                      keyboardType: TextInputType.phone,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _correo,
+                      decoration: const InputDecoration(labelText: 'Correo'),
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
               Row(
@@ -386,7 +379,9 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
                 const SizedBox(height: 14),
                 const Divider(height: 1),
                 const SizedBox(height: 10),
-                const Text('Representa a  (toca una fila para editar su NIT / razón social)',
+                const Text(
+                    'Representa a  (la razón social es el nombre del negocio; '
+                    'toca una fila para editar su NIT / naturaleza)',
                     style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -415,16 +410,13 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(n.negocio,
+                                Text('Razón social: ${n.negocio}',
                                     style: const TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 13)),
                                 Text(
                                   [
-                                    if ((n.razonSocial ?? '').isNotEmpty)
-                                      'Razón social: ${n.razonSocial}',
-                                    if ((n.nit ?? '').isNotEmpty)
-                                      'NIT ${n.nit}',
+                                    if ((n.nit ?? '').isNotEmpty) 'NIT ${n.nit}',
                                     if ((n.naturaleza ?? '').isNotEmpty)
                                       n.naturaleza!,
                                     if (!n.vigente) 'anterior',
@@ -447,7 +439,8 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
               if (_error != null) ...[
                 const SizedBox(height: 10),
                 Text(_error!,
-                    style: const TextStyle(color: NVColors.error, fontSize: 12)),
+                    style: const TextStyle(
+                        color: NVColors.error, fontSize: 12)),
               ],
             ],
           ),

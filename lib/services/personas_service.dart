@@ -15,9 +15,9 @@ class PersonasService {
       'direccion, municipio';
 
   /// Columnas a pedir por tipo — responsables/delegados llevan `cargo`,
-  /// representantes llevan `naturaleza_juridica` y `razon_social` (ver 0031).
+  /// representantes llevan `naturaleza_juridica` (ver 0031/0036).
   String _columnas(TipoPersona t) => t == TipoPersona.representante
-      ? '$_comunes, naturaleza_juridica, razon_social'
+      ? '$_comunes, naturaleza_juridica'
       : '$_comunes, cargo';
 
   String _rpcGuardar(TipoPersona t) => switch (t) {
@@ -89,7 +89,7 @@ class PersonasService {
   Future<List<Persona>> listarConConteo(TipoPersona tipo) async {
     try {
       final extra = tipo == TipoPersona.representante
-          ? ', negocios_total, negocios_vigentes, nits_negocios, razones_negocios'
+          ? ', negocios_total, negocios_vigentes, nits_negocios, negocios_nombres'
           : ', negocios_total, negocios_vigentes';
       final data = await _supabase
           .from(_vista(tipo))
@@ -103,9 +103,9 @@ class PersonasService {
     }
   }
 
-  /// Los negocios que representa (o representó) un representante, con el NIT,
-  /// la naturaleza y la razón social con que quedó registrado en cada uno —
-  /// para ver y editar la asociación representante ↔ razón social ↔ NIT.
+  /// Los negocios que representa (o representó) una persona, con el NIT y la
+  /// naturaleza con que quedó registrado en cada uno. El nombre del negocio
+  /// ES su razón social (ver 0036).
   Future<
       List<
           ({
@@ -113,14 +113,13 @@ class PersonasService {
             String negocio,
             String? nit,
             String? naturaleza,
-            String? razonSocial,
             bool vigente
           })>> negociosDeRepresentante(String representanteId) async {
     try {
       final data = await _supabase
           .from('negocio_representante')
           .select(
-              'negocio_id, nit, naturaleza_juridica, razon_social, vigente_hasta, negocios(nombre)')
+              'negocio_id, nit, naturaleza_juridica, vigente_hasta, negocios(nombre)')
           .eq('representante_id', representanteId)
           .order('vigente_desde', ascending: false);
       return (data as List).map((e) {
@@ -136,7 +135,6 @@ class PersonasService {
           negocio: nombre,
           nit: fila['nit']?.toString(),
           naturaleza: fila['naturaleza_juridica']?.toString(),
-          razonSocial: fila['razon_social']?.toString(),
           vigente: fila['vigente_hasta'] == null,
         );
       }).toList();
@@ -172,7 +170,6 @@ class PersonasService {
         'p_municipio': p.municipio,
       };
       if (tipo == TipoPersona.representante) {
-        base['p_razon_social'] = p.razonSocial;
         base['p_naturaleza_juridica'] = p.naturalezaJuridica;
       } else {
         base['p_cargo'] = p.cargo;
@@ -194,7 +191,6 @@ class PersonasService {
     required String personaId,
     String? nit,
     String? naturalezaJuridica,
-    String? razonSocial,
     String? nota,
   }) async {
     try {
@@ -206,7 +202,6 @@ class PersonasService {
         params['p_representante_id'] = personaId;
         params['p_nit'] = nit;
         params['p_naturaleza_juridica'] = naturalezaJuridica;
-        params['p_razon_social'] = razonSocial;
       } else if (tipo == TipoPersona.responsable) {
         params['p_responsable_id'] = personaId;
       } else {
@@ -271,9 +266,7 @@ class PersonasService {
       final p = _puente(tipo);
       final esRepr = tipo == TipoPersona.representante;
       final extra = esRepr ? ', nit, naturaleza_juridica' : '';
-      final embedCols = esRepr
-          ? 'nombres, apellidos, documento, razon_social'
-          : 'nombres, apellidos, documento';
+      final embedCols = 'nombres, apellidos, documento';
       final data = await _supabase
           .from(p.tabla)
           .select(

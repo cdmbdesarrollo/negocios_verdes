@@ -35,21 +35,22 @@ class Persona {
   /// Solo responsables CDMB y delegados.
   final String? cargo;
 
-  /// Solo representantes: 'Natural' o 'Jurídica'. Cuando es 'Jurídica' el
-  /// nombre que se muestra es [razonSocial], no nombres+apellidos.
+  /// Solo representantes: 'Natural' o 'Jurídica'. Es SIEMPRE una persona;
+  /// esto solo dice si firma como persona natural o por una entidad
+  /// jurídica. La razón social NO es un dato de la persona — es el nombre
+  /// del negocio verde (ver 0036).
   final String? naturalezaJuridica;
-  final String? razonSocial;
 
   /// Solo vienen poblados al leer desde las vistas `v_*` (ver 0030): a
   /// cuántos negocios está asignada esta persona en total y ahora mismo.
   final int? negociosTotal;
   final int? negociosVigentes;
 
-  /// Solo representantes, solo desde `v_representantes` (0034/0035): todos
-  /// los NITs / razones sociales que tiene en sus negocios — para buscar por
-  /// ahí aunque el campo propio esté vacío.
+  /// Solo representantes, solo desde `v_representantes` (0034/0036): los
+  /// NITs y los nombres de los negocios que representa (= sus razones
+  /// sociales) — para buscar por ahí y mostrar la asociación.
   final String? nitsNegocios;
-  final String? razonesNegocios;
+  final String? negociosNombres;
 
   const Persona({
     required this.id,
@@ -63,30 +64,21 @@ class Persona {
     this.municipio,
     this.cargo,
     this.naturalezaJuridica,
-    this.razonSocial,
     this.negociosTotal,
     this.negociosVigentes,
     this.nitsNegocios,
-    this.razonesNegocios,
+    this.negociosNombres,
   });
 
   bool get esJuridica => (naturalezaJuridica ?? '').toLowerCase() == 'jurídica' ||
       (naturalezaJuridica ?? '').toLowerCase() == 'juridica';
 
-  /// Nombre + apellidos en una sola línea.
+  /// Nombre + apellidos en una sola línea. Es lo que se muestra en listas y
+  /// buscadores y lo que se copia a `negocios.representante_legal`.
   String get nombreCompleto {
     final ap = apellidos?.trim() ?? '';
-    return ap.isEmpty ? nombres.trim() : '${nombres.trim()} $ap';
-  }
-
-  /// Lo que se muestra en listas y buscadores y lo que se copia a
-  /// `negocios.representante_legal`: la razón social si es jurídica, si no
-  /// el nombre completo.
-  String get nombreMostrado {
-    final rs = razonSocial?.trim() ?? '';
-    if (rs.isNotEmpty) return rs;
-    final nc = nombreCompleto;
-    return nc.isEmpty ? '(sin nombre)' : nc;
+    final n = ap.isEmpty ? nombres.trim() : '${nombres.trim()} $ap';
+    return n.isEmpty ? '(sin nombre)' : n;
   }
 
   /// "CC 12345678" / "NIT 900...-1" — tipo abreviado + número.
@@ -116,11 +108,10 @@ class Persona {
         municipio: json['municipio']?.toString(),
         cargo: json['cargo']?.toString(),
         naturalezaJuridica: json['naturaleza_juridica']?.toString(),
-        razonSocial: json['razon_social']?.toString(),
         negociosTotal: (json['negocios_total'] as num?)?.toInt(),
         negociosVigentes: (json['negocios_vigentes'] as num?)?.toInt(),
         nitsNegocios: json['nits_negocios']?.toString(),
-        razonesNegocios: json['razones_negocios']?.toString(),
+        negociosNombres: json['negocios_nombres']?.toString(),
       );
 }
 
@@ -158,13 +149,11 @@ class AsignacionPersona {
             : <String, dynamic>{});
     final nombres = persona['nombres']?.toString() ?? '';
     final apellidos = persona['apellidos']?.toString() ?? '';
-    final razonSocial = persona['razon_social']?.toString() ?? '';
     final nombreCompleto =
         (apellidos.isEmpty ? nombres : '$nombres $apellidos').trim();
     return AsignacionPersona(
-      personaNombre: razonSocial.isNotEmpty
-          ? razonSocial
-          : (nombreCompleto.isEmpty ? '(sin nombre)' : nombreCompleto),
+      personaNombre:
+          nombreCompleto.isEmpty ? '(sin nombre)' : nombreCompleto,
       documento: persona['documento']?.toString(),
       vigenteDesde: DateTime.tryParse(json['vigente_desde']?.toString() ?? ''),
       vigenteHasta: DateTime.tryParse(json['vigente_hasta']?.toString() ?? ''),

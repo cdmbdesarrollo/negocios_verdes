@@ -287,6 +287,18 @@ en un Supabase nuevo:
     se borra y recrea). `v_representantes` gana `razones_negocios` para el
     buscador. `negocios.representante_legal` (público) sigue siendo el
     nombre de la persona, no la razón social. Depende de 0034.
+36. `0036_razon_social_es_el_negocio.sql` — **corrección de modelo**: la
+    RAZÓN SOCIAL es el nombre del negocio verde (verificado: coincide en el
+    100% de los vínculos jurídicos), no un dato de la persona. El
+    REPRESENTANTE LEGAL es siempre la persona (`representantes.nombres`).
+    Se eliminan `representantes.razon_social` (0031) y
+    `negocio_representante.razon_social` (0035). `_display_representante`
+    pasa a devolver solo el nombre de la persona (era el bug: prefería la
+    razón social). `guardar_representante` y `asignar_representante_negocio`
+    pierden `p_razon_social`. `v_representantes` cambia `razones_negocios`
+    por `negocios_nombres`. Backfill de `negocios.representante_legal` con el
+    nombre de la persona. Además: `search_path` fijo en `generar_slug_unico`,
+    `immutable_unaccent` y `set_updated_at` (advisor). Depende de 0035.
 
 ## Sobre trabajo concurrente de dos sesiones
 

@@ -557,7 +557,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
   String? _personaNombre(List<Persona> lista, String? id) {
     if (id == null) return null;
     for (final p in lista) {
-      if (p.id == id) return p.nombreMostrado;
+      if (p.id == id) return p.nombreCompleto;
     }
     return null;
   }
@@ -601,21 +601,8 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           negocioId: _negocioId,
           personaId: _representanteId!,
           nit: nit,
-          naturalezaJuridica: _naturalezaJuridica,
-          // Razón social: la del negocio si es jurídico (su nombre), si no
-          // la que el representante ya tenga registrada.
-          razonSocial: _naturalezaJuridica == 'Jurídica'
-              ? _nombreCtrl.text.trim()
-              : _persona(_representantes, _representanteId)?.razonSocial);
+          naturalezaJuridica: _naturalezaJuridica);
     }
-  }
-
-  Persona? _persona(List<Persona> lista, String? id) {
-    if (id == null) return null;
-    for (final p in lista) {
-      if (p.id == id) return p;
-    }
-    return null;
   }
 
   /// Borrar+reinsertar, igual que negocios_subcategorias en la RPC — a esta
@@ -979,8 +966,31 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
                   size: 20, color: NVColors.primary),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           _seccion('Identificación'),
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: NVColors.primaryLight,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.badge_outlined,
+                    size: 18, color: NVColors.primaryDark),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Razón social: ${_nombreCtrl.text.trim().isEmpty ? '(el nombre del negocio, arriba)' : _nombreCtrl.text.trim()}',
+                    style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
           SelectorPersona(
             tipo: TipoPersona.representante,
             personas: _representantes,
@@ -1052,7 +1062,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           _seccion('Municipio y categorización'),
           DropdownButtonFormField<String>(
             initialValue: _municipio,
@@ -1125,7 +1135,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
               _actividadIds = actividadIds;
             },
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           _seccion('Ubicación'),
           TextFormField(
             controller: _direccionCtrl,
@@ -1260,7 +1270,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
               'Selecciona un municipio para poder marcar la ubicación en el mapa.',
               style: TextStyle(color: NVColors.textoSecundario, fontSize: 12),
             ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           _seccion('Contacto y redes sociales'),
           LayoutBuilder(
             builder: (context, c) {
@@ -1364,7 +1374,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
               );
             },
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           _seccion('Fotos'),
           GaleriaEditor(
             negocioId: _negocioId,
@@ -1377,7 +1387,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             },
             onGaleriaCambiada: (fotos) => _galeriaActual = fotos,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           _seccion('Reconocimientos'),
           const Text(
             'Las 3 categorías de CDMB son independientes entre sí — un '
@@ -1413,7 +1423,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             value: _avalado,
             onChanged: (v) => setState(() => _avalado = v),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           _seccion('Publicación'),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
@@ -1431,7 +1441,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             value: _activo,
             onChanged: (v) => setState(() => _activo = v),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           _fichaTecnica(),
           const SizedBox(height: 24),
           Row(

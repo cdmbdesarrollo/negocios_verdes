@@ -399,7 +399,13 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
             icon: const Icon(Icons.edit_outlined),
             onPressed: () => context.go('/admin/negocios/${n.id}/editar'),
           ),
-          ConfirmarEliminarBoton(onConfirmado: () => _eliminar(n)),
+          ConfirmarEliminarBoton(
+            onConfirmado: () => _eliminar(n),
+            advertencia:
+                'Se elimina "${n.nombre}" con TODO lo suyo: fotos, categorías, '
+                'permisos, puntajes de seguimiento e historial de personas. '
+                'No se puede deshacer.',
+          ),
         ],
       ),
     );
