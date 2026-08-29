@@ -211,27 +211,11 @@ class _NosotrosPageState extends State<NosotrosPage> {
                     ),
                     const SizedBox(height: 4),
                     const Text(
-                      'Niveles de desarrollo',
+                      'Reconocimientos',
                       style:
                           TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                     ),
-                    const SizedBox(height: 8),
-                    _nivel(
-                      '🌱 En verificación',
-                      'Emprendimientos que están iniciando su proceso de '
-                          'verificación con la CDMB.',
-                    ),
-                    _nivel(
-                      '✅ Verificado',
-                      'Negocios que ya cumplen los criterios del programa y '
-                          'fueron verificados por la CDMB.',
-                    ),
-                    _nivel(
-                      '🏆 Negocio ancla',
-                      'Negocios verdes consolidados, referentes en su '
-                          'categoría y en su municipio.',
-                    ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
@@ -243,11 +227,40 @@ class _NosotrosPageState extends State<NosotrosPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          _encabezadoReconocimiento(
+                              Icons.verified_outlined,
+                              NVColors.avaladoAzul,
+                              'Avalado'),
+                          const SizedBox(height: 6),
                           const Text(
-                            '🎖️ Sello Marca de Negocios Verdes',
+                            'Negocio avalado por la CDMB: cumple los '
+                            'criterios del programa y fue reconocido '
+                            'directamente por la Ventanilla de Negocios '
+                            'Verdes.',
                             style: TextStyle(
-                                fontWeight: FontWeight.w600, fontSize: 15),
+                                color: NVColors.textoSecundario,
+                                fontSize: 13,
+                                height: 1.4),
                           ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: NVColors.fondo,
+                        border: Border.all(color: NVColors.borde),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _encabezadoReconocimiento(
+                              Icons.military_tech,
+                              NVColors.selloMarcaVerde,
+                              'Sello Marca de Negocios Verdes'),
                           const SizedBox(height: 6),
                           const Text(
                             'Certificación oficial que reconoce a las '
@@ -277,18 +290,16 @@ class _NosotrosPageState extends State<NosotrosPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            '🛡️ Aval de Confianza',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w600, fontSize: 15),
-                          ),
+                          _encabezadoReconocimiento(
+                              Icons.eco_outlined,
+                              NVColors.emprendimientoVerdeGris,
+                              'Emprendimiento Verde'),
                           const SizedBox(height: 6),
                           const Text(
-                            'Reconocimiento oficial otorgado por la '
-                            'Ventanilla de Negocios Verdes a las empresas y '
-                            'emprendimientos que cumplen los requisitos '
-                            'mínimos y superan el 51 % de avance en '
-                            'criterios ambientales, sociales y económicos.',
+                            'La puerta de entrada al programa: negocios y '
+                            'emprendimientos que ya iniciaron su proceso con '
+                            'la Ventanilla de Negocios Verdes de la CDMB, en '
+                            'camino hacia el Sello Marca o el Aval.',
                             style: TextStyle(
                                 color: NVColors.textoSecundario,
                                 fontSize: 13,
@@ -371,17 +382,20 @@ class _NosotrosPageState extends State<NosotrosPage> {
     );
   }
 
-  Widget _nivel(String titulo, String descripcion) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(titulo, style: const TextStyle(fontWeight: FontWeight.w600)),
-          Text(descripcion,
-              style: const TextStyle(color: NVColors.textoSecundario)),
-        ],
-      ),
+  /// Ícono + título de cada caja de la sección "Reconocimientos" — antes
+  /// era un emoji suelto dentro del Text, pero el renderer de Flutter Web
+  /// lo pintaba en blanco y negro (se veía "feo"/sin color, reportado con
+  /// captura real); un Icon de Material sí respeta el color de marca de
+  /// cada insignia.
+  Widget _encabezadoReconocimiento(IconData icono, Color color, String titulo) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icono, color: color, size: 20),
+        const SizedBox(width: 8),
+        Text(titulo,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+      ],
     );
   }
 

@@ -44,6 +44,9 @@ dependencies:
   google_fonts: ^8.2.1
   http: ^1.6.0
   qr_flutter: ^4.1.0
+  # Carga masiva de negocios: exportar/importar CSV desde /admin/negocios.
+  csv: ^8.0.0
+  file_picker: ^12.1.0
 
 dev_dependencies:
   flutter_test:

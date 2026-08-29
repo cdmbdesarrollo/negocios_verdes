@@ -72,19 +72,22 @@ abstract final class NVColors {
   /// Las 3 categorías de reconocimiento CDMB (ver 0022_ficha_ampliada_negocios.sql)
   /// son independientes entre sí — un negocio puede tener 1, 2 o las 3 —
   /// así que cada una necesita su propio color, ninguno reusado de otra.
+  /// "Aval de Confianza" ya no existe como categoría (CDMB confirmó que las
+  /// 3 reales son Emprendimiento Verde/Sello Marca/Avalado) — su color
+  /// dorado se retira con el badge, no se reusa acá.
   static const Color emprendimientoVerdeGris = Color(0xFF8C8C7A);
 
   /// Reservado únicamente para el Sello Marca de Negocios Verdes (ver
-  /// SelloMarcaBadge) — reconocimiento independiente de emprendimientoVerde
-  /// y avalado, por eso necesita su propio color y no reusa accent (ese
-  /// sigue solo para CTAs de conversión).
-  static const Color selloMarcaDorado = Color(0xFFC9A227);
+  /// SelloMarcaBadge) — pedido explícito de acercarlo al verde del sello
+  /// oficial "Sello Ambiental Colombiano / Negocios Verdes" (el círculo
+  /// verde con mariposa/hoja), en vez del dorado que tenía antes. Reusa
+  /// [verdeVivo] (ya documentado como el verde pensado para íconos) en vez
+  /// de inventar un tono nuevo.
+  static const Color selloMarcaVerde = verdeVivo;
 
   /// Reservado únicamente para Negocio Verde Avalado (ver AvaladoBadge) —
-  /// mismo criterio que selloMarcaDorado: un reconocimiento aparte,
-  /// necesita su propio color. Deliberadamente distinto de govCoAzul (esa
-  /// es la franja institucional obligatoria, nunca se reusa) y de
-  /// selloMarcaDorado (para no verse como "el mismo tipo de insignia"
-  /// cuando son reconocimientos independientes).
+  /// deliberadamente NO reusa [primary]/[verdeVivo]: con Sello Marca ya en
+  /// verde, un segundo badge también verde se leería como "la misma
+  /// insignia" en vez de dos reconocimientos independientes.
   static const Color avaladoAzul = Color(0xFF2A6F97);
 }

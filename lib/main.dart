@@ -19,6 +19,7 @@ import 'pages/admin/dashboard/admin_dashboard_page.dart';
 import 'pages/admin/login/admin_login_page.dart';
 import 'pages/admin/logs/admin_logs_page.dart';
 import 'pages/admin/negocios/admin_negocio_form_page.dart';
+import 'pages/admin/negocios/admin_negocios_importar_page.dart';
 import 'pages/admin/negocios/admin_negocios_page.dart';
 import 'pages/admin/subcategorias/admin_subcategorias_page.dart';
 import 'pages/buscar/buscar_page.dart';
@@ -172,6 +173,10 @@ GoRouter _construirRouter() {
           GoRoute(
             path: '/admin/negocios/nuevo',
             builder: (context, state) => const AdminNegocioFormPage(),
+          ),
+          GoRoute(
+            path: '/admin/negocios/importar',
+            builder: (context, state) => const AdminNegociosImportarPage(),
           ),
           GoRoute(
             path: '/admin/negocios/:id/editar',

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../catalogos.dart';
 import '../../../core/admin_guard.dart';
+import '../../../core/descargar_archivo_web.dart';
 import '../../../core/widgets/avalado_badge.dart';
 import '../../../core/widgets/chip_filtro.dart';
 import '../../../core/widgets/confirmar_eliminar_boton.dart';
@@ -188,6 +189,22 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
                     DropdownMenuItem(value: c.id, child: Text(c.nombre)),
                 ],
                 onChanged: (v) => setState(() => _filtroCategoriaId = v),
+              ),
+              // Carga masiva: exporta TODOS los negocios (no solo los que
+              // dejan pasar los filtros de arriba) e importa desde el mismo
+              // formato de columnas — ver AdminNegociosImportarPage. Pensado
+              // para altas futuras en lote, no se usó para los 295 reales
+              // de CDMB (esos entraron por migración SQL, ver
+              // lib/migraciones/0023_datos_cdmb_negocios_verdes_*.sql).
+              OutlinedButton.icon(
+                onPressed: () => exportarNegociosComoCsv(_negocios!),
+                icon: const Icon(Icons.download_outlined, size: 18),
+                label: const Text('Exportar CSV'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => context.go('/admin/negocios/importar'),
+                icon: const Icon(Icons.upload_file_outlined, size: 18),
+                label: const Text('Importar CSV'),
               ),
             ],
           ),

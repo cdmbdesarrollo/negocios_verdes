@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import '../../theme/nv_colors.dart';
 
 /// Insignia de negocios.sello_marca — deliberadamente distinta de
-/// BadgeNivel (degradado dorado + sombra en vez del pill plano con borde
-/// alfa): es un reconocimiento aparte, no un nivel más, así que no debe
-/// leerse como "otro valor de la misma lista" al lado de BadgeNivel.
+/// AvaladoBadge/AvalConfianzaBadge (degradado verde + sombra en vez del
+/// pill plano con borde alfa): es un reconocimiento aparte, no debe leerse
+/// como "otro valor de la misma lista" al lado de las otras insignias.
+/// Verde (no dorado, pedido explícito) para acercarse al color del sello
+/// oficial "Sello Ambiental Colombiano / Negocios Verdes".
 class SelloMarcaBadge extends StatelessWidget {
   final double tamanoFuente;
 
@@ -20,12 +22,12 @@ class SelloMarcaBadge extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [NVColors.selloMarcaDorado, Color(0xFFE7C766)],
+          colors: [NVColors.selloMarcaVerde, Color(0xFF6FD88A)],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: NVColors.selloMarcaDorado.withValues(alpha: 0.35),
+            color: NVColors.selloMarcaVerde.withValues(alpha: 0.35),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),

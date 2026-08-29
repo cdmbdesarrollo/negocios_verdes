@@ -155,3 +155,13 @@ que 0020 ya había dejado en producción, en vez de asumir el estado previo
 a 0020. Antes de tocar el esquema de `negocios` en una sesión nueva,
 conviene `git fetch`/mirar `origin/master` primero — no asumir que el
 `HEAD` local sigue siendo lo último en producción.
+
+Esa misma sesión de 0020 también dejó, en commits posteriores: los colores
+verde/dorado de Sello Marca y (el ya retirado) Aval de Confianza, y el
+importador/exportador CSV de `/admin/negocios/importar` (`negocios_csv.dart`,
+pensado para altas futuras en lote — no se usó para la carga inicial de
+los 295 negocios reales, esa fue 0023). Se fusionó vía `git merge`: el
+importador se actualizó para llamar a `NegocioService.guardar()` con la
+firma nueva (agrega `vereda_id`/`representante_legal`/`producto`/`nit`/
+`naturaleza_juridica`, todos opcionales — un CSV viejo sin esas columnas
+sigue funcionando).
