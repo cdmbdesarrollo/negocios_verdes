@@ -42,6 +42,11 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
   bool _guardando = false;
   String? _error;
 
+  /// Solo representante en modo edición: los negocios que representa, con su
+  /// NIT — la "asociación representante ↔ razón social ↔ NIT".
+  List<({String negocio, String? nit, String? naturaleza, bool vigente})>?
+      _negocios;
+
   bool get _esRepr => widget.tipo == TipoPersona.representante;
   bool get _esJuridica => _esRepr && _naturaleza == 'Jurídica';
 
@@ -64,6 +69,11 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
     _naturaleza = i?.naturalezaJuridica != null
         ? (i!.esJuridica ? 'Jurídica' : 'Natural')
         : 'Natural';
+    if (_esRepr && i != null && i.id.isNotEmpty) {
+      widget.servicio.negociosDeRepresentante(i.id).then((r) {
+        if (mounted) setState(() => _negocios = r);
+      }).catchError((_) {});
+    }
   }
 
   /// Lista guía + el valor actual si viniera de un dato viejo fuera de la
@@ -283,6 +293,63 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
                   ),
                 ],
               ),
+              if (_esRepr && (_negocios?.isNotEmpty ?? false)) ...[
+                const SizedBox(height: 14),
+                const Divider(height: 1),
+                const SizedBox(height: 10),
+                const Text('Representa a',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: NVColors.textoSecundario)),
+                const SizedBox(height: 6),
+                for (final n in _negocios!)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          n.vigente
+                              ? Icons.check_circle
+                              : Icons.history_toggle_off,
+                          size: 14,
+                          color: n.vigente
+                              ? NVColors.verdeVivo
+                              : NVColors.textoSecundario,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text.rich(TextSpan(children: [
+                            TextSpan(
+                                text: n.negocio,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600, fontSize: 13)),
+                            TextSpan(
+                              text: [
+                                if ((n.nit ?? '').isNotEmpty) 'NIT ${n.nit}',
+                                if ((n.naturaleza ?? '').isNotEmpty)
+                                  n.naturaleza!,
+                                if (!n.vigente) 'anterior',
+                              ].isEmpty
+                                  ? ''
+                                  : '  ·  ${[
+                                      if ((n.nit ?? '').isNotEmpty)
+                                        'NIT ${n.nit}',
+                                      if ((n.naturaleza ?? '').isNotEmpty)
+                                        n.naturaleza!,
+                                      if (!n.vigente) 'anterior',
+                                    ].join('  ·  ')}',
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  color: NVColors.textoSecundario),
+                            ),
+                          ])),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
               if (_error != null) ...[
                 const SizedBox(height: 10),
                 Text(_error!,

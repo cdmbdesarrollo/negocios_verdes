@@ -64,7 +64,9 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
         final texto = quitarTildes([
           p.nombreMostrado,
           p.nombreCompleto,
+          p.razonSocial ?? '',
           p.documento ?? '',
+          p.nitsNegocios ?? '',
           p.telefono ?? '',
           p.correo ?? '',
           p.cargo ?? '',
@@ -256,6 +258,19 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
   static const _wNegocios = 2;
   static const _wAcciones = 2;
 
+  /// Documento propio; si no lo tiene (representante con NIT distinto por
+  /// negocio), el/los NIT de sus negocios.
+  String _identificacion(Persona p) {
+    final d = p.documento?.trim() ?? '';
+    if (d.isNotEmpty) return d;
+    final nits = (p.nitsNegocios ?? '')
+        .split(' ')
+        .where((s) => s.trim().isNotEmpty)
+        .toList();
+    if (nits.isEmpty) return '—';
+    return nits.length == 1 ? nits.first : '${nits.first} +${nits.length - 1}';
+  }
+
   Widget _encabezado() {
     Widget h(String t, int flex) => Expanded(
           flex: flex,
@@ -300,9 +315,7 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(p.documento?.trim().isNotEmpty == true
-                    ? p.documento!.trim()
-                    : '—'),
+                Text(_identificacion(p)),
                 Text(
                   _tipo == TipoPersona.representante
                       ? (p.naturalezaJuridica ?? '—')

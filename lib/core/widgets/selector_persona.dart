@@ -41,12 +41,24 @@ class SelectorPersona extends StatelessWidget {
     return null;
   }
 
-  static String _subtitulo(Persona p) => [
-        if (p.documentoMostrado != null) p.documentoMostrado!,
-        if ((p.cargo ?? '').isNotEmpty) p.cargo!,
-        if ((p.telefono ?? '').isNotEmpty) p.telefono!,
-        if ((p.correo ?? '').isNotEmpty) p.correo!,
-      ].join('  ·  ');
+  static String _subtitulo(Persona p) {
+    // Si el representante no tiene documento propio pero sí NITs en sus
+    // negocios, se muestra el primero como referencia.
+    final docRef = p.documentoMostrado ??
+        (() {
+          final nits = (p.nitsNegocios ?? '')
+              .split(' ')
+              .where((s) => s.trim().isNotEmpty)
+              .toList();
+          return nits.isEmpty ? null : 'NIT ${nits.first}';
+        })();
+    return [
+      if (docRef != null) docRef,
+      if ((p.cargo ?? '').isNotEmpty) p.cargo!,
+      if ((p.telefono ?? '').isNotEmpty) p.telefono!,
+      if ((p.correo ?? '').isNotEmpty) p.correo!,
+    ].join('  ·  ');
+  }
 
   static Widget _pill(String texto) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
@@ -216,7 +228,9 @@ class _BuscadorPersonaDialogState extends State<_BuscadorPersonaDialog> {
       final texto = quitarTildes([
         p.nombreMostrado,
         p.nombreCompleto,
+        p.razonSocial ?? '',
         p.documento ?? '',
+        p.nitsNegocios ?? '',
         p.telefono ?? '',
         p.correo ?? '',
         p.cargo ?? '',

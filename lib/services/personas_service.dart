@@ -88,15 +88,49 @@ class PersonasService {
   /// /admin/personas.
   Future<List<Persona>> listarConConteo(TipoPersona tipo) async {
     try {
+      final extra = tipo == TipoPersona.representante
+          ? ', negocios_total, negocios_vigentes, nits_negocios'
+          : ', negocios_total, negocios_vigentes';
       final data = await _supabase
           .from(_vista(tipo))
-          .select('${_columnas(tipo)}, negocios_total, negocios_vigentes')
+          .select('${_columnas(tipo)}$extra')
           .order('nombres');
       return (data as List)
           .map((e) => Persona.fromJson(e as Map<String, dynamic>))
           .toList();
     } catch (e) {
       throw Exception('No se pudo cargar la lista de ${tipo.etiqueta}: $e');
+    }
+  }
+
+  /// Los negocios que representa (o representó) un representante, con el NIT
+  /// y la naturaleza con que quedó registrado en cada uno — para ver la
+  /// asociación representante ↔ razón social ↔ NIT.
+  Future<List<({String negocio, String? nit, String? naturaleza, bool vigente})>>
+      negociosDeRepresentante(String representanteId) async {
+    try {
+      final data = await _supabase
+          .from('negocio_representante')
+          .select('nit, naturaleza_juridica, vigente_hasta, negocios(nombre)')
+          .eq('representante_id', representanteId)
+          .order('vigente_desde', ascending: false);
+      return (data as List).map((e) {
+        final fila = e as Map<String, dynamic>;
+        final neg = fila['negocios'];
+        final nombre = neg is Map
+            ? (neg['nombre']?.toString() ?? '(negocio borrado)')
+            : (neg is List && neg.isNotEmpty && neg.first is Map
+                ? (neg.first as Map)['nombre']?.toString() ?? '(negocio borrado)'
+                : '(negocio borrado)');
+        return (
+          negocio: nombre,
+          nit: fila['nit']?.toString(),
+          naturaleza: fila['naturaleza_juridica']?.toString(),
+          vigente: fila['vigente_hasta'] == null,
+        );
+      }).toList();
+    } catch (e) {
+      throw Exception('No se pudieron cargar los negocios: $e');
     }
   }
 

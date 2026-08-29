@@ -272,6 +272,13 @@ en un Supabase nuevo:
     y el formulario de edición de negocios fallan con
     `column v_responsables_cdmb.tipo_documento does not exist`. Correr después
     de 0032.
+34. `0034_representantes_nit_desde_negocios.sql` — el NIT/cédula de cada
+    representante ya vivía en `negocio_representante.nit` (0029) pero
+    `representantes.documento` estaba vacío. Backfill: para los 255
+    representantes con un NIT único entre sus negocios se copia a `documento`
+    (+ `tipo_documento` según naturaleza). La vista `v_representantes` gana
+    `nits_negocios` (todos los NITs de sus negocios) para que el buscador
+    filtre por NIT aunque `documento` siga vacío. Depende de 0031/0033.
 
 ## Sobre trabajo concurrente de dos sesiones
 
