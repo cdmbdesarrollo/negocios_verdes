@@ -21,6 +21,9 @@ enum _Vista { global, estado, emprendimientoVerde, selloMarca, avalado }
 /// Estados CDMB (columna `negocios.novedad`, CHECK `negocios_novedad_valida`).
 const _kEstados = ['ACTIVO', 'INACTIVO', 'RETIRADO', 'SUSPENDIDO'];
 
+String _capitalizar(String s) =>
+    s.isEmpty ? s : '${s[0]}${s.substring(1).toLowerCase()}';
+
 extension on _Vista {
   String get etiqueta => switch (this) {
         _Vista.global => 'Global',
@@ -59,16 +62,22 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Map<int, double> _promedioPorAnio = {};
   String? _error;
   _Vista _vista = _Vista.global;
-  String _estadoSel = 'ACTIVO';
+
+  /// Estado CDMB elegido en el selector. `null` = "Todos los estados"
+  /// (misma población que Global, pero deja ver el desglose por estado).
+  String? _estadoSel = 'ACTIVO';
 
   /// Etiqueta legible de la vista actual (para el título).
-  String get _etiquetaVista => _vista == _Vista.estado
-      ? '${_estadoSel[0]}${_estadoSel.substring(1).toLowerCase()}'
-      : _vista.etiqueta;
+  String get _etiquetaVista => _vista != _Vista.estado
+      ? _vista.etiqueta
+      : _estadoSel == null
+          ? 'Todos los estados'
+          : _capitalizar(_estadoSel!);
 
   bool _aplicaVista(Negocio n) => switch (_vista) {
         _Vista.global => true,
-        _Vista.estado => (n.novedad ?? '').toUpperCase() == _estadoSel,
+        _Vista.estado => _estadoSel == null ||
+            (n.novedad ?? '').toUpperCase() == _estadoSel,
         _Vista.emprendimientoVerde => n.emprendimientoVerde,
         _Vista.selloMarca => n.selloMarca,
         _Vista.avalado => n.avalado,
@@ -128,7 +137,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     // Vista normal: torta por estado CDMB. Vista = un estado concreto: esa
     // torta sería un solo color, así que se muestra publicado vs. sin
     // publicar dentro de ese estado.
-    final segundaTorta = _vista == _Vista.estado
+    final vistaEstadoConcreto =
+        _vista == _Vista.estado && _estadoSel != null;
+    final segundaTorta = vistaEstadoConcreto
         ? (
             titulo: 'Publicación en el sitio',
             datos: _conteo(negocios,
@@ -185,6 +196,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         _estadoSel = e;
                       }),
                     )
+
                   else
                     ChipFiltro(
                       etiqueta: v.etiqueta,
@@ -454,13 +466,15 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 }
 
-/// Chip con dropdown para elegir el estado CDMB (ACTIVO / INACTIVO /
-/// RETIRADO / SUSPENDIDO) como "vista" del panel. Se ve igual que un
-/// ChipFiltro pero con una flechita.
+/// Chip con dropdown para elegir el estado CDMB (Todos / ACTIVO / INACTIVO
+/// / RETIRADO / SUSPENDIDO) como "vista" del panel. Se ve igual que un
+/// ChipFiltro pero con una flechita. `null` = "Todos los estados".
+const _kTodosEstados = '__todos__';
+
 class _SelectorEstado extends StatelessWidget {
   final bool seleccionado;
-  final String estado;
-  final ValueChanged<String> onEstado;
+  final String? estado;
+  final ValueChanged<String?> onEstado;
 
   const _SelectorEstado({
     required this.seleccionado,
@@ -470,19 +484,23 @@ class _SelectorEstado extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final etiqueta = seleccionado
-        ? '${estado[0]}${estado.substring(1).toLowerCase()}'
-        : 'Estado CDMB';
+    final etiqueta = !seleccionado
+        ? 'Estado CDMB'
+        : estado == null
+            ? 'Todos los estados'
+            : _capitalizar(estado!);
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 40),
       child: PopupMenuButton<String>(
-        initialValue: estado,
-        onSelected: onEstado,
+        initialValue: estado ?? _kTodosEstados,
+        onSelected: (v) => onEstado(v == _kTodosEstados ? null : v),
         itemBuilder: (_) => [
+          const PopupMenuItem(
+              value: _kTodosEstados, child: Text('Todos los estados')),
           for (final e in _kEstados)
             PopupMenuItem(
               value: e,
-              child: Text('${e[0]}${e.substring(1).toLowerCase()}'),
+              child: Text(_capitalizar(e)),
             ),
         ],
         child: Container(
