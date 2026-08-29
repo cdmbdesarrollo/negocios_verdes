@@ -114,11 +114,11 @@ en un Supabase nuevo:
 23. `0023_foto_portada_opcional.sql` — quita el CHECK
     `negocios_publicado_necesita_foto` (0004): la foto de portada deja de
     ser obligatoria para publicar. Con los 295 negocios reales que carga
-    0025 y ninguno con foto todavía, exigirla los habría dejado a todos
+    0026 y ninguno con foto todavía, exigirla los habría dejado a todos
     sin poder activarse. Mientras no tenga foto, la ficha pública/tarjetas
     muestran el logo de Negocios Verdes en su lugar (ver
     `assets/images/iconografia/logo_negocios_verdes.png`). **Correr ANTES
-    de 0025** — si no, el insert de los negocios `activo = true` falla
+    de 0026** — si no, el insert de los negocios `activo = true` falla
     contra este mismo CHECK.
 24. `0024_este_norte_ubicacion.sql` — columnas `negocios.este`/`negocios.norte`
     (texto, admin-only): las coordenadas tal cual las escribe CDMB, no solo
@@ -129,25 +129,48 @@ en un Supabase nuevo:
     a `guardar_ficha_tecnica_negocio` **como parámetros nuevos al final,
     con default `null`** — a diferencia de los cambios de firma anteriores,
     esto no rompe la firma existente ante Postgres, así que no hace falta
-    un `drop function` explícito. **Correr ANTES de 0025** (usa estas
+    un `drop function` explícito. **Correr ANTES de 0026** (usa estas
     columnas).
-25. `0025_datos_cdmb_negocios_verdes_01.sql` … `_10.sql` — **generado**, no
-    escrito a mano: script en `lib/migraciones/generar_0025.py` que lee el
-    Excel real de CDMB (`BASE_ACTUALIZADA_NV_ka.xlsx`) y produce estos 10
-    archivos (partido en varios porque el editor SQL del dashboard de
-    Supabase truncó el archivo único de ~1 MB a mitad de una línea —
-    limitación del editor web, no un error de sintaxis). Cargan entre
-    todos 295 de los 304 negocios reales (borra el único negocio de prueba
-    que había en producción), las veredas encontradas, y las
+25. `0025_ficha_tecnica_catalogos.sql` — dos correcciones sobre feedback
+    directo del admin en vivo. (1) Borra 12 columnas de `negocios`
+    agregadas en 0022 que resultaron ser lectura de columnas **ocultas**
+    del Excel de CDMB — confirmado con `openpyxl`
+    (`column_dimensions[...].hidden`), no adivinado: `tiempo_constitucion`,
+    `codigo_marca`, `fortalecimiento_tecnico/academico/financiero`,
+    `internacionalizacion` (distinta de `exportacion`, que sí es visible),
+    `certificaciones`, `posicionamiento_marca`,
+    `debilidades_ambiental/social/financiera`, `beneficios_ventanilla`.
+    (2) Crea `opciones_campo`, catálogo genérico (una tabla sirve para
+    ~25 campos, no una tabla por campo) que reemplaza el texto libre en
+    los campos categóricos de la ficha técnica (permisos SI/NO/PENDIENTE/
+    N-A y similares, más `responsable_cdmb`/`delegado` — mismo problema,
+    mismo catálogo) — semilla con las opciones reales encontradas
+    analizando el Excel (no inventadas), más una RPC
+    `guardar_opcion_campo` para que el admin agregue una opción nueva sin
+    salir del formulario. `novedad` gana un CHECK de exactamente 4
+    valores (`ACTIVO`/`INACTIVO`/`RETIRADO`/`SUSPENDIDO`). Reemplaza la
+    firma de `guardar_ficha_tecnica_negocio` (pierde los 12 parámetros de
+    las columnas borradas) — **correr ANTES de desplegar**, mismo motivo
+    que las anteriores.
+26. `0026_datos_cdmb_negocios_verdes_01.sql` … `_09.sql` — **generado**, no
+    escrito a mano: script en `lib/migraciones/generar_0026.py` que lee el
+    Excel real de CDMB (`BASE_ACTUALIZADA_NV_ka.xlsx`) y produce estos 9
+    archivos (partidos porque el editor SQL del dashboard de Supabase
+    truncó el archivo único de ~1 MB a mitad de una línea — limitación
+    del editor web, no un error de sintaxis). Cargan entre todos 295 de
+    los 304 negocios reales (borra el único negocio de prueba que había
+    en producción), las veredas encontradas, las opciones reales de cada
+    campo categórico (para `opciones_campo`, ver 0025), y las
     categorías/subcategorías/actividades de cada uno. `activo = true`
     directo para los 166 que CDMB ya marca `NOVEDAD = 'ACTIVO'` (posible
     recién con 0023, que quita la exigencia de foto); `whatsapp` se llena
     con el mismo número de `telefono` (casi todos son celular, no fijo),
-    normalizado a `57` + 10 dígitos cuando el formato lo permite. `novedad`
-    unifica los 3 valores que en la práctica son el mismo estado
+    normalizado a `57` + 10 dígitos cuando el formato lo permite.
+    `novedad` se estandariza a los 4 valores del CHECK de 0025
     ("RETIRADO"/"ACTIVO (RETIRADO)"/"ACTIVO (RETIRADO) P" → `RETIRADO`,
-    pedido explícito — ninguno de los 3 es `ACTIVO` a secas, así que esto
-    no cambia qué se publica). Las 3 categorías de reconocimiento
+    "ACTIVO (SUSPENDIDO)" → `SUSPENDIDO`, pedido explícito — ninguna de
+    esas variantes es `ACTIVO` a secas, así que esto no cambia qué se
+    publica). Las 3 categorías de reconocimiento
     (`emprendimiento_verde`/`sello_marca`/`avalado`) quedan con al menos
     una en `true` siempre — CDMB confirmó que todo negocio real de su
     base tiene alguna de las 3, así que los 59 casos sin señal explícita
@@ -159,25 +182,24 @@ en un Supabase nuevo:
     al otro como texto ("ICA (REGISTRO...)" aparecía después de
     "NATURAL - JURÍDICA" en la búsqueda por substring porque "jurídica"
     contiene "ica"; "INTERNACIONALIZACIÓN" pisaba a "EXPORTACIÓN -
-    INTERNACIONALIZACIÓN (ACTUALMENTE)") — confirmado que ahora los 73
+    INTERNACIONALIZACIÓN (ACTUALMENTE)") — confirmado que los 73
     encabezados del Excel se leen completos, ninguno se pierde ni se cruza
     con otro. Cada archivo es ~120 KB, su propia transacción
-    (`begin`/`commit`), y trae
-    el mismo preámbulo idempotente al principio (`where not exists`/`on
-    conflict do nothing`) — **correr los 10, en cualquier orden**, y
-    repetir uno no duplica nada porque cada `insert into negocios` sin
-    `ON CONFLICT` queda protegido por el `begin`/`commit` de su propio
-    archivo (si algo falla a mitad, ese archivo entero se revierte solo,
-    sin dejar filas a medias). Ningún dato se inventa: lo que el Excel no
-    trae queda `null` (o, solo para categoría oficial —campo
-    obligatorio—, en la categoría-comodín "Pendiente de clasificar" creada
-    en el primer archivo). **Correr DESPUÉS de 0022/0023/0024** (usa
-    columnas y el CHECK relajado de esas 3). Ver
-    `reporte_import_negocios.txt` (generado junto con estos archivos) para
-    la lista de los 8 negocios sin municipio en el Excel que quedaron
-    fuera y necesitan completarse a mano, y de los ~89 que quedaron en
-    "Pendiente de clasificar" para revisión manual desde
-    `/admin/negocios`.
+    (`begin`/`commit`), y trae el mismo preámbulo idempotente al principio
+    (`where not exists`/`on conflict do nothing`) — **correr todos, en
+    cualquier orden**, y repetir uno no duplica nada porque cada `insert
+    into negocios` sin `ON CONFLICT` queda protegido por el
+    `begin`/`commit` de su propio archivo (si algo falla a mitad, ese
+    archivo entero se revierte solo, sin dejar filas a medias). Ningún
+    dato se inventa: lo que el Excel no trae queda `null` (o, solo para
+    categoría oficial —campo obligatorio—, en la categoría-comodín
+    "Pendiente de clasificar" creada en el primer archivo). **Correr
+    DESPUÉS de 0022/0023/0024/0025** (usa columnas, catálogo y el CHECK
+    relajado de esas 4). Ver `reporte_import_negocios.txt` (generado
+    junto con estos archivos) para la lista de los 8 negocios sin
+    municipio en el Excel que quedaron fuera y necesitan completarse a
+    mano, y de los ~89 que quedaron en "Pendiente de clasificar" para
+    revisión manual desde `/admin/negocios`.
 
 ## Sobre trabajo concurrente de dos sesiones
 

@@ -45,6 +45,7 @@ class AdminDashboardPage extends StatefulWidget {
 class _AdminDashboardPageState extends State<AdminDashboardPage> {
   final _service = NegocioService();
   List<Negocio>? _negocios;
+  List<({String nombre, String slug, int anio, double puntaje})>? _topPuntajes;
   String? _error;
   _Vista _vista = _Vista.global;
 
@@ -58,7 +59,18 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Future<void> _cargar() async {
     try {
       final negocios = await _service.listarTodosAdmin();
-      if (mounted) setState(() => _negocios = negocios);
+      // Best-effort: si no hay puntajes cargados todavía, el dashboard
+      // sigue funcionando sin la tarjeta de "top puntajes".
+      List<({String nombre, String slug, int anio, double puntaje})> top = [];
+      try {
+        top = await _service.obtenerTopPuntajes();
+      } catch (_) {}
+      if (mounted) {
+        setState(() {
+          _negocios = negocios;
+          _topPuntajes = top;
+        });
+      }
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
     }
@@ -231,6 +243,56 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 ),
               ),
             ],
+            if (_topPuntajes != null && _topPuntajes!.isNotEmpty) ...[
+              const SizedBox(height: 28),
+              Text(
+                  'Top ${_topPuntajes!.length} mejores puntajes '
+                  '(${_topPuntajes!.first.anio})',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 12),
+              NVCard(
+                child: Column(
+                  children: [
+                    for (final (i, fila) in _topPuntajes!.indexed)
+                      _filaTopPuntaje(i + 1, fila),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _filaTopPuntaje(
+      int puesto, ({String nombre, String slug, int anio, double puntaje}) fila) {
+    final medalla = switch (puesto) {
+      1 => '🥇',
+      2 => '🥈',
+      3 => '🥉',
+      _ => '$puesto',
+    };
+    return InkWell(
+      onTap: () => context.go('/admin/negocios'),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 28,
+              child: Text(medalla,
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(fila.nombre,
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
+            Text(fila.puntaje.toStringAsFixed(1),
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, color: NVColors.verdeVivo)),
           ],
         ),
       ),

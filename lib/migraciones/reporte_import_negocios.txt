@@ -1,4 +1,4 @@
-Generado en 10 archivos: 0025_datos_cdmb_negocios_verdes_01.sql .. 0025_datos_cdmb_negocios_verdes_10.sql
+Generado en 9 archivos: 0026_datos_cdmb_negocios_verdes_01.sql .. 0026_datos_cdmb_negocios_verdes_09.sql
 
 Total importados: 295 / 303
 
@@ -143,8 +143,7 @@ Coordenadas con formato no reconocible (33):
 Por NOVEDAD original:
   ACTIVO: 166
   RETIRADO: 71
-  ACTIVO (SUSPENDIDO): 22
-  SUSPENDIDO: 21
+  SUSPENDIDO: 43
   INACTIVO: 15
 
 Badges asignados: {'emprendimiento_verde': 211, 'sello_marca': 29, 'avalado': 84, 'sin_senal_explicita_fallback_emprendimiento': 59}

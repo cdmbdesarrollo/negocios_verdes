@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Genera 0025_datos_cdmb_negocios_verdes.sql a partir del Excel real de CDMB
+Genera 0026_datos_cdmb_negocios_verdes.sql a partir del Excel real de CDMB
 (BASE_ACTUALIZADA_NV_ka.xlsx, hoja "BASE DE DATOS", 304 filas x 73
 columnas). No se ejecuta como parte de la app — es una herramienta de una
 sola vez, documentada acá para que quede claro cómo se produjo la
@@ -21,14 +21,22 @@ migración de datos. Reglas seguidas (acordadas con el usuario):
 - Un negocio sin MUNICIPIO no se puede insertar (columna NOT NULL con
   CHECK de los 13 valores fijos) — esos quedan fuera del script, listados
   en el reporte final para completarlos a mano.
-- activo siempre queda en FALSE al importar (ningún negocio del Excel
-  trae foto de portada, y la tabla exige foto para poder marcarse activo)
-  — CDMB decide caso por caso cuándo publicar cada uno, subiendo su foto
-  desde /admin/negocios. novedad guarda el estado original de la base
-  (ACTIVO/RETIRADO/SUSPENDIDO/...) para que el admin sepa cuáles corresponde
-  publicar primero.
+- activo = true directo para los negocios que CDMB ya marca NOVEDAD='ACTIVO'
+  (la foto de portada dejó de ser obligatoria, ver
+  0023_foto_portada_opcional.sql). novedad guarda el estado original ya
+  estandarizado a 4 valores (ACTIVO/INACTIVO/RETIRADO/SUSPENDIDO — ver
+  normalizar_novedad) para auditoría y filtro admin.
+- 12 columnas del Excel resultaron ser lectura de columnas OCULTAS (CDMB
+  no las usa activamente) — se excluyen del todo, ver
+  0025_ficha_tecnica_catalogos.sql para la lista y el motivo verificado
+  con openpyxl (column_dimensions[...].hidden), no adivinado.
+- Los campos categóricos (permisos, trámites, etc.) se normalizan a una
+  forma canónica (Sí/No/Pendiente/No aplica/...) que coincide con las
+  opciones sembradas en opciones_campo (0025) — mismo criterio en los dos
+  lados para que el selector del admin encuentre el valor ya cargado en
+  vez de mostrarlo como "no está en la lista".
 
-Uso: python generar_0025.py <ruta_excel> > 0025_datos_cdmb_negocios_verdes.sql
+Uso: python generar_0026.py <ruta_excel> > 0026_datos_cdmb_negocios_verdes.sql
 (el reporte de incidencias se imprime aparte, a un .txt, ver REPORTE_PATH).
 """
 import openpyxl
@@ -37,7 +45,7 @@ import re
 import uuid
 import datetime
 
-SQL_PATH = sys.argv[2] if len(sys.argv) > 2 else '0025_datos_cdmb_negocios_verdes.sql'
+SQL_PATH = sys.argv[2] if len(sys.argv) > 2 else '0026_datos_cdmb_negocios_verdes.sql'
 REPORTE_PATH = sys.argv[3] if len(sys.argv) > 3 else 'reporte_import_negocios.txt'
 
 MUNICIPIOS_VALIDOS = [
@@ -211,19 +219,122 @@ def normalizar_vereda(texto):
 
 
 def normalizar_novedad(texto):
-    """Unifica los 3 valores de NOVEDAD que en la práctica son lo mismo
-    (pedido explícito): 'RETIRADO', 'ACTIVO (RETIRADO)' y 'ACTIVO
-    (RETIRADO) P' (la "P" suelta es una anotación, no un estado distinto)
-    quedan todos como 'RETIRADO' — ninguno de los 3 es 'ACTIVO' a secas de
-    todas formas, así que esto no cambia qué negocios se publican, solo
-    limpia el texto que ve el admin. SUSPENDIDO/ACTIVO (SUSPENDIDO) no se
-    tocan, no fueron parte del pedido."""
+    """Estandariza NOVEDAD a exactamente 4 valores (pedido explícito,
+    coincide con el CHECK negocios_novedad_valida de 0025):
+    'RETIRADO'/'ACTIVO (RETIRADO)'/'ACTIVO (RETIRADO) P' (la "P" suelta es
+    una anotación, no un estado distinto) → RETIRADO; 'ACTIVO (SUSPENDIDO)'
+    → SUSPENDIDO. Ninguna de esas variantes es 'ACTIVO' a secas de todas
+    formas, así que esto no cambia qué negocios se publican, solo limpia
+    el texto que ve el admin."""
     if texto is None:
         return None
-    v = texto.strip()
-    if 'RETIRADO' in v.upper():
+    v = texto.strip().upper()
+    if v == 'ACTIVO':
+        return 'ACTIVO'
+    if 'RETIRADO' in v:
         return 'RETIRADO'
+    if 'SUSPENDIDO' in v:
+        return 'SUSPENDIDO'
+    if v in ('INACTIVO',):
+        return 'INACTIVO'
+    return texto.strip()
+
+
+def normalizar_categorico(valor):
+    """Sí/No/Pendiente/No aplica y variantes → forma canónica, coincide
+    con las opciones sembradas en 0025_ficha_tecnica_catalogos.sql. Lo que
+    no matchea ningún patrón genérico se devuelve tal cual recortado (para
+    eso existe "+ Agregar opción nueva" en el selector del admin: un valor
+    real que el catálogo todavía no tenía no se pierde, solo no viene
+    pre-normalizado)."""
+    if valor is None:
+        return None
+    v = valor.strip()
+    vu = v.upper()
+    if vu in ('SI', 'SÍ'):
+        return 'Sí'
+    if vu == 'NO':
+        return 'No'
+    if vu in ('PENDIENTE',):
+        return 'Pendiente'
+    if vu in ('N/A', 'NA', 'N.A', 'N.A.', '#N/A', 'N/A.'):
+        return 'No aplica'
+    if vu == 'NO HAY FICHA':
+        return 'No hay ficha'
+    if vu == 'REQUIERE':
+        return 'Requiere'
+    if 'IMPLEMENTA' in vu:
+        return 'En implementación'
     return v
+
+
+def normalizar_concesion_aguas(valor):
+    if valor is None:
+        return None
+    vu = valor.strip().upper()
+    if vu == 'ACUEDUCTO':
+        return 'Acueducto'
+    if vu == 'ACUEDUCTO VEREDAL':
+        return 'Acueducto veredal'
+    return normalizar_categorico(valor)
+
+
+def normalizar_canal_venta(valor):
+    if valor is None:
+        return None
+    vu = valor.strip().upper()
+    if vu == 'B2B':
+        return 'B2B'
+    if vu == 'B2C':
+        return 'B2C'
+    if vu in ('MIXTA', 'MIXTO'):
+        return 'Mixta'
+    return normalizar_categorico(valor)
+
+
+def normalizar_rut_camara(valor):
+    if valor is None:
+        return None
+    vu = valor.strip().upper()
+    mapa = {
+        'CAMARA DE COMERCIO': 'Cámara de comercio',
+        'CÁMARA DE COMERCIO': 'Cámara de comercio',
+        'CAMARA DE COMERCIO Y RUT': 'Cámara de comercio y RUT',
+        'CÁMARA DE COMERCIO Y RUT': 'Cámara de comercio y RUT',
+        "RUT -CAMARA DE COMERCIO": 'Cámara de comercio y RUT',
+        'RUT-CAMARA DE COMERCIO': 'Cámara de comercio y RUT',
+        'RUT': 'RUT',
+        'SIN VERIFICAR': 'Sin verificar',
+        'NO TIENE': 'No tiene',
+    }
+    if vu in mapa:
+        return mapa[vu]
+    return normalizar_categorico(valor)
+
+
+def normalizar_tipo_negocio_verde(valor):
+    if valor is None:
+        return None
+    vu = valor.strip().upper()
+    mapa = {
+        'DINAMIZADORAS': 'Dinamizadoras', 'INICIAL': 'Inicial',
+        'INTERMEDIO': 'Intermedio', 'SATISFACTORIO': 'Satisfactorio',
+        'AVANZADO': 'Avanzado', 'BASICO': 'Básico', 'BÁSICO': 'Básico',
+        'EMPRENDIMIENTO': 'Inicial', 'NO': 'No aplica',
+    }
+    if vu in mapa:
+        return mapa[vu]
+    return normalizar_categorico(valor)
+
+
+def normalizar_aplicacion_ficha(valor):
+    if valor is None:
+        return None
+    vu = valor.strip().upper()
+    mapa = {'ACTUALIZO': 'Actualizó', 'NO ACTUALIZO': 'No actualizó', 'NO': 'No actualizó'}
+    if vu in mapa:
+        return mapa[vu]
+    return normalizar_categorico(valor)
 
 
 DMS_RE = re.compile(
@@ -273,7 +384,7 @@ def main():
     i = {
         'nvemp': col('NV / EMP'), 'anio': col('AÑO'), 'novedad': col('NOVEDAD'),
         'municipio': col('MUNICIPIO'), 'vereda': col('VEREDA'),
-        'razon': col('RAZÓN SOCIAL'), 'tiempo_const': col('TIEMPO DE CONSTITUCIÓN'),
+        'razon': col('RAZÓN SOCIAL'),
         'nit': col('CC / NIT'), 'naturaleza': col('NATURAL - JURÍDICA'),
         'rut': col('RUT - CÁMARA'), 'descripcion': col('DESCRIPCION'),
         'producto': col('PRODUCTO'), 'actividad': col('ACTIVIDAD PRODUCTIVA'),
@@ -295,21 +406,11 @@ def main():
         'capacidad_carga': col('CAPACIDAD DE CARGA'),
         'sstt': col('SSTT'), 'canal_venta': col('B2B'),
         'exportacion': col('EXPORTACION'), 'huella': col('HUELLA DE CARBONO'),
-        'fort_tec': col('FORTALECIMIENTO TÉCNICO'),
-        'fort_aca': col('FORTALECIMIENTO ACADEMICO'),
-        'fort_fin': col('FORTALECIMIENTO FINANCIERO'),
-        'internac': col('INTERNACIONALIZACIÓN'),
-        'certificaciones': col('CERTIFICACIONES'),
-        'posic_marca': col('POSICIONAMIENTO DE MARCA'),
         'fort_amb': col('FORTALEZAS - AMBIENTAL'),
         'fort_soc': col('FORTALEZAS - SOCIAL'),
         'fort_eco': col('FORTALEZAS - ECONÓMICO'),
-        'deb_amb': col('DEBILIDADES - AMBIENTAL'),
-        'deb_soc': col('DEBILIDADES - SOCIAL'),
-        'deb_fin': col('DEBILIDADES - FINANCIERA'),
-        'beneficios': col('BENEFICIOS RECIBIDOS'),
         'aval': col('AVAL'), 'sello': col('SELLO MARCA'),
-        'codigo_marca': col('CODIGO MARCA'), 'tipo_nv': col('TIPO DE NEGOCIO VERDE'),
+        'tipo_nv': col('TIPO DE NEGOCIO VERDE'),
         'aplicacion_2025': col('APLICACIÓN DE FICHA 2025'),
         'observaciones': col('OBSERVACIONES'),
         'este': col('ESTE'), 'norte': col('NORTE'), 'cota': col('COTA'),
@@ -385,6 +486,12 @@ def main():
     # otro archivo ya haya corrido antes (cada negocio es autocontenido
     # salvo el preámbulo, que se repite en cada archivo).
     bloques_negocio = []
+    # campo -> set de valores normalizados encontrados en el Excel real —
+    # se vuelca al preámbulo (on conflict do nothing) para que el catálogo
+    # opciones_campo quede completo con cualquier valor real que la
+    # semilla de 0025_ficha_tecnica_catalogos.sql no haya anticipado,
+    # incluidos los nombres de responsable_cdmb/delegado.
+    opciones_encontradas = {}
 
     anios_puntaje = [
         ('PUNTAJE 2020', 2020), ('PUNTAJE 2021', 2021), ('PUNTAJE 2022', 2022),
@@ -510,6 +617,55 @@ def main():
                 corte = descripcion[:157].rsplit(' ', 1)[0]
                 descripcion_corta = corte + '…'
 
+        # Categóricos normalizados — la misma forma canónica que
+        # opciones_campo (0025), y lo que encuentre acá que ese catálogo
+        # todavía no tenía se agrega solo (ver opciones_encontradas más
+        # abajo, "caracteriza todos los datos... deja una opción adicional
+        # si es necesario").
+        rnt_v = normalizar_categorico(limpio(r[i['rnt']]))
+        uso_suelo_v = normalizar_categorico(limpio(r[i['uso_suelo']]))
+        conc_aguas_v = normalizar_concesion_aguas(limpio(r[i['conc_aguas']]))
+        vertimientos_v = normalizar_categorico(limpio(r[i['vertimientos']]))
+        pueaa_v = normalizar_categorico(limpio(r[i['pueaa']]))
+        pgris_v = normalizar_categorico(limpio(r[i['pgris']]))
+        pozo_v = normalizar_categorico(limpio(r[i['pozo']]))
+        alcantarillado_v = normalizar_categorico(limpio(r[i['alcantarillado']]))
+        ica_v = normalizar_categorico(limpio(r[i['ica']]))
+        invima_v = normalizar_categorico(limpio(r[i['invima']]))
+        cert_animales_v = normalizar_categorico(limpio(r[i['cert_animales']]))
+        bpa_v = normalizar_categorico(limpio(r[i['bpa']]))
+        bpa_apicola_v = normalizar_categorico(limpio(r[i['bpa_apicola']]))
+        reg_apicola_v = normalizar_categorico(limpio(r[i['reg_apicola']]))
+        interv_cauce_v = normalizar_categorico(limpio(r[i['interv_cauce']]))
+        capacidad_carga_v = normalizar_categorico(limpio(r[i['capacidad_carga']]))
+        sstt_v = normalizar_categorico(limpio(r[i['sstt']]))
+        canal_venta_v = normalizar_canal_venta(limpio(r[i['canal_venta']]))
+        exportacion_v = normalizar_categorico(limpio(r[i['exportacion']]))
+        rut_v = normalizar_rut_camara(limpio(r[i['rut']]))
+        tipo_nv_v = normalizar_tipo_negocio_verde(limpio(r[i['tipo_nv']]))
+        aplicacion_2025_v = normalizar_aplicacion_ficha(limpio(r[i['aplicacion_2025']]))
+        resp_cdmb_v = limpio(r[i['resp_cdmb']])
+        delegado_v = limpio(r[i['delegado']])
+
+        for campo_cat, valor_cat in (
+            ('registro_nacional_turismo', rnt_v), ('uso_suelo', uso_suelo_v),
+            ('concesion_aguas', conc_aguas_v), ('vertimientos', vertimientos_v),
+            ('pueaa', pueaa_v), ('pgris', pgris_v), ('pozo_septico', pozo_v),
+            ('alcantarillado', alcantarillado_v), ('ica', ica_v), ('invima', invima_v),
+            ('certificado_tenencia_animales', cert_animales_v),
+            ('buenas_practicas_agricolas', bpa_v),
+            ('buenas_practicas_apicolas', bpa_apicola_v),
+            ('registro_apicola', reg_apicola_v),
+            ('intervencion_cauce', interv_cauce_v),
+            ('capacidad_carga', capacidad_carga_v), ('sstt', sstt_v),
+            ('canal_venta', canal_venta_v), ('exportacion', exportacion_v),
+            ('rut_camara_comercio', rut_v), ('tipo_negocio_verde', tipo_nv_v),
+            ('aplicacion_ficha_2025', aplicacion_2025_v),
+            ('responsable_cdmb', resp_cdmb_v), ('delegado', delegado_v),
+        ):
+            if valor_cat:
+                opciones_encontradas.setdefault(campo_cat, set()).add(valor_cat)
+
         campos = {
             'id': sql_str(negocio_id),
             'nombre': sql_str(nombre),
@@ -529,56 +685,44 @@ def main():
             'representante_legal': sql_str(limpio(r[i['repleg']])),
             'nit': sql_str(limpio(r[i['nit']])),
             'naturaleza_juridica': sql_str(naturaleza),
-            'delegado': sql_str(limpio(r[i['delegado']])),
-            'tiempo_constitucion': sql_str(limpio(r[i['tiempo_const']])),
-            'rut_camara_comercio': sql_str(limpio(r[i['rut']])),
-            'responsable_cdmb': sql_str(limpio(r[i['resp_cdmb']])),
+            'delegado': sql_str(delegado_v),
+            'rut_camara_comercio': sql_str(rut_v),
+            'responsable_cdmb': sql_str(resp_cdmb_v),
             'novedad': sql_str(novedad),
-            'tipo_negocio_verde': sql_str(limpio(r[i['tipo_nv']])),
-            'codigo_marca': sql_str(limpio(r[i['codigo_marca']])),
+            'tipo_negocio_verde': sql_str(tipo_nv_v),
             'anio_registro': sql_int(r[i['anio']] if isinstance(r[i['anio']], (int, float)) else None),
             'cota_msnm': sql_str(limpio(r[i['cota']])),
             'este': sql_str(este_raw),
             'norte': sql_str(norte_raw),
-            'aplicacion_ficha_2025': sql_str(limpio(r[i['aplicacion_2025']])),
+            'aplicacion_ficha_2025': sql_str(aplicacion_2025_v),
             'observaciones': sql_str(limpio(r[i['observaciones']])),
-            'registro_nacional_turismo': sql_str(limpio(r[i['rnt']])),
-            'uso_suelo': sql_str(limpio(r[i['uso_suelo']])),
-            'concesion_aguas': sql_str(limpio(r[i['conc_aguas']])),
+            'registro_nacional_turismo': sql_str(rnt_v),
+            'uso_suelo': sql_str(uso_suelo_v),
+            'concesion_aguas': sql_str(conc_aguas_v),
             'concesion_aguas_vencimiento': sql_date(r[i['conc_aguas_venc']]) if i['conc_aguas_venc'] is not None else 'null',
-            'vertimientos': sql_str(limpio(r[i['vertimientos']])),
+            'vertimientos': sql_str(vertimientos_v),
             'vertimientos_vencimiento': sql_date(r[i['vertimientos_venc']]) if i['vertimientos_venc'] is not None else 'null',
-            'pueaa': sql_str(limpio(r[i['pueaa']])),
-            'pgris': sql_str(limpio(r[i['pgris']])),
-            'pozo_septico': sql_str(limpio(r[i['pozo']])),
-            'alcantarillado': sql_str(limpio(r[i['alcantarillado']])),
-            'ica': sql_str(limpio(r[i['ica']])),
+            'pueaa': sql_str(pueaa_v),
+            'pgris': sql_str(pgris_v),
+            'pozo_septico': sql_str(pozo_v),
+            'alcantarillado': sql_str(alcantarillado_v),
+            'ica': sql_str(ica_v),
             'ica_vencimiento': sql_date(r[i['ica_venc']]) if i['ica_venc'] is not None else 'null',
-            'invima': sql_str(limpio(r[i['invima']])),
+            'invima': sql_str(invima_v),
             'invima_vencimiento': sql_date(r[i['invima_venc']]) if i['invima_venc'] is not None else 'null',
-            'certificado_tenencia_animales': sql_str(limpio(r[i['cert_animales']])),
-            'buenas_practicas_agricolas': sql_str(limpio(r[i['bpa']])),
-            'buenas_practicas_apicolas': sql_str(limpio(r[i['bpa_apicola']])),
-            'registro_apicola': sql_str(limpio(r[i['reg_apicola']])),
-            'intervencion_cauce': sql_str(limpio(r[i['interv_cauce']])),
-            'capacidad_carga': sql_str(limpio(r[i['capacidad_carga']])),
-            'sstt': sql_str(limpio(r[i['sstt']])),
-            'canal_venta': sql_str(limpio(r[i['canal_venta']])),
-            'exportacion': sql_str(limpio(r[i['exportacion']])),
+            'certificado_tenencia_animales': sql_str(cert_animales_v),
+            'buenas_practicas_agricolas': sql_str(bpa_v),
+            'buenas_practicas_apicolas': sql_str(bpa_apicola_v),
+            'registro_apicola': sql_str(reg_apicola_v),
+            'intervencion_cauce': sql_str(interv_cauce_v),
+            'capacidad_carga': sql_str(capacidad_carga_v),
+            'sstt': sql_str(sstt_v),
+            'canal_venta': sql_str(canal_venta_v),
+            'exportacion': sql_str(exportacion_v),
             'huella_carbono': sql_str(limpio(r[i['huella']])),
-            'fortalecimiento_tecnico': sql_str(limpio(r[i['fort_tec']])),
-            'fortalecimiento_academico': sql_str(limpio(r[i['fort_aca']])),
-            'fortalecimiento_financiero': sql_str(limpio(r[i['fort_fin']])),
-            'internacionalizacion': sql_str(limpio(r[i['internac']])),
-            'certificaciones': sql_str(limpio(r[i['certificaciones']])),
-            'posicionamiento_marca': sql_str(limpio(r[i['posic_marca']])),
-            'beneficios_ventanilla': sql_str(limpio(r[i['beneficios']])),
             'fortalezas_ambiental': sql_str(limpio(r[i['fort_amb']])),
             'fortalezas_social': sql_str(limpio(r[i['fort_soc']])),
             'fortalezas_economico': sql_str(limpio(r[i['fort_eco']])),
-            'debilidades_ambiental': sql_str(limpio(r[i['deb_amb']])),
-            'debilidades_social': sql_str(limpio(r[i['deb_soc']])),
-            'debilidades_financiera': sql_str(limpio(r[i['deb_fin']])),
             'emprendimiento_verde': sql_bool(emprendimiento_verde),
             'sello_marca': sql_bool(sello_marca),
             'avalado': sql_bool(avalado),
@@ -623,10 +767,26 @@ def main():
     # (begin/commit) con el preámbulo repetido (es idempotente) al
     # principio, así se pueden correr en cualquier orden, o repetir uno
     # sin duplicar nada, sin depender de que otro archivo ya haya corrido.
+    if opciones_encontradas:
+        valores = [
+            f"\n  ({sql_str(campo)}, {sql_str(valor)})"
+            for campo in sorted(opciones_encontradas)
+            for valor in sorted(opciones_encontradas[campo])
+        ]
+        preambulo.append(
+            '-- Opciones reales encontradas en el Excel para los campos de\n'
+            '-- selector (incluye responsable_cdmb/delegado) — completa lo que\n'
+            '-- 0025_ficha_tecnica_catalogos.sql no haya anticipado, sin\n'
+            '-- duplicar lo que ya sembró esa migración.\n'
+            'insert into opciones_campo (campo, valor) values'
+            + ','.join(valores)
+            + '\non conflict (campo, valor) do nothing;'
+        )
+
     LIMITE_BYTES = 120_000
     preambulo_txt = '\n\n'.join(preambulo)
     encabezado_comun = (
-        "-- Generado por lib/migraciones/generar_0025.py desde "
+        "-- Generado por lib/migraciones/generar_0026.py desde "
         "BASE_ACTUALIZADA_NV_ka.xlsx — no editar a mano.\n"
         "-- Uno de varios archivos partidos (ver README.md) — correr TODOS, "
         "en cualquier orden, cada uno es su propia transacción.\n"

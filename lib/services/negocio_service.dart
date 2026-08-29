@@ -288,19 +288,16 @@ class NegocioService {
       final data = await _supabase
           .from('negocios')
           .select(
-              'id, tiempo_constitucion, rut_camara_comercio, responsable_cdmb, '
+              'id, rut_camara_comercio, responsable_cdmb, '
               'delegado, registro_nacional_turismo, uso_suelo, concesion_aguas, '
               'concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, '
               'pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, '
               'invima, invima_vencimiento, certificado_tenencia_animales, '
               'buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, '
               'intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, '
-              'huella_carbono, fortalecimiento_tecnico, fortalecimiento_academico, '
-              'fortalecimiento_financiero, internacionalizacion, certificaciones, '
-              'posicionamiento_marca, beneficios_ventanilla, fortalezas_ambiental, '
-              'fortalezas_social, fortalezas_economico, debilidades_ambiental, '
-              'debilidades_social, debilidades_financiera, novedad, tipo_negocio_verde, '
-              'codigo_marca, anio_registro, cota_msnm, aplicacion_ficha_2025, observaciones, '
+              'huella_carbono, fortalezas_ambiental, '
+              'fortalezas_social, fortalezas_economico, novedad, tipo_negocio_verde, '
+              'anio_registro, cota_msnm, aplicacion_ficha_2025, observaciones, '
               'este, norte')
           .eq('id', negocioId)
           .single();
@@ -319,13 +316,11 @@ class NegocioService {
     required String id,
     String? novedad,
     String? tipoNegocioVerde,
-    String? codigoMarca,
     int? anioRegistro,
     String? cotaMsnm,
     String? aplicacionFicha2025,
     String? observaciones,
     String? delegado,
-    String? tiempoConstitucion,
     String? rutCamaraComercio,
     String? responsableCdmb,
     String? registroNacionalTurismo,
@@ -352,19 +347,9 @@ class NegocioService {
     String? canalVenta,
     String? exportacion,
     String? huellaCarbono,
-    String? fortalecimientoTecnico,
-    String? fortalecimientoAcademico,
-    String? fortalecimientoFinanciero,
-    String? internacionalizacion,
-    String? certificaciones,
-    String? posicionamientoMarca,
-    String? beneficiosVentanilla,
     String? fortalezasAmbiental,
     String? fortalezasSocial,
     String? fortalezasEconomico,
-    String? debilidadesAmbiental,
-    String? debilidadesSocial,
-    String? debilidadesFinanciera,
     String? este,
     String? norte,
   }) async {
@@ -374,13 +359,11 @@ class NegocioService {
         'p_id': id,
         'p_novedad': novedad,
         'p_tipo_negocio_verde': tipoNegocioVerde,
-        'p_codigo_marca': codigoMarca,
         'p_anio_registro': anioRegistro,
         'p_cota_msnm': cotaMsnm,
         'p_aplicacion_ficha_2025': aplicacionFicha2025,
         'p_observaciones': observaciones,
         'p_delegado': delegado,
-        'p_tiempo_constitucion': tiempoConstitucion,
         'p_rut_camara_comercio': rutCamaraComercio,
         'p_responsable_cdmb': responsableCdmb,
         'p_registro_nacional_turismo': registroNacionalTurismo,
@@ -407,19 +390,9 @@ class NegocioService {
         'p_canal_venta': canalVenta,
         'p_exportacion': exportacion,
         'p_huella_carbono': huellaCarbono,
-        'p_fortalecimiento_tecnico': fortalecimientoTecnico,
-        'p_fortalecimiento_academico': fortalecimientoAcademico,
-        'p_fortalecimiento_financiero': fortalecimientoFinanciero,
-        'p_internacionalizacion': internacionalizacion,
-        'p_certificaciones': certificaciones,
-        'p_posicionamiento_marca': posicionamientoMarca,
-        'p_beneficios_ventanilla': beneficiosVentanilla,
         'p_fortalezas_ambiental': fortalezasAmbiental,
         'p_fortalezas_social': fortalezasSocial,
         'p_fortalezas_economico': fortalezasEconomico,
-        'p_debilidades_ambiental': debilidadesAmbiental,
-        'p_debilidades_social': debilidadesSocial,
-        'p_debilidades_financiera': debilidadesFinanciera,
         'p_este': este,
         'p_norte': norte,
       });
@@ -437,6 +410,59 @@ class NegocioService {
       });
     } catch (e) {
       throw Exception('No se pudo guardar el puntaje: $e');
+    }
+  }
+
+  /// Todos los años con al menos un puntaje cargado — para que el
+  /// selector de años del formulario ("Puntajes de seguimiento") no
+  /// dependa de una lista fija en el código: si ya hay un 2026 cargado,
+  /// aparece solo; "piensa en futuro, no solo hasta 2025" (pedido
+  /// explícito) — el admin igual puede escribir cualquier año nuevo
+  /// aunque todavía no exista ningún puntaje para él.
+  Future<List<int>> anosConPuntajes() async {
+    try {
+      final data = await _supabase.from('negocio_puntajes').select('anio');
+      final anos = (data as List)
+          .map((e) => ((e as Map<String, dynamic>)['anio'] as num).toInt())
+          .toSet()
+          .toList()
+        ..sort();
+      return anos;
+    } catch (e) {
+      throw Exception('No se pudieron cargar los años con puntajes: $e');
+    }
+  }
+
+  /// Los mejores puntajes del año más reciente con datos — "top mejores
+  /// puntajes" del dashboard (pedido explícito). Si [anio] es null usa el
+  /// año más alto que exista en negocio_puntajes.
+  Future<List<({String nombre, String slug, int anio, double puntaje})>>
+      obtenerTopPuntajes({int? anio, int limite = 10}) async {
+    try {
+      var anioUsado = anio;
+      if (anioUsado == null) {
+        final anos = await anosConPuntajes();
+        if (anos.isEmpty) return [];
+        anioUsado = anos.last;
+      }
+      final data = await _supabase
+          .from('negocio_puntajes')
+          .select('anio, puntaje, negocios(nombre, slug)')
+          .eq('anio', anioUsado)
+          .order('puntaje', ascending: false)
+          .limit(limite);
+      return (data as List).map((e) {
+        final fila = e as Map<String, dynamic>;
+        final negocio = fila['negocios'] as Map<String, dynamic>?;
+        return (
+          nombre: negocio?['nombre']?.toString() ?? '(negocio borrado)',
+          slug: negocio?['slug']?.toString() ?? '',
+          anio: (fila['anio'] as num).toInt(),
+          puntaje: (fila['puntaje'] as num).toDouble(),
+        );
+      }).toList();
+    } catch (e) {
+      throw Exception('No se pudieron cargar los mejores puntajes: $e');
     }
   }
 

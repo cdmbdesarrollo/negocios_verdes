@@ -4,16 +4,19 @@ import 'package:uuid/uuid.dart';
 
 import '../../../catalogos.dart';
 import '../../../core/admin_guard.dart';
+import '../../../core/widgets/selector_con_catalogo.dart';
 import '../../../models/actividad_productiva.dart';
 import '../../../models/categoria_oficial.dart';
 import '../../../models/ficha_tecnica_negocio.dart';
 import '../../../models/negocio_foto.dart';
+import '../../../models/opcion_campo.dart';
 import '../../../models/subcategoria.dart';
 import '../../../models/vereda.dart';
 import '../../../services/actividad_productiva_service.dart';
 import '../../../services/categoria_service.dart';
 import '../../../services/negocio_foto_service.dart';
 import '../../../services/negocio_service.dart';
+import '../../../services/opcion_campo_service.dart';
 import '../../../services/subcategoria_service.dart';
 import '../../../services/vereda_service.dart';
 import '../../../theme/nv_colors.dart';
@@ -21,78 +24,66 @@ import 'widgets/galeria_editor.dart';
 import 'widgets/selector_taxonomia_negocio.dart';
 import 'widgets/selector_ubicacion_mapa.dart';
 
-/// Campo de texto libre de la "Ficha técnica CDMB" (ver
-/// 0022_ficha_ampliada_negocios.sql) — [clave] coincide 1:1 con el nombre
-/// del parámetro con nombre en NegocioService.guardarFichaTecnica (sin el
-/// prefijo p_), así _guardarFichaTecnica() puede armar esos ~40 argumentos
-/// en un loop en vez de escribirlos a mano dos veces.
-class _CampoFicha {
-  final String clave;
+/// Un campo categórico de la "Ficha técnica CDMB" respaldado por
+/// opciones_campo (ver 0025_ficha_tecnica_catalogos.sql) — [campo] es la
+/// clave tal cual vive en esa tabla (snake_case, igual que la columna real
+/// en negocios), así _valoresSelector/_guardarFichaTecnica no necesitan
+/// traducir nombres entre Dart y la base.
+class _CampoSelector {
+  final String campo;
   final String etiqueta;
-  final bool esFecha;
-  const _CampoFicha(this.clave, this.etiqueta, {this.esFecha = false});
+  const _CampoSelector(this.campo, this.etiqueta);
 }
 
-const _kGruposFichaTecnica = <String, List<_CampoFicha>>{
-  'Identificación y seguimiento': [
-    _CampoFicha('novedad', 'Estado original (novedad CDMB)'),
-    _CampoFicha('tipoNegocioVerde', 'Tipo / madurez de negocio verde'),
-    _CampoFicha('codigoMarca', 'Código de marca'),
-    _CampoFicha('cotaMsnm', 'Cota (msnm)'),
-    _CampoFicha('aplicacionFicha2025', 'Aplicación de ficha 2025'),
-    _CampoFicha('delegado', 'Delegado'),
-    _CampoFicha('tiempoConstitucion', 'Tiempo de constitución'),
-    _CampoFicha('rutCamaraComercio', 'RUT / Cámara de comercio'),
-    _CampoFicha('responsableCdmb', 'Responsable CDMB'),
-  ],
+const _kGruposSelector = <String, List<_CampoSelector>>{
   'Permisos y trámites ambientales': [
-    _CampoFicha('registroNacionalTurismo', 'Registro Nacional de Turismo'),
-    _CampoFicha('usoSuelo', 'Uso del suelo'),
-    _CampoFicha('concesionAguas', 'Concesión de aguas'),
-    _CampoFicha('concesionAguasVencimiento', 'Vencimiento concesión de aguas',
-        esFecha: true),
-    _CampoFicha('vertimientos', 'Vertimientos'),
-    _CampoFicha('vertimientosVencimiento', 'Vencimiento vertimientos',
-        esFecha: true),
-    _CampoFicha('pueaa', 'PUEAA'),
-    _CampoFicha('pgris', 'PGRIS'),
-    _CampoFicha('pozoSeptico', 'Pozo séptico'),
-    _CampoFicha('alcantarillado', 'Alcantarillado'),
-    _CampoFicha('ica', 'ICA (registro producción/comercialización abono)'),
-    _CampoFicha('icaVencimiento', 'Vencimiento ICA', esFecha: true),
-    _CampoFicha('invima', 'INVIMA'),
-    _CampoFicha('invimaVencimiento', 'Vencimiento INVIMA', esFecha: true),
-    _CampoFicha('certificadoTenenciaAnimales', 'Certificado tenencia de animales'),
-    _CampoFicha('buenasPracticasAgricolas', 'Buenas prácticas agrícolas'),
-    _CampoFicha('buenasPracticasApicolas', 'Buenas prácticas apícolas'),
-    _CampoFicha('registroApicola', 'Registro apícola'),
-    _CampoFicha('intervencionCauce', 'Intervención de cauce'),
-    _CampoFicha('capacidadCarga', 'Capacidad de carga'),
-    _CampoFicha('sstt', 'SSTT'),
+    _CampoSelector('registro_nacional_turismo', 'Registro Nacional de Turismo'),
+    _CampoSelector('uso_suelo', 'Uso del suelo'),
+    _CampoSelector('concesion_aguas', 'Concesión de aguas'),
+    _CampoSelector('vertimientos', 'Vertimientos'),
+    _CampoSelector('pueaa', 'PUEAA'),
+    _CampoSelector('pgris', 'PGRIS'),
+    _CampoSelector('pozo_septico', 'Pozo séptico'),
+    _CampoSelector('alcantarillado', 'Alcantarillado'),
+    _CampoSelector('ica', 'ICA (registro producción/comercialización abono)'),
+    _CampoSelector('invima', 'INVIMA'),
+    _CampoSelector('certificado_tenencia_animales', 'Certificado tenencia de animales'),
+    _CampoSelector('buenas_practicas_agricolas', 'Buenas prácticas agrícolas'),
+    _CampoSelector('buenas_practicas_apicolas', 'Buenas prácticas apícolas'),
+    _CampoSelector('registro_apicola', 'Registro apícola'),
+    _CampoSelector('intervencion_cauce', 'Intervención de cauce'),
+    _CampoSelector('capacidad_carga', 'Capacidad de carga'),
+    _CampoSelector('sstt', 'SSTT'),
   ],
-  'Mercado y fortalecimiento': [
-    _CampoFicha('canalVenta', 'Canal de venta (B2B / B2C / mixta)'),
-    _CampoFicha('exportacion', 'Exportación / internacionalización actual'),
-    _CampoFicha('huellaCarbono', 'Huella de carbono'),
-    _CampoFicha('fortalecimientoTecnico', 'Fortalecimiento técnico'),
-    _CampoFicha('fortalecimientoAcademico', 'Fortalecimiento académico'),
-    _CampoFicha('fortalecimientoFinanciero', 'Fortalecimiento financiero'),
-    _CampoFicha('internacionalizacion', 'Internacionalización'),
-    _CampoFicha('certificaciones', 'Certificaciones'),
-    _CampoFicha('posicionamientoMarca', 'Posicionamiento de marca'),
-    _CampoFicha('beneficiosVentanilla', 'Beneficios recibidos de la Ventanilla NV'),
-  ],
-  'Análisis DOFA': [
-    _CampoFicha('fortalezasAmbiental', 'Fortalezas — ambiental'),
-    _CampoFicha('fortalezasSocial', 'Fortalezas — social'),
-    _CampoFicha('fortalezasEconomico', 'Fortalezas — económico'),
-    _CampoFicha('debilidadesAmbiental', 'Debilidades — ambiental'),
-    _CampoFicha('debilidadesSocial', 'Debilidades — social'),
-    _CampoFicha('debilidadesFinanciera', 'Debilidades — financiera'),
+  'Mercado': [
+    _CampoSelector('canal_venta', 'Canal de venta'),
+    _CampoSelector('exportacion', 'Exportación / internacionalización actual'),
   ],
 };
 
-const _kAniosPuntaje = [2020, 2021, 2022, 2023, 2024, 2025];
+/// Los 4 permisos que además llevan fecha de vencimiento — [campo] es el
+/// selector Sí/No/…, [campoVencimiento] la columna date correspondiente.
+class _PermisoConVencimiento {
+  final String campo;
+  final String campoVencimiento;
+  final String etiqueta;
+  const _PermisoConVencimiento(this.campo, this.campoVencimiento, this.etiqueta);
+}
+
+const _kPermisosConVencimiento = [
+  _PermisoConVencimiento('concesion_aguas', 'concesion_aguas_vencimiento', 'Concesión de aguas'),
+  _PermisoConVencimiento('vertimientos', 'vertimientos_vencimiento', 'Vertimientos'),
+  _PermisoConVencimiento('ica', 'ica_vencimiento', 'ICA'),
+  _PermisoConVencimiento('invima', 'invima_vencimiento', 'INVIMA'),
+];
+
+/// novedad es de las pocas cosas de la ficha técnica que NO usa el
+/// catálogo editable opciones_campo — a propósito: tiene una restricción
+/// real en la base (CHECK negocios_novedad_valida, ver
+/// 0025_ficha_tecnica_catalogos.sql) que exige exactamente estos 4
+/// valores, así que dejar que el admin "agregue una opción nueva" acá
+/// rompería el guardado en vez de ayudar.
+const _kNovedadOpciones = ['ACTIVO', 'INACTIVO', 'RETIRADO', 'SUSPENDIDO'];
 
 /// Un solo formulario para crear y editar (negocioId nulo = crear). El id
 /// del negocio se genera en el cliente ANTES de guardar (ver initState) —
@@ -115,6 +106,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
   final _veredaService = VeredaService();
   final _negocioService = NegocioService();
   final _negocioFotoService = NegocioFotoService();
+  final _opcionCampoService = OpcionCampoService();
 
   late final String _negocioId;
   bool get _esEdicion => widget.negocioId != null;
@@ -138,16 +130,31 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
   final _nitCtrl = TextEditingController();
   final _anioRegistroCtrl = TextEditingController();
   final _observacionesCtrl = TextEditingController();
+  final _huellaCarbonoCtrl = TextEditingController();
+  final _fortalezasAmbientalCtrl = TextEditingController();
+  final _fortalezasSocialCtrl = TextEditingController();
+  final _fortalezasEconomicoCtrl = TextEditingController();
 
-  /// Las ~40 columnas de "ficha técnica" (ver _kGruposFichaTecnica arriba)
-  /// — un controller por clave, poblado/leído en loop en vez de a mano.
-  final Map<String, TextEditingController> _fichaCtrls = {
-    for (final grupo in _kGruposFichaTecnica.values)
-      for (final campo in grupo) campo.clave: TextEditingController(),
+  /// Catálogo cargado una sola vez al abrir el formulario — campo (clave
+  /// snake_case) → sus opciones existentes, ordenadas. "no hardcodeada":
+  /// las opciones viven en la base (opciones_campo), no en este archivo.
+  Map<String, List<OpcionCampo>> _opciones = {};
+  /// Valor elegido por campo, para todos los _kGruposSelector +
+  /// tipoNegocioVerde/aplicacionFicha2025/rutCamaraComercio/responsable_cdmb/
+  /// delegado — todos comparten esta misma forma (String? simple, no
+  /// TextEditingController, porque son selectores, no texto libre).
+  final Map<String, String?> _valoresSelector = {};
+  final Map<String, DateTime?> _vencimientos = {
+    for (final p in _kPermisosConVencimiento) p.campoVencimiento: null,
   };
-  final Map<int, TextEditingController> _puntajeCtrls = {
-    for (final anio in _kAniosPuntaje) anio: TextEditingController(),
-  };
+  String? _novedad;
+
+  /// Puntajes por año — Set de años en vez de una lista fija de 2020-2025:
+  /// "piensa en futuro, no solo hasta 2025" (pedido explícito). Arranca
+  /// con los años que el negocio ya tenga cargados + el año actual;
+  /// "+ Agregar año" deja escribir cualquier otro.
+  final Set<int> _aniosPuntaje = {};
+  final Map<int, TextEditingController> _puntajeCtrls = {};
 
   List<CategoriaOficial> _categorias = [];
   List<Subcategoria> _subcategorias = [];
@@ -172,6 +179,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
   int _mapaVersion = 0;
   final _esteCtrl = TextEditingController();
   final _norteCtrl = TextEditingController();
+  final _cotaCtrl = TextEditingController();
   String? _errorEsteNorte;
   bool _destacado = false;
   bool _activo = false;
@@ -208,11 +216,13 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
     _nitCtrl.dispose();
     _anioRegistroCtrl.dispose();
     _observacionesCtrl.dispose();
+    _huellaCarbonoCtrl.dispose();
+    _fortalezasAmbientalCtrl.dispose();
+    _fortalezasSocialCtrl.dispose();
+    _fortalezasEconomicoCtrl.dispose();
     _esteCtrl.dispose();
     _norteCtrl.dispose();
-    for (final c in _fichaCtrls.values) {
-      c.dispose();
-    }
+    _cotaCtrl.dispose();
     for (final c in _puntajeCtrls.values) {
       c.dispose();
     }
@@ -225,6 +235,9 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
       final subcategorias = await _subcategoriaService.listarTodas();
       final actividades = await _actividadService.listarTodas();
       final veredas = await _veredaService.listarTodas();
+      final opciones = await _opcionCampoService.listarTodas();
+
+      _aniosPuntaje.add(DateTime.now().year);
 
       if (_esEdicion) {
         final existente = await _negocioService.obtenerPorId(_negocioId);
@@ -285,6 +298,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
         _subcategorias = subcategorias;
         _actividades = actividades;
         _veredas = veredas;
+        _opciones = opciones;
         _cargando = false;
       });
     } catch (e) {
@@ -297,73 +311,62 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
     }
   }
 
-  String _fmtFecha(DateTime? d) =>
-      d == null ? '' : d.toIso8601String().split('T').first;
-
   void _poblarFicha(FichaTecnicaNegocio f) {
-    _fichaCtrls['novedad']!.text = f.novedad ?? '';
-    _fichaCtrls['tipoNegocioVerde']!.text = f.tipoNegocioVerde ?? '';
-    _fichaCtrls['codigoMarca']!.text = f.codigoMarca ?? '';
-    _fichaCtrls['cotaMsnm']!.text = f.cotaMsnm ?? '';
-    _fichaCtrls['aplicacionFicha2025']!.text = f.aplicacionFicha2025 ?? '';
-    _fichaCtrls['delegado']!.text = f.delegado ?? '';
-    _fichaCtrls['tiempoConstitucion']!.text = f.tiempoConstitucion ?? '';
-    _fichaCtrls['rutCamaraComercio']!.text = f.rutCamaraComercio ?? '';
-    _fichaCtrls['responsableCdmb']!.text = f.responsableCdmb ?? '';
-    _fichaCtrls['registroNacionalTurismo']!.text =
-        f.registroNacionalTurismo ?? '';
-    _fichaCtrls['usoSuelo']!.text = f.usoSuelo ?? '';
-    _fichaCtrls['concesionAguas']!.text = f.concesionAguas ?? '';
-    _fichaCtrls['concesionAguasVencimiento']!.text =
-        _fmtFecha(f.concesionAguasVencimiento);
-    _fichaCtrls['vertimientos']!.text = f.vertimientos ?? '';
-    _fichaCtrls['vertimientosVencimiento']!.text =
-        _fmtFecha(f.vertimientosVencimiento);
-    _fichaCtrls['pueaa']!.text = f.pueaa ?? '';
-    _fichaCtrls['pgris']!.text = f.pgris ?? '';
-    _fichaCtrls['pozoSeptico']!.text = f.pozoSeptico ?? '';
-    _fichaCtrls['alcantarillado']!.text = f.alcantarillado ?? '';
-    _fichaCtrls['ica']!.text = f.ica ?? '';
-    _fichaCtrls['icaVencimiento']!.text = _fmtFecha(f.icaVencimiento);
-    _fichaCtrls['invima']!.text = f.invima ?? '';
-    _fichaCtrls['invimaVencimiento']!.text = _fmtFecha(f.invimaVencimiento);
-    _fichaCtrls['certificadoTenenciaAnimales']!.text =
-        f.certificadoTenenciaAnimales ?? '';
-    _fichaCtrls['buenasPracticasAgricolas']!.text =
-        f.buenasPracticasAgricolas ?? '';
-    _fichaCtrls['buenasPracticasApicolas']!.text =
-        f.buenasPracticasApicolas ?? '';
-    _fichaCtrls['registroApicola']!.text = f.registroApicola ?? '';
-    _fichaCtrls['intervencionCauce']!.text = f.intervencionCauce ?? '';
-    _fichaCtrls['capacidadCarga']!.text = f.capacidadCarga ?? '';
-    _fichaCtrls['sstt']!.text = f.sstt ?? '';
-    _fichaCtrls['canalVenta']!.text = f.canalVenta ?? '';
-    _fichaCtrls['exportacion']!.text = f.exportacion ?? '';
-    _fichaCtrls['huellaCarbono']!.text = f.huellaCarbono ?? '';
-    _fichaCtrls['fortalecimientoTecnico']!.text =
-        f.fortalecimientoTecnico ?? '';
-    _fichaCtrls['fortalecimientoAcademico']!.text =
-        f.fortalecimientoAcademico ?? '';
-    _fichaCtrls['fortalecimientoFinanciero']!.text =
-        f.fortalecimientoFinanciero ?? '';
-    _fichaCtrls['internacionalizacion']!.text = f.internacionalizacion ?? '';
-    _fichaCtrls['certificaciones']!.text = f.certificaciones ?? '';
-    _fichaCtrls['posicionamientoMarca']!.text = f.posicionamientoMarca ?? '';
-    _fichaCtrls['beneficiosVentanilla']!.text = f.beneficiosVentanilla ?? '';
-    _fichaCtrls['fortalezasAmbiental']!.text = f.fortalezasAmbiental ?? '';
-    _fichaCtrls['fortalezasSocial']!.text = f.fortalezasSocial ?? '';
-    _fichaCtrls['fortalezasEconomico']!.text = f.fortalezasEconomico ?? '';
-    _fichaCtrls['debilidadesAmbiental']!.text = f.debilidadesAmbiental ?? '';
-    _fichaCtrls['debilidadesSocial']!.text = f.debilidadesSocial ?? '';
-    _fichaCtrls['debilidadesFinanciera']!.text =
-        f.debilidadesFinanciera ?? '';
+    _novedad = f.novedad;
+    _valoresSelector['tipo_negocio_verde'] = f.tipoNegocioVerde;
+    _valoresSelector['aplicacion_ficha_2025'] = f.aplicacionFicha2025;
+    _valoresSelector['rut_camara_comercio'] = f.rutCamaraComercio;
+    _valoresSelector['responsable_cdmb'] = f.responsableCdmb;
+    _valoresSelector['delegado'] = f.delegado;
+    _valoresSelector['registro_nacional_turismo'] = f.registroNacionalTurismo;
+    _valoresSelector['uso_suelo'] = f.usoSuelo;
+    _valoresSelector['concesion_aguas'] = f.concesionAguas;
+    _valoresSelector['vertimientos'] = f.vertimientos;
+    _valoresSelector['pueaa'] = f.pueaa;
+    _valoresSelector['pgris'] = f.pgris;
+    _valoresSelector['pozo_septico'] = f.pozoSeptico;
+    _valoresSelector['alcantarillado'] = f.alcantarillado;
+    _valoresSelector['ica'] = f.ica;
+    _valoresSelector['invima'] = f.invima;
+    _valoresSelector['certificado_tenencia_animales'] =
+        f.certificadoTenenciaAnimales;
+    _valoresSelector['buenas_practicas_agricolas'] = f.buenasPracticasAgricolas;
+    _valoresSelector['buenas_practicas_apicolas'] = f.buenasPracticasApicolas;
+    _valoresSelector['registro_apicola'] = f.registroApicola;
+    _valoresSelector['intervencion_cauce'] = f.intervencionCauce;
+    _valoresSelector['capacidad_carga'] = f.capacidadCarga;
+    _valoresSelector['sstt'] = f.sstt;
+    _valoresSelector['canal_venta'] = f.canalVenta;
+    _valoresSelector['exportacion'] = f.exportacion;
+    _vencimientos['concesion_aguas_vencimiento'] = f.concesionAguasVencimiento;
+    _vencimientos['vertimientos_vencimiento'] = f.vertimientosVencimiento;
+    _vencimientos['ica_vencimiento'] = f.icaVencimiento;
+    _vencimientos['invima_vencimiento'] = f.invimaVencimiento;
     _anioRegistroCtrl.text = f.anioRegistro?.toString() ?? '';
     _observacionesCtrl.text = f.observaciones ?? '';
+    _huellaCarbonoCtrl.text = f.huellaCarbono ?? '';
+    _fortalezasAmbientalCtrl.text = f.fortalezasAmbiental ?? '';
+    _fortalezasSocialCtrl.text = f.fortalezasSocial ?? '';
+    _fortalezasEconomicoCtrl.text = f.fortalezasEconomico ?? '';
     _esteCtrl.text = f.este ?? '';
     _norteCtrl.text = f.norte ?? '';
-    for (final anio in _kAniosPuntaje) {
-      final valor = f.puntajes[anio];
-      if (valor != null) _puntajeCtrls[anio]!.text = valor.toString();
+    _cotaCtrl.text = f.cotaMsnm ?? '';
+    _aniosPuntaje.addAll(f.puntajes.keys);
+    for (final anio in _aniosPuntaje) {
+      _puntajeCtrls[anio] =
+          TextEditingController(text: f.puntajes[anio]?.toString() ?? '');
+    }
+    // Auto-ubicar: si el negocio no tenía lat/lng propios pero sí
+    // Este/Norte, arma el punto del mapa apenas se abre el formulario —
+    // "no solo mostrarlo sino ubicarlo" (pedido explícito), no hace falta
+    // que el admin toque nada para verlo en el mapa la primera vez.
+    if (_latitud == null && _longitud == null) {
+      final este = _parsearGrados(f.este ?? '');
+      final norte = _parsearGrados(f.norte ?? '');
+      if (este != null && norte != null) {
+        _latitud = norte;
+        _longitud = -este;
+      }
     }
   }
 
@@ -435,67 +438,51 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
     }
   }
 
-  String? _c(String clave) => _vacioANulo(_fichaCtrls[clave]!.text);
-  DateTime? _fecha(String clave) =>
-      DateTime.tryParse(_fichaCtrls[clave]!.text.trim());
-
   Future<void> _guardarFichaTecnica() async {
     await _negocioService.guardarFichaTecnica(
       id: _negocioId,
-      novedad: _c('novedad'),
-      tipoNegocioVerde: _c('tipoNegocioVerde'),
-      codigoMarca: _c('codigoMarca'),
+      novedad: _novedad,
+      tipoNegocioVerde: _valoresSelector['tipo_negocio_verde'],
       anioRegistro: int.tryParse(_anioRegistroCtrl.text.trim()),
-      cotaMsnm: _c('cotaMsnm'),
-      aplicacionFicha2025: _c('aplicacionFicha2025'),
+      cotaMsnm: _vacioANulo(_cotaCtrl.text),
+      aplicacionFicha2025: _valoresSelector['aplicacion_ficha_2025'],
       observaciones: _vacioANulo(_observacionesCtrl.text),
-      delegado: _c('delegado'),
-      tiempoConstitucion: _c('tiempoConstitucion'),
-      rutCamaraComercio: _c('rutCamaraComercio'),
-      responsableCdmb: _c('responsableCdmb'),
-      registroNacionalTurismo: _c('registroNacionalTurismo'),
-      usoSuelo: _c('usoSuelo'),
-      concesionAguas: _c('concesionAguas'),
-      concesionAguasVencimiento: _fecha('concesionAguasVencimiento'),
-      vertimientos: _c('vertimientos'),
-      vertimientosVencimiento: _fecha('vertimientosVencimiento'),
-      pueaa: _c('pueaa'),
-      pgris: _c('pgris'),
-      pozoSeptico: _c('pozoSeptico'),
-      alcantarillado: _c('alcantarillado'),
-      ica: _c('ica'),
-      icaVencimiento: _fecha('icaVencimiento'),
-      invima: _c('invima'),
-      invimaVencimiento: _fecha('invimaVencimiento'),
-      certificadoTenenciaAnimales: _c('certificadoTenenciaAnimales'),
-      buenasPracticasAgricolas: _c('buenasPracticasAgricolas'),
-      buenasPracticasApicolas: _c('buenasPracticasApicolas'),
-      registroApicola: _c('registroApicola'),
-      intervencionCauce: _c('intervencionCauce'),
-      capacidadCarga: _c('capacidadCarga'),
-      sstt: _c('sstt'),
-      canalVenta: _c('canalVenta'),
-      exportacion: _c('exportacion'),
-      huellaCarbono: _c('huellaCarbono'),
-      fortalecimientoTecnico: _c('fortalecimientoTecnico'),
-      fortalecimientoAcademico: _c('fortalecimientoAcademico'),
-      fortalecimientoFinanciero: _c('fortalecimientoFinanciero'),
-      internacionalizacion: _c('internacionalizacion'),
-      certificaciones: _c('certificaciones'),
-      posicionamientoMarca: _c('posicionamientoMarca'),
-      beneficiosVentanilla: _c('beneficiosVentanilla'),
-      fortalezasAmbiental: _c('fortalezasAmbiental'),
-      fortalezasSocial: _c('fortalezasSocial'),
-      fortalezasEconomico: _c('fortalezasEconomico'),
-      debilidadesAmbiental: _c('debilidadesAmbiental'),
-      debilidadesSocial: _c('debilidadesSocial'),
-      debilidadesFinanciera: _c('debilidadesFinanciera'),
+      delegado: _valoresSelector['delegado'],
+      rutCamaraComercio: _valoresSelector['rut_camara_comercio'],
+      responsableCdmb: _valoresSelector['responsable_cdmb'],
+      registroNacionalTurismo: _valoresSelector['registro_nacional_turismo'],
+      usoSuelo: _valoresSelector['uso_suelo'],
+      concesionAguas: _valoresSelector['concesion_aguas'],
+      concesionAguasVencimiento: _vencimientos['concesion_aguas_vencimiento'],
+      vertimientos: _valoresSelector['vertimientos'],
+      vertimientosVencimiento: _vencimientos['vertimientos_vencimiento'],
+      pueaa: _valoresSelector['pueaa'],
+      pgris: _valoresSelector['pgris'],
+      pozoSeptico: _valoresSelector['pozo_septico'],
+      alcantarillado: _valoresSelector['alcantarillado'],
+      ica: _valoresSelector['ica'],
+      icaVencimiento: _vencimientos['ica_vencimiento'],
+      invima: _valoresSelector['invima'],
+      invimaVencimiento: _vencimientos['invima_vencimiento'],
+      certificadoTenenciaAnimales: _valoresSelector['certificado_tenencia_animales'],
+      buenasPracticasAgricolas: _valoresSelector['buenas_practicas_agricolas'],
+      buenasPracticasApicolas: _valoresSelector['buenas_practicas_apicolas'],
+      registroApicola: _valoresSelector['registro_apicola'],
+      intervencionCauce: _valoresSelector['intervencion_cauce'],
+      capacidadCarga: _valoresSelector['capacidad_carga'],
+      sstt: _valoresSelector['sstt'],
+      canalVenta: _valoresSelector['canal_venta'],
+      exportacion: _valoresSelector['exportacion'],
+      huellaCarbono: _vacioANulo(_huellaCarbonoCtrl.text),
+      fortalezasAmbiental: _vacioANulo(_fortalezasAmbientalCtrl.text),
+      fortalezasSocial: _vacioANulo(_fortalezasSocialCtrl.text),
+      fortalezasEconomico: _vacioANulo(_fortalezasEconomicoCtrl.text),
       este: _vacioANulo(_esteCtrl.text),
       norte: _vacioANulo(_norteCtrl.text),
     );
 
-    for (final anio in _kAniosPuntaje) {
-      final texto = _puntajeCtrls[anio]!.text.trim();
+    for (final anio in _aniosPuntaje) {
+      final texto = _puntajeCtrls[anio]?.text.trim() ?? '';
       if (texto.isEmpty) continue;
       final puntaje = double.tryParse(texto.replaceAll(',', '.'));
       if (puntaje != null) {
@@ -531,7 +518,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
 
   /// Grados decimales (siempre positivos) desde un texto Este/Norte, o null
   /// si no calza con ningún formato reconocible — mismo criterio que
-  /// generar_0025.py (nunca "adivina" un valor a medias): acepta grados
+  /// generar_0026.py (nunca "adivina" un valor a medias): acepta grados
   /// decimales ya listos (ej. "72.87") o el patrón DMS más común
   /// (73°12'34.5"), rechaza minutos/segundos fuera de rango.
   double? _parsearGrados(String texto) {
@@ -550,12 +537,8 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
     return grados + minutos / 60 + segundos / 3600;
   }
 
-  /// Este/Norte quedan guardados tal cual los escribió CDMB (ver
-  /// guardarFichaTecnica) — este botón es solo un atajo para no tener que
-  /// convertirlos a mano: calcula latitud/longitud y fuerza a
-  /// SelectorUbicacionMapa a remontarse con el punto nuevo (_mapaVersion
-  /// cambia su key). Santander es siempre oeste, por eso la longitud
-  /// calculada de Este siempre queda negativa.
+  /// Botón explícito ("Actualizar mapa"): sí avisa si Este/Norte no se
+  /// pueden leer, porque acá el admin pidió la conversión a propósito.
   void _calcularUbicacionDesdeEsteNorte() {
     final este = _parsearGrados(_esteCtrl.text);
     final norte = _parsearGrados(_norteCtrl.text);
@@ -568,6 +551,26 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
       _errorEsteNorte = null;
       _latitud = norte;
       _longitud = -este;
+      _mapaVersion++;
+    });
+  }
+
+  /// Se llama en cada tecla de Este/Norte ("no solo mostrarlo sino
+  /// ubicarlo": el mapa se actualiza solo mientras se escribe, sin
+  /// esperar un clic aparte) — a diferencia del botón, mientras se escribe
+  /// la mayoría de los estados intermedios son inválidos a propósito (ej.
+  /// "72." o "-72"), así que acá nunca se muestra error, solo se actualiza
+  /// el mapa cuando ambos ya parsean a un punto válido.
+  void _actualizarMapaSiValido() {
+    final este = _parsearGrados(_esteCtrl.text);
+    final norte = _parsearGrados(_norteCtrl.text);
+    if (este == null || norte == null) return;
+    final lat = norte, lng = -este;
+    if (_latitud == lat && _longitud == lng) return;
+    setState(() {
+      _errorEsteNorte = null;
+      _latitud = lat;
+      _longitud = lng;
       _mapaVersion++;
     });
   }
@@ -617,6 +620,85 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
     } catch (e) {
       _avisar(e.toString().replaceFirst('Exception: ', ''));
     }
+  }
+
+  /// "Deja una opción adicional si es necesario para el administrador":
+  /// un solo diálogo reusado por CADA SelectorConCatalogo del formulario
+  /// (permisos, nombres de responsable/delegado, tipo de negocio, etc.) —
+  /// agrega la opción al catálogo real (opciones_campo) y la deja
+  /// seleccionada de una vez, así el admin no tiene que buscarla de
+  /// nuevo en la lista.
+  Future<void> _agregarOpcion(BuildContext context, String campo) async {
+    final controller = TextEditingController();
+    final valor = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Agregar opción nueva'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Valor'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text),
+            child: const Text('Agregar'),
+          ),
+        ],
+      ),
+    );
+    if (valor == null || valor.trim().isEmpty) return;
+    try {
+      final opcion =
+          await _opcionCampoService.agregar(campo: campo, valor: valor.trim());
+      if (!mounted) return;
+      setState(() {
+        _opciones = {..._opciones};
+        _opciones.putIfAbsent(campo, () => []).add(opcion);
+        _valoresSelector[campo] = opcion.valor;
+      });
+    } catch (e) {
+      _avisar(e.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  List<String> _valoresDe(String campo) =>
+      (_opciones[campo] ?? []).map((o) => o.valor).toList();
+
+  Future<void> _agregarAnioPuntaje() async {
+    final controller = TextEditingController();
+    final texto = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Agregar año'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: 'Año', hintText: '2026'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text),
+            child: const Text('Agregar'),
+          ),
+        ],
+      ),
+    );
+    final anio = int.tryParse(texto?.trim() ?? '');
+    if (anio == null) return;
+    setState(() {
+      _aniosPuntaje.add(anio);
+      _puntajeCtrls.putIfAbsent(anio, () => TextEditingController());
+    });
   }
 
   @override
@@ -780,53 +862,105 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             decoration: const InputDecoration(labelText: 'Dirección (opcional)'),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Este/Norte/Cota — tal cual vienen de la base de CDMB (opcional). '
-            'Se guardan como referencia y "Calcular" arma el punto en el '
-            'mapa de abajo a partir de ellos.',
-            style: TextStyle(color: NVColors.textoSecundario, fontSize: 12),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _esteCtrl,
-                  decoration: const InputDecoration(
-                      labelText: 'Este', isDense: true, hintText: '72°58\'36.7"'),
+          // Este/Norte/Cota son la fuente primaria de ubicación (pedido
+          // explícito: "se deben presentar en Este, Norte y Cota... es
+          // como lo tenemos"), no la latitud/longitud del mapa — esas se
+          // calculan A PARTIR de acá, nunca al revés.
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: NVColors.primaryLight,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Este / Norte / Cota',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                const SizedBox(height: 4),
+                const Text(
+                  'Tal cual vienen de la base de CDMB — el mapa de abajo se '
+                  'ubica solo a partir de estos 3 datos.',
+                  style: TextStyle(color: NVColors.textoSecundario, fontSize: 12),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextFormField(
-                  controller: _norteCtrl,
-                  decoration: const InputDecoration(
-                      labelText: 'Norte', isDense: true, hintText: '7°23\'2.0"'),
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _esteCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Este',
+                          isDense: true,
+                          hintText: '72°58\'36.7"',
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        onChanged: (_) => _actualizarMapaSiValido(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _norteCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Norte',
+                          isDense: true,
+                          hintText: '7°23\'2.0"',
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        onChanged: (_) => _actualizarMapaSiValido(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _cotaCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Cota',
+                          isDense: true,
+                          hintText: '999 msnm',
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextFormField(
-                  controller: _fichaCtrls['cotaMsnm'],
-                  decoration: const InputDecoration(
-                      labelText: 'Cota', isDense: true, hintText: '999 msnm'),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: _calcularUbicacionDesdeEsteNorte,
+                      icon: const Icon(Icons.my_location, size: 18),
+                      label: const Text('Actualizar mapa'),
+                    ),
+                    if (_latitud != null && _longitud != null) ...[
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Convertido: ${_latitud!.toStringAsFixed(6)}, '
+                          '${_longitud!.toStringAsFixed(6)}'
+                          '${_cotaCtrl.text.trim().isNotEmpty ? ', ${_cotaCtrl.text.trim()}' : ''}',
+                          style: const TextStyle(
+                              color: NVColors.textoSecundario, fontSize: 11),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ),
-            ],
+                if (_errorEsteNorte != null) ...[
+                  const SizedBox(height: 6),
+                  Text(_errorEsteNorte!,
+                      style: const TextStyle(color: NVColors.error, fontSize: 12)),
+                ],
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: _calcularUbicacionDesdeEsteNorte,
-            icon: const Icon(Icons.my_location, size: 18),
-            label: const Text('Calcular ubicación en el mapa'),
-          ),
-          if (_errorEsteNorte != null) ...[
-            const SizedBox(height: 6),
-            Text(_errorEsteNorte!,
-                style: const TextStyle(color: NVColors.error, fontSize: 12)),
-          ],
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           if (_municipio != null)
             SelectorUbicacionMapa(
               key: ValueKey(_mapaVersion),
@@ -980,8 +1114,13 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
   }
 
   /// Sección "Ficha técnica CDMB" — gestión interna, nunca pública (ver
-  /// NegocioService._selectPublico). Colapsada por defecto: son ~40 campos
-  /// que la mayoría de las ediciones del día a día no toca.
+  /// NegocioService._selectPublico). Colapsada por defecto: son varias
+  /// docenas de campos que la mayoría de las ediciones del día a día no
+  /// toca. Rediseñada como tarjetas con ícono por grupo (pedido explícito:
+  /// "que se vea muy moderno y fácil gestión") — cada campo categórico usa
+  /// SelectorConCatalogo en vez de texto libre, así el valor siempre es
+  /// exactamente el mismo sin importar quién edite ("no hardcodeada": las
+  /// opciones viven en la base, no en este archivo).
   Widget _fichaTecnica() {
     return ExpansionTile(
       tilePadding: EdgeInsets.zero,
@@ -990,74 +1129,265 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
         style: TextStyle(fontWeight: FontWeight.bold, color: NVColors.primaryDark),
       ),
       subtitle: const Text(
-        'Permisos, DOFA, fortalecimiento y puntajes — nunca visible en el sitio público.',
+        'Permisos, fortalezas y puntajes — nunca visible en el sitio público. '
+        'Puede ir quedando incompleta: la actualiza el personal de campo.',
         style: TextStyle(fontSize: 12, color: NVColors.textoSecundario),
       ),
       childrenPadding: const EdgeInsets.only(top: 8, bottom: 12),
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: TextFormField(
-                controller: _anioRegistroCtrl,
-                decoration: const InputDecoration(labelText: 'Año de registro'),
-                keyboardType: TextInputType.number,
+        _tarjetaGrupo(
+          icono: Icons.badge_outlined,
+          titulo: 'Identificación y seguimiento',
+          hijos: [
+            DropdownButtonFormField<String?>(
+              initialValue: _novedad,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Estado (novedad CDMB)'),
+              items: [
+                const DropdownMenuItem(value: null, child: Text('—')),
+                for (final o in _kNovedadOpciones)
+                  DropdownMenuItem(value: o, child: Text(o)),
+              ],
+              onChanged: (v) => setState(() => _novedad = v),
+            ),
+            const SizedBox(height: 12),
+            SelectorConCatalogo(
+              etiqueta: 'Tipo / madurez de negocio verde',
+              valor: _valoresSelector['tipo_negocio_verde'],
+              opciones: _valoresDe('tipo_negocio_verde'),
+              onCambio: (v) =>
+                  setState(() => _valoresSelector['tipo_negocio_verde'] = v),
+              onAgregarOpcion: (ctx) => _agregarOpcion(ctx, 'tipo_negocio_verde'),
+            ),
+            const SizedBox(height: 12),
+            SelectorConCatalogo(
+              etiqueta: 'Aplicación de ficha 2025',
+              valor: _valoresSelector['aplicacion_ficha_2025'],
+              opciones: _valoresDe('aplicacion_ficha_2025'),
+              onCambio: (v) =>
+                  setState(() => _valoresSelector['aplicacion_ficha_2025'] = v),
+              onAgregarOpcion: (ctx) => _agregarOpcion(ctx, 'aplicacion_ficha_2025'),
+            ),
+            const SizedBox(height: 12),
+            SelectorConCatalogo(
+              etiqueta: 'RUT / Cámara de comercio',
+              valor: _valoresSelector['rut_camara_comercio'],
+              opciones: _valoresDe('rut_camara_comercio'),
+              onCambio: (v) =>
+                  setState(() => _valoresSelector['rut_camara_comercio'] = v),
+              onAgregarOpcion: (ctx) => _agregarOpcion(ctx, 'rut_camara_comercio'),
+            ),
+            const SizedBox(height: 12),
+            SelectorConCatalogo(
+              etiqueta: 'Responsable CDMB',
+              valor: _valoresSelector['responsable_cdmb'],
+              opciones: _valoresDe('responsable_cdmb'),
+              onCambio: (v) =>
+                  setState(() => _valoresSelector['responsable_cdmb'] = v),
+              onAgregarOpcion: (ctx) => _agregarOpcion(ctx, 'responsable_cdmb'),
+            ),
+            const SizedBox(height: 12),
+            SelectorConCatalogo(
+              etiqueta: 'Delegado',
+              valor: _valoresSelector['delegado'],
+              opciones: _valoresDe('delegado'),
+              onCambio: (v) => setState(() => _valoresSelector['delegado'] = v),
+              onAgregarOpcion: (ctx) => _agregarOpcion(ctx, 'delegado'),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _anioRegistroCtrl,
+              decoration: InputDecoration(
+                labelText: 'Año de registro',
+                helperText: _anioTrayectoria(),
               ),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _observacionesCtrl,
+              decoration: const InputDecoration(labelText: 'Observaciones'),
+              maxLines: 3,
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        for (final entrada in _kGruposFichaTecnica.entries) ...[
+        const SizedBox(height: 14),
+        for (final entrada in _kGruposSelector.entries)
           Padding(
-            padding: const EdgeInsets.only(top: 8, bottom: 8),
-            child: Text(entrada.key,
-                style: const TextStyle(
-                    fontWeight: FontWeight.w600, color: NVColors.primaryDark)),
-          ),
-          for (final campo in entrada.value)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: TextFormField(
-                controller: _fichaCtrls[campo.clave],
-                decoration: InputDecoration(
-                  labelText: campo.etiqueta,
-                  helperText: campo.esFecha ? 'Formato AAAA-MM-DD' : null,
-                ),
-              ),
+            padding: const EdgeInsets.only(bottom: 14),
+            child: _tarjetaGrupo(
+              icono: entrada.key == 'Mercado'
+                  ? Icons.trending_up
+                  : Icons.eco_outlined,
+              titulo: entrada.key,
+              hijos: [
+                for (final campo in entrada.value) ...[
+                  SelectorConCatalogo(
+                    etiqueta: campo.etiqueta,
+                    valor: _valoresSelector[campo.campo],
+                    opciones: _valoresDe(campo.campo),
+                    onCambio: (v) =>
+                        setState(() => _valoresSelector[campo.campo] = v),
+                    onAgregarOpcion: (ctx) => _agregarOpcion(ctx, campo.campo),
+                  ),
+                  if (_kPermisosConVencimiento.any((p) => p.campo == campo.campo))
+                    _campoVencimiento(_kPermisosConVencimiento
+                        .firstWhere((p) => p.campo == campo.campo)),
+                  const SizedBox(height: 12),
+                ],
+                if (entrada.key == 'Mercado')
+                  TextFormField(
+                    controller: _huellaCarbonoCtrl,
+                    decoration: const InputDecoration(labelText: 'Huella de carbono'),
+                  ),
+              ],
             ),
-        ],
-        Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: TextFormField(
-            controller: _observacionesCtrl,
-            decoration: const InputDecoration(labelText: 'Observaciones'),
-            maxLines: 3,
           ),
+        _tarjetaGrupo(
+          icono: Icons.thumb_up_outlined,
+          titulo: 'Fortalezas',
+          hijos: [
+            TextFormField(
+              controller: _fortalezasAmbientalCtrl,
+              decoration: const InputDecoration(labelText: 'Ambiental'),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _fortalezasSocialCtrl,
+              decoration: const InputDecoration(labelText: 'Social'),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _fortalezasEconomicoCtrl,
+              decoration: const InputDecoration(labelText: 'Económico'),
+              maxLines: 2,
+            ),
+          ],
         ),
-        const Padding(
-          padding: EdgeInsets.only(top: 8, bottom: 8),
-          child: Text('Puntajes de seguimiento por año',
-              style: TextStyle(
-                  fontWeight: FontWeight.w600, color: NVColors.primaryDark)),
-        ),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            for (final anio in _kAniosPuntaje)
-              SizedBox(
-                width: 110,
-                child: TextFormField(
-                  controller: _puntajeCtrls[anio],
-                  decoration: InputDecoration(labelText: '$anio'),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+        const SizedBox(height: 14),
+        _tarjetaGrupo(
+          icono: Icons.leaderboard_outlined,
+          titulo: 'Puntajes de seguimiento por año',
+          hijos: [
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                for (final anio in (_aniosPuntaje.toList()..sort()))
+                  SizedBox(
+                    width: 110,
+                    child: TextFormField(
+                      controller: _puntajeCtrls[anio],
+                      decoration: InputDecoration(labelText: '$anio'),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                    ),
+                  ),
+                SizedBox(
+                  height: 56,
+                  child: OutlinedButton.icon(
+                    onPressed: _agregarAnioPuntaje,
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Agregar año'),
+                  ),
                 ),
-              ),
+              ],
+            ),
           ],
         ),
       ],
+    );
+  }
+
+  String? _anioTrayectoria() {
+    final anio = int.tryParse(_anioRegistroCtrl.text.trim());
+    if (anio == null) return null;
+    final anios = DateTime.now().year - anio;
+    if (anios < 0) return null;
+    return anios == 0 ? 'Registrado este año' : '$anios años de trayectoria';
+  }
+
+  Widget _campoVencimiento(_PermisoConVencimiento permiso) {
+    final fecha = _vencimientos[permiso.campoVencimiento];
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 4),
+      child: InkWell(
+        onTap: () async {
+          final elegida = await showDatePicker(
+            context: context,
+            initialDate: fecha ?? DateTime.now(),
+            firstDate: DateTime(2015),
+            lastDate: DateTime(2100),
+          );
+          if (elegida != null) {
+            setState(() => _vencimientos[permiso.campoVencimiento] = elegida);
+          }
+        },
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: 'Vencimiento — ${permiso.etiqueta}',
+            isDense: true,
+            suffixIcon: fecha == null
+                ? const Icon(Icons.calendar_today_outlined, size: 18)
+                : IconButton(
+                    icon: const Icon(Icons.clear, size: 18),
+                    onPressed: () => setState(
+                        () => _vencimientos[permiso.campoVencimiento] = null),
+                  ),
+          ),
+          child: Text(
+            fecha == null
+                ? 'Sin definir'
+                : '${fecha.day.toString().padLeft(2, '0')}/'
+                    '${fecha.month.toString().padLeft(2, '0')}/${fecha.year}',
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _tarjetaGrupo({
+    required IconData icono,
+    required String titulo,
+    required List<Widget> hijos,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: NVColors.fondo,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: NVColors.borde),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: NVColors.primaryLight,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Icon(icono, size: 18, color: NVColors.primaryDark),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(titulo,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, color: NVColors.primaryDark)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ...hijos,
+        ],
+      ),
     );
   }
 
