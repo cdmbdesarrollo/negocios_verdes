@@ -897,18 +897,6 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
     });
   }
 
-  /// Historial año→puntaje tal cual está escrito ahora en los campos, para
-  /// dibujar la mini-gráfica de barras (solo los años con un número válido).
-  Map<int, double> get _puntajesActuales {
-    final m = <int, double>{};
-    for (final anio in _aniosPuntaje) {
-      final t = _puntajeCtrls[anio]?.text.trim().replaceAll(',', '.') ?? '';
-      final v = double.tryParse(t);
-      if (v != null) m[anio] = v;
-    }
-    return m;
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_error != null) {
@@ -1536,51 +1524,44 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           titulo: 'Puntajes de seguimiento por año',
           hijos: [
             const Text(
-              'Historial completo de la calificación de seguimiento de este '
-              'negocio. Agrega los años que necesites (2026, 2027…); cada año '
-              'se guarda por separado.',
+              'Calificación de seguimiento de este negocio, un valor por año. '
+              'Agrega los años que necesites (2026, 2027…); cada año se guarda '
+              'por separado. La evolución en el tiempo se ve en el panel.',
               style: TextStyle(fontSize: 12, color: NVColors.textoSecundario),
             ),
-            const SizedBox(height: 14),
-            _GraficaPuntajes(puntajes: _puntajesActuales),
-            const SizedBox(height: 16),
-            for (final anio in (_aniosPuntaje.toList()..sort()))
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 96,
-                      child: TextFormField(
-                        controller: _puntajeCtrls[anio],
-                        onChanged: (_) => setState(() {}),
-                        decoration: InputDecoration(
-                          labelText: '$anio',
-                          isDense: true,
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                for (final anio in (_aniosPuntaje.toList()..sort()))
+                  SizedBox(
+                    width: 128,
+                    child: TextFormField(
+                      controller: _puntajeCtrls[anio],
+                      decoration: InputDecoration(
+                        labelText: '$anio',
+                        isDense: true,
+                        suffixIcon: IconButton(
+                          tooltip: 'Quitar el año $anio',
+                          icon: const Icon(Icons.close, size: 16),
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () => _eliminarAnioPuntaje(anio),
                         ),
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
                       ),
+                      keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _BarraPuntaje(
-                          valor: _puntajesActuales[anio], maximo: 100),
-                    ),
-                    IconButton(
-                      tooltip: 'Quitar el año $anio',
-                      icon: const Icon(Icons.close, size: 18),
-                      color: NVColors.textoSecundario,
-                      onPressed: () => _eliminarAnioPuntaje(anio),
-                    ),
-                  ],
+                  ),
+                SizedBox(
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    onPressed: _agregarAnioPuntaje,
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Agregar año'),
+                  ),
                 ),
-              ),
-            const SizedBox(height: 4),
-            OutlinedButton.icon(
-              onPressed: _agregarAnioPuntaje,
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Agregar año'),
+              ],
             ),
           ],
         ),
@@ -1772,102 +1753,6 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           fontSize: 16,
           color: NVColors.primaryDark,
         ),
-      ),
-    );
-  }
-}
-
-/// Mini-gráfica de barras del historial de puntajes (un CustomPaint liviano,
-/// sin dependencias nuevas — el stack del proyecto no trae librería de
-/// charts, ver pubspec). Escala fija 0–100 porque los puntajes de
-/// seguimiento de CDMB van en esa escala.
-class _GraficaPuntajes extends StatelessWidget {
-  final Map<int, double> puntajes;
-  const _GraficaPuntajes({required this.puntajes});
-
-  @override
-  Widget build(BuildContext context) {
-    final anios = puntajes.keys.toList()..sort();
-    if (anios.isEmpty) {
-      return Container(
-        height: 120,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: NVColors.fondo,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: NVColors.borde),
-        ),
-        child: const Text('Sin puntajes cargados todavía.',
-            style: TextStyle(fontSize: 12, color: NVColors.textoSecundario)),
-      );
-    }
-    return Container(
-      height: 150,
-      padding: const EdgeInsets.fromLTRB(8, 12, 8, 4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: NVColors.borde),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          for (final anio in anios)
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    (puntajes[anio] ?? 0).toStringAsFixed(1),
-                    style: const TextStyle(
-                        fontSize: 11, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Expanded(
-                    child: FractionallySizedBox(
-                      alignment: Alignment.bottomCenter,
-                      heightFactor:
-                          ((puntajes[anio] ?? 0) / 100).clamp(0.02, 1.0),
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 6),
-                        decoration: BoxDecoration(
-                          color: NVColors.verdeVivo,
-                          borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(4)),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text('$anio',
-                      style: const TextStyle(
-                          fontSize: 11, color: NVColors.textoSecundario)),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Barra fina al lado de cada campo de año — refuerzo visual de la gráfica
-/// de arriba, para leer de un vistazo cuál año subió o bajó.
-class _BarraPuntaje extends StatelessWidget {
-  final double? valor;
-  final double maximo;
-  const _BarraPuntaje({required this.valor, required this.maximo});
-
-  @override
-  Widget build(BuildContext context) {
-    final v = valor;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(5),
-      child: LinearProgressIndicator(
-        value: v == null ? 0 : (v / maximo).clamp(0.0, 1.0),
-        minHeight: 8,
-        backgroundColor: NVColors.fondo,
-        valueColor: const AlwaysStoppedAnimation(NVColors.verdeVivo),
       ),
     );
   }

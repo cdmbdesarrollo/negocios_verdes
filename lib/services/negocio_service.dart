@@ -449,6 +449,32 @@ class NegocioService {
     }
   }
 
+  /// Puntaje promedio de todos los negocios por año — para la gráfica de
+  /// evolución del panel (la "gráfica" ya no vive en cada negocio, ver
+  /// pedido explícito: "el negocio verde no debería tener gráfica, el
+  /// dashboard sí"). Trae todo `negocio_puntajes` (cientos de filas, no
+  /// miles) y promedia en el cliente.
+  Future<Map<int, double>> promedioPuntajePorAnio() async {
+    try {
+      final data =
+          await _supabase.from('negocio_puntajes').select('anio, puntaje');
+      final sumas = <int, double>{};
+      final cuentas = <int, int>{};
+      for (final e in data as List) {
+        final fila = e as Map<String, dynamic>;
+        final anio = (fila['anio'] as num).toInt();
+        final p = (fila['puntaje'] as num).toDouble();
+        sumas[anio] = (sumas[anio] ?? 0) + p;
+        cuentas[anio] = (cuentas[anio] ?? 0) + 1;
+      }
+      return {
+        for (final anio in sumas.keys) anio: sumas[anio]! / cuentas[anio]!,
+      };
+    } catch (e) {
+      throw Exception('No se pudo cargar el promedio de puntajes: $e');
+    }
+  }
+
   /// Los mejores puntajes del año más reciente con datos — "top mejores
   /// puntajes" del dashboard (pedido explícito). Si [anio] es null usa el
   /// año más alto que exista en negocio_puntajes.

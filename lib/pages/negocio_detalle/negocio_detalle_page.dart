@@ -253,31 +253,33 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
                     if (negocio.descripcion != null &&
                         negocio.descripcion!.isNotEmpty) ...[
                       const SizedBox(height: 24),
-                      _descripcion(negocio.descripcion!),
+                      _tituloSeccion(
+                          Icons.info_outline, 'Sobre el negocio'),
+                      const SizedBox(height: 10),
+                      _tarjeta(child: _descripcion(negocio.descripcion!)),
                     ],
                     if (negocio.producto != null &&
                         negocio.producto!.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      const Text('Producto',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16)),
-                      const SizedBox(height: 6),
-                      Text(negocio.producto!,
-                          style: const TextStyle(fontSize: 15, height: 1.4)),
+                      const SizedBox(height: 24),
+                      _tituloSeccion(
+                          Icons.shopping_bag_outlined, 'Producto o servicio'),
+                      const SizedBox(height: 10),
+                      _tarjeta(
+                        child: Text(negocio.producto!,
+                            style:
+                                const TextStyle(fontSize: 15, height: 1.4)),
+                      ),
                     ],
                     if (negocio.fotos.isNotEmpty) ...[
                       const SizedBox(height: 24),
-                      const Text('Galería',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16)),
+                      _tituloSeccion(
+                          Icons.photo_library_outlined, 'Galería'),
                       const SizedBox(height: 12),
                       _galeria(negocio),
                     ],
                     if (negocio.tieneUbicacion) ...[
                       const SizedBox(height: 24),
-                      const Text('Ubicación',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16)),
+                      _tituloSeccion(Icons.map_outlined, 'Ubicación'),
                       const SizedBox(height: 12),
                       _miniMapa(negocio),
                     ],
@@ -454,6 +456,35 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
     );
   }
 
+  /// Encabezado de sección con ícono — pedido explícito: la ficha pública
+  /// "más gráfica, con iconos de acuerdo al dato".
+  Widget _tituloSeccion(IconData icono, String texto) {
+    return Row(
+      children: [
+        Icon(icono, size: 18, color: NVColors.primaryDark),
+        const SizedBox(width: 8),
+        Text(texto,
+            style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: NVColors.primaryDark)),
+      ],
+    );
+  }
+
+  Widget _tarjeta({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: NVColors.borde),
+      ),
+      child: child,
+    );
+  }
+
   /// Los botones de arriba (WhatsApp, Llamar, redes) son para actuar; este
   /// bloque es para LEER — con SelectableText, para que se pueda copiar un
   /// correo o número a mano sin depender de que el link funcione.
@@ -484,8 +515,15 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Información de contacto',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+          Row(
+            children: const [
+              Icon(Icons.contact_page_outlined,
+                  size: 18, color: NVColors.primaryDark),
+              SizedBox(width: 8),
+              Text('Información de contacto',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            ],
+          ),
           const SizedBox(height: 12),
           for (final (icono, valor) in filas) _filaContacto(icono, valor),
         ],
