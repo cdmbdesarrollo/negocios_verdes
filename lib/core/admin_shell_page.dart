@@ -17,6 +17,7 @@ class EnlaceAdmin {
 const List<EnlaceAdmin> enlacesAdmin = [
   EnlaceAdmin('Panel', '/admin', Icons.dashboard_outlined),
   EnlaceAdmin('Negocios', '/admin/negocios', Icons.storefront_outlined),
+  EnlaceAdmin('Personas', '/admin/personas', Icons.badge_outlined),
   EnlaceAdmin('Categorías', '/admin/categorias', Icons.category_outlined),
   EnlaceAdmin('Subcategorías', '/admin/subcategorias', Icons.label_outline),
   EnlaceAdmin('Actividades productivas', '/admin/actividades', Icons.eco_outlined),

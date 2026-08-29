@@ -29,6 +29,11 @@ class Persona {
   final String? telefono;
   final String? correo;
 
+  /// Solo vienen poblados al leer desde las vistas `v_*` (ver 0030): a
+  /// cuántos negocios está asignada esta persona en total y ahora mismo.
+  final int? negociosTotal;
+  final int? negociosVigentes;
+
   const Persona({
     required this.id,
     required this.nombres,
@@ -36,6 +41,8 @@ class Persona {
     this.documento,
     this.telefono,
     this.correo,
+    this.negociosTotal,
+    this.negociosVigentes,
   });
 
   /// Nombre + apellidos en una sola línea — es lo que se guarda como copia
@@ -52,6 +59,8 @@ class Persona {
         documento: json['documento']?.toString(),
         telefono: json['telefono']?.toString(),
         correo: json['correo']?.toString(),
+        negociosTotal: (json['negocios_total'] as num?)?.toInt(),
+        negociosVigentes: (json['negocios_vigentes'] as num?)?.toInt(),
       );
 }
 

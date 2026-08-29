@@ -243,6 +243,12 @@ en un Supabase nuevo:
     asignación la mantienen sincronizada) para no tocar el `select` público
     ni el modelo `Negocio`. Correr después de que exista `negocios` y
     `es_admin`; sin más dependencias de orden.
+30. `0030_personas_vistas_y_eliminar.sql` — para la pantalla
+    `/admin/personas`: 3 vistas `v_*` (`security_invoker`) con el conteo de
+    negocios (total e vigentes) por persona, y RPCs `eliminar_responsable` /
+    `eliminar_delegado` / `eliminar_representante` que solo borran si la
+    persona nunca se asignó (si tiene historial se rechaza con mensaje claro).
+    Depende de 0029.
 
 ## Sobre trabajo concurrente de dos sesiones
 

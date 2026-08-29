@@ -30,6 +30,18 @@ class PersonasService {
         TipoPersona.representante => 'quitar_representante_negocio',
       };
 
+  String _rpcEliminar(TipoPersona t) => switch (t) {
+        TipoPersona.responsable => 'eliminar_responsable',
+        TipoPersona.delegado => 'eliminar_delegado',
+        TipoPersona.representante => 'eliminar_representante',
+      };
+
+  String _vista(TipoPersona t) => switch (t) {
+        TipoPersona.responsable => 'v_responsables_cdmb',
+        TipoPersona.delegado => 'v_delegados',
+        TipoPersona.representante => 'v_representantes',
+      };
+
   ({String tabla, String fkPersona, String embed}) _puente(TipoPersona t) =>
       switch (t) {
         TipoPersona.responsable => (
@@ -60,6 +72,33 @@ class PersonasService {
           .toList();
     } catch (e) {
       throw Exception('No se pudo cargar la lista de ${tipo.etiqueta}: $e');
+    }
+  }
+
+  /// Igual que [listar] pero desde la vista `v_*` (ver 0030): cada persona
+  /// trae `negociosTotal` / `negociosVigentes`. Para la pantalla
+  /// /admin/personas.
+  Future<List<Persona>> listarConConteo(TipoPersona tipo) async {
+    try {
+      final data = await _supabase
+          .from(_vista(tipo))
+          .select('$_columnas, negocios_total, negocios_vigentes')
+          .order('nombres');
+      return (data as List)
+          .map((e) => Persona.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      throw Exception('No se pudo cargar la lista de ${tipo.etiqueta}: $e');
+    }
+  }
+
+  /// Borra una persona que nunca se asignó a un negocio. Si tiene historial
+  /// la RPC lo rechaza con un mensaje claro (la traza no se rompe).
+  Future<void> eliminarPersona(TipoPersona tipo, String id) async {
+    try {
+      await _supabase.rpc(_rpcEliminar(tipo), params: {'p_id': id});
+    } catch (e) {
+      throw Exception(e.toString().replaceFirst('Exception: ', ''));
     }
   }
 

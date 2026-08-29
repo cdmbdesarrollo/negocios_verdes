@@ -263,9 +263,12 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
       final actividades = await _actividadService.listarTodas();
       final veredas = await _veredaService.listarTodas();
       final opciones = await _opcionCampoService.listarTodas();
-      _responsables = await _personasService.listar(TipoPersona.responsable);
-      _delegados = await _personasService.listar(TipoPersona.delegado);
-      _representantes = await _personasService.listar(TipoPersona.representante);
+      _responsables =
+          await _personasService.listarConConteo(TipoPersona.responsable);
+      _delegados =
+          await _personasService.listarConConteo(TipoPersona.delegado);
+      _representantes =
+          await _personasService.listarConConteo(TipoPersona.representante);
 
       _aniosPuntaje.add(DateTime.now().year);
 

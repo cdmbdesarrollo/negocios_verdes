@@ -4,6 +4,7 @@ import '../../models/persona.dart';
 import '../../services/personas_service.dart';
 import '../../theme/nv_colors.dart';
 import '../texto_utils.dart';
+import 'form_persona_dialog.dart';
 
 /// Campo para elegir un responsable CDMB / delegado / representante desde su
 /// base de datos (ver PersonasService / 0029). En vez de un desplegable
@@ -51,13 +52,18 @@ class SelectorPersona extends StatelessWidget {
     );
     if (resultado == null) return;
     onPersonasCambiaron(resultado.lista);
-    onSeleccion(resultado.seleccionada);
+    if (resultado.cambioSeleccion) {
+      onSeleccion(resultado.seleccionada);
+    } else if (resultado.idsEliminados.contains(seleccionadaId)) {
+      // Borraron (desde el buscador) a la persona que estaba seleccionada.
+      onSeleccion(null);
+    }
   }
 
   Future<void> _editar(BuildContext context, Persona persona) async {
     final actualizada = await showDialog<Persona>(
       context: context,
-      builder: (_) => _FormPersonaDialog(
+      builder: (_) => FormPersonaDialog(
         tipo: tipo,
         servicio: servicio,
         inicial: persona,
@@ -133,7 +139,14 @@ class SelectorPersona extends StatelessWidget {
 class _ResultadoBuscador {
   final Persona? seleccionada;
   final List<Persona> lista;
-  const _ResultadoBuscador(this.seleccionada, this.lista);
+  final bool cambioSeleccion;
+  final Set<String> idsEliminados;
+  const _ResultadoBuscador(
+    this.seleccionada,
+    this.lista, {
+    this.cambioSeleccion = false,
+    this.idsEliminados = const {},
+  });
 }
 
 class _BuscadorPersonaDialog extends StatefulWidget {
@@ -154,12 +167,17 @@ class _BuscadorPersonaDialog extends StatefulWidget {
 class _BuscadorPersonaDialogState extends State<_BuscadorPersonaDialog> {
   late List<Persona> _lista;
   final _busquedaCtrl = TextEditingController();
+  final _idsEliminados = <String>{};
 
   @override
   void initState() {
     super.initState();
     _lista = List.of(widget.personas);
   }
+
+  void _ordenar() => _lista.sort((a, b) => a.nombreCompleto
+      .toLowerCase()
+      .compareTo(b.nombreCompleto.toLowerCase()));
 
   @override
   void dispose() {
@@ -181,20 +199,71 @@ class _BuscadorPersonaDialogState extends State<_BuscadorPersonaDialog> {
   Future<void> _crear() async {
     final nueva = await showDialog<Persona>(
       context: context,
-      builder: (_) => _FormPersonaDialog(
+      builder: (_) => FormPersonaDialog(
         tipo: widget.tipo,
         servicio: widget.servicio,
         inicial: null,
         nombreSugerido: _busquedaCtrl.text.trim(),
       ),
     );
-    if (nueva == null) return;
-    setState(() => _lista = [..._lista, nueva]
-      ..sort((a, b) => a.nombreCompleto
-          .toLowerCase()
-          .compareTo(b.nombreCompleto.toLowerCase())));
-    if (mounted) {
-      Navigator.pop(context, _ResultadoBuscador(nueva, _lista));
+    if (nueva == null || !mounted) return;
+    setState(() {
+      _lista = [..._lista, nueva];
+      _ordenar();
+    });
+    Navigator.pop(context,
+        _ResultadoBuscador(nueva, _lista, cambioSeleccion: true));
+  }
+
+  Future<void> _editar(Persona p) async {
+    final actualizada = await showDialog<Persona>(
+      context: context,
+      builder: (_) => FormPersonaDialog(
+        tipo: widget.tipo,
+        servicio: widget.servicio,
+        inicial: p,
+      ),
+    );
+    if (actualizada == null || !mounted) return;
+    setState(() {
+      _lista = [
+        for (final x in _lista)
+          if (x.id == actualizada.id) actualizada else x,
+      ];
+      _ordenar();
+    });
+  }
+
+  Future<void> _eliminar(Persona p) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dc) => AlertDialog(
+        title: Text('Eliminar a ${p.nombreCompleto}'),
+        content: const Text(
+            'Solo se puede si nunca estuvo asignada a un negocio.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dc, false),
+              child: const Text('Cancelar')),
+          FilledButton(
+              onPressed: () => Navigator.pop(dc, true),
+              child: const Text('Eliminar')),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      await widget.servicio.eliminarPersona(widget.tipo, p.id);
+      if (!mounted) return;
+      setState(() {
+        _lista = [for (final x in _lista) if (x.id != p.id) x];
+        _idsEliminados.add(p.id);
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', ''))));
+      }
     }
   }
 
@@ -234,25 +303,43 @@ class _BuscadorPersonaDialogState extends State<_BuscadorPersonaDialog> {
                       itemCount: filtradas.length,
                       itemBuilder: (context, i) {
                         final p = filtradas[i];
+                        final subtitulo = [
+                          if ((p.documento ?? '').isNotEmpty)
+                            'CC ${p.documento}',
+                          if ((p.telefono ?? '').isNotEmpty) p.telefono!,
+                          if ((p.correo ?? '').isNotEmpty) p.correo!,
+                        ].join(' · ');
+                        final sePuedeEliminar = (p.negociosTotal ?? 0) == 0;
                         return ListTile(
                           dense: true,
                           title: Text(p.nombreCompleto),
-                          subtitle: [
-                                    if ((p.documento ?? '').isNotEmpty)
-                                      'CC ${p.documento}',
-                                    if ((p.telefono ?? '').isNotEmpty)
-                                      p.telefono!,
-                                    if ((p.correo ?? '').isNotEmpty) p.correo!,
-                                  ].isEmpty
-                              ? null
-                              : Text([
-                                  if ((p.documento ?? '').isNotEmpty)
-                                    'CC ${p.documento}',
-                                  if ((p.telefono ?? '').isNotEmpty) p.telefono!,
-                                  if ((p.correo ?? '').isNotEmpty) p.correo!,
-                                ].join(' · ')),
+                          subtitle:
+                              subtitulo.isEmpty ? null : Text(subtitulo),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                tooltip: 'Editar',
+                                visualDensity: VisualDensity.compact,
+                                icon: const Icon(Icons.edit_outlined, size: 18),
+                                onPressed: () => _editar(p),
+                              ),
+                              IconButton(
+                                tooltip: sePuedeEliminar
+                                    ? 'Eliminar'
+                                    : 'Tiene negocios en el historial',
+                                visualDensity: VisualDensity.compact,
+                                icon:
+                                    const Icon(Icons.delete_outline, size: 18),
+                                onPressed:
+                                    sePuedeEliminar ? () => _eliminar(p) : null,
+                              ),
+                            ],
+                          ),
                           onTap: () => Navigator.pop(
-                              context, _ResultadoBuscador(p, _lista)),
+                              context,
+                              _ResultadoBuscador(p, _lista,
+                                  cambioSeleccion: true)),
                         );
                       },
                     ),
@@ -262,174 +349,16 @@ class _BuscadorPersonaDialogState extends State<_BuscadorPersonaDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
+          onPressed: () => Navigator.pop(
+              context,
+              _ResultadoBuscador(null, _lista,
+                  idsEliminados: _idsEliminados)),
+          child: const Text('Cerrar'),
         ),
         FilledButton.icon(
           onPressed: _crear,
           icon: const Icon(Icons.person_add_alt, size: 18),
           label: const Text('Crear nueva'),
-        ),
-      ],
-    );
-  }
-}
-
-class _FormPersonaDialog extends StatefulWidget {
-  final TipoPersona tipo;
-  final PersonasService servicio;
-  final Persona? inicial;
-  final String? nombreSugerido;
-
-  const _FormPersonaDialog({
-    required this.tipo,
-    required this.servicio,
-    required this.inicial,
-    this.nombreSugerido,
-  });
-
-  @override
-  State<_FormPersonaDialog> createState() => _FormPersonaDialogState();
-}
-
-class _FormPersonaDialogState extends State<_FormPersonaDialog> {
-  late final TextEditingController _nombres;
-  late final TextEditingController _apellidos;
-  late final TextEditingController _documento;
-  late final TextEditingController _telefono;
-  late final TextEditingController _correo;
-  bool _guardando = false;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    final i = widget.inicial;
-    _nombres = TextEditingController(
-        text: i?.nombres ?? widget.nombreSugerido ?? '');
-    _apellidos = TextEditingController(text: i?.apellidos ?? '');
-    _documento = TextEditingController(text: i?.documento ?? '');
-    _telefono = TextEditingController(text: i?.telefono ?? '');
-    _correo = TextEditingController(text: i?.correo ?? '');
-  }
-
-  @override
-  void dispose() {
-    _nombres.dispose();
-    _apellidos.dispose();
-    _documento.dispose();
-    _telefono.dispose();
-    _correo.dispose();
-    super.dispose();
-  }
-
-  Future<void> _guardar() async {
-    if (_nombres.text.trim().isEmpty) {
-      setState(() => _error = 'Los nombres son obligatorios.');
-      return;
-    }
-    setState(() {
-      _guardando = true;
-      _error = null;
-    });
-    try {
-      String? nn(TextEditingController c) =>
-          c.text.trim().isEmpty ? null : c.text.trim();
-      final id = await widget.servicio.guardarPersona(
-        widget.tipo,
-        id: widget.inicial?.id,
-        nombres: _nombres.text.trim(),
-        apellidos: nn(_apellidos),
-        documento: nn(_documento),
-        telefono: nn(_telefono),
-        correo: nn(_correo),
-      );
-      if (!mounted) return;
-      Navigator.pop(
-        context,
-        Persona(
-          id: id,
-          nombres: _nombres.text.trim(),
-          apellidos: nn(_apellidos),
-          documento: nn(_documento),
-          telefono: nn(_telefono),
-          correo: nn(_correo),
-        ),
-      );
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString().replaceFirst('Exception: ', '');
-          _guardando = false;
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final esNueva = widget.inicial == null;
-    return AlertDialog(
-      title: Text(esNueva
-          ? 'Nueva persona — ${widget.tipo.etiqueta.toLowerCase()}'
-          : 'Editar ${widget.inicial!.nombreCompleto}'),
-      content: SizedBox(
-        width: 420,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _nombres,
-                autofocus: true,
-                decoration: const InputDecoration(labelText: 'Nombres *'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _apellidos,
-                decoration: const InputDecoration(labelText: 'Apellidos'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _documento,
-                decoration:
-                    const InputDecoration(labelText: 'Documento de identidad'),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _telefono,
-                decoration: const InputDecoration(labelText: 'Teléfono'),
-                keyboardType: TextInputType.phone,
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _correo,
-                decoration: const InputDecoration(labelText: 'Correo'),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              if (_error != null) ...[
-                const SizedBox(height: 10),
-                Text(_error!,
-                    style: const TextStyle(color: NVColors.error, fontSize: 12)),
-              ],
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _guardando ? null : () => Navigator.pop(context),
-          child: const Text('Cancelar'),
-        ),
-        FilledButton(
-          onPressed: _guardando ? null : _guardar,
-          child: _guardando
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('Guardar'),
         ),
       ],
     );

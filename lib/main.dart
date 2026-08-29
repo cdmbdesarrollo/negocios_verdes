@@ -20,6 +20,7 @@ import 'pages/admin/login/admin_login_page.dart';
 import 'pages/admin/logs/admin_logs_page.dart';
 import 'pages/admin/negocios/admin_negocio_form_page.dart';
 import 'pages/admin/negocios/admin_negocios_page.dart';
+import 'pages/admin/personas/admin_personas_page.dart';
 import 'pages/admin/subcategorias/admin_subcategorias_page.dart';
 import 'pages/buscar/buscar_page.dart';
 import 'pages/estaticas/contacto_page.dart';
@@ -178,6 +179,10 @@ GoRouter _construirRouter() {
             builder: (context, state) => AdminNegocioFormPage(
               negocioId: state.pathParameters['id'],
             ),
+          ),
+          GoRoute(
+            path: '/admin/personas',
+            builder: (context, state) => const AdminPersonasPage(),
           ),
           GoRoute(
             path: '/admin/categorias',
