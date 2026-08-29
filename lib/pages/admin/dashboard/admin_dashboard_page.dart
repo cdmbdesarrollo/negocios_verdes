@@ -2,10 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/admin_guard.dart';
+import '../../../core/widgets/chip_filtro.dart';
 import '../../../core/widgets/nv_card.dart';
 import '../../../models/negocio.dart';
 import '../../../services/negocio_service.dart';
 import '../../../theme/nv_colors.dart';
+
+/// Cada "vista" filtra el conjunto de negocios ANTES de calcular KPIs y el
+/// desglose por municipio — pedido explícito: "ver negocios por municipio
+/// sean cualquiera de estas categorías... una vista por cada categoría,
+/// activo, etc. y otro global. Con KPI por cada caso y global". Global no
+/// filtra nada; el resto son mutuamente excluyentes entre sí como chips
+/// (una a la vez, no combinables) porque cada una responde una pregunta
+/// distinta del admin ("¿cómo van los Avalados?", no "Avalados Y Activos").
+enum _Vista { global, activos, emprendimientoVerde, selloMarca, avalado }
+
+extension on _Vista {
+  String get etiqueta => switch (this) {
+        _Vista.global => 'Global',
+        _Vista.activos => 'Activos',
+        _Vista.emprendimientoVerde => 'Emprendimiento Verde',
+        _Vista.selloMarca => 'Sello Marca',
+        _Vista.avalado => 'Avalado',
+      };
+
+  bool aplica(Negocio n) => switch (this) {
+        _Vista.global => true,
+        _Vista.activos => n.activo,
+        _Vista.emprendimientoVerde => n.emprendimientoVerde,
+        _Vista.selloMarca => n.selloMarca,
+        _Vista.avalado => n.avalado,
+      };
+}
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -18,6 +46,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   final _service = NegocioService();
   List<Negocio>? _negocios;
   String? _error;
+  _Vista _vista = _Vista.global;
 
   @override
   void initState() {
@@ -40,35 +69,34 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     if (_error != null) {
       return Center(child: Text(_error!));
     }
-    final negocios = _negocios;
-    if (negocios == null) {
+    final todos = _negocios;
+    if (todos == null) {
       return const Center(child: CircularProgressIndicator());
     }
+
+    final negocios = todos.where(_vista.aplica).toList();
 
     final activos = negocios.where((n) => n.activo).length;
     // CDMB marca "ACTIVO" en su base (novedad) pero acá sigue inactivo casi
     // siempre por falta de foto de portada (constraint de la base) — cifra
     // priorizable para el admin, más útil que un genérico "en verificación"
     // que ya no existe como concepto (ver 0022_ficha_ampliada_negocios.sql).
-    final pendientesDePublicar = negocios
-        .where((n) => !n.activo && n.novedad == 'ACTIVO')
-        .length;
+    final pendientesDePublicar =
+        negocios.where((n) => !n.activo && n.novedad == 'ACTIVO').length;
     final sinFoto = negocios
         .where((n) => n.fotoPortadaUrl == null || n.fotoPortadaUrl!.isEmpty)
         .length;
     final sinClasificar = negocios
         .where((n) => n.categoriaOficial?.slug == 'pendiente-clasificar')
         .length;
-    final totalParaBarras = negocios.isEmpty ? 1 : negocios.length;
     final porMunicipio = <String, int>{};
     for (final n in negocios) {
       porMunicipio[n.municipio] = (porMunicipio[n.municipio] ?? 0) + 1;
     }
     final municipiosOrdenados = porMunicipio.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-    final maxMunicipio = municipiosOrdenados.isEmpty
-        ? 1
-        : municipiosOrdenados.first.value;
+    final maxMunicipio =
+        municipiosOrdenados.isEmpty ? 1 : municipiosOrdenados.first.value;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -90,7 +118,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${negocios.length} negocios registrados en total',
+                        '${todos.length} negocios registrados en total',
                         style: const TextStyle(color: NVColors.textoSecundario),
                       ),
                     ],
@@ -103,7 +131,24 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final v in _Vista.values)
+                  ChipFiltro(
+                    etiqueta: v.etiqueta,
+                    seleccionado: _vista == v,
+                    onTap: () => setState(() => _vista = v),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Text('Vista: ${_vista.etiqueta} (${negocios.length} negocios)',
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600, color: NVColors.primaryDark)),
+            const SizedBox(height: 12),
             Wrap(
               spacing: 12,
               runSpacing: 12,
@@ -146,12 +191,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               ],
             ),
             const SizedBox(height: 28),
-            Text('Negocios por municipio',
+            Text('Negocios por municipio — ${_vista.etiqueta}',
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
             NVCard(
               child: municipiosOrdenados.isEmpty
-                  ? const Text('Todavía no hay negocios registrados.')
+                  ? const Text('No hay negocios con esta vista.')
                   : Column(
                       children: [
                         for (final entrada in municipiosOrdenados)
@@ -159,31 +204,33 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       ],
                     ),
             ),
-            const SizedBox(height: 28),
-            Text('Por reconocimiento',
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
-            NVCard(
-              child: Column(
-                children: [
-                  _filaMunicipio(
-                    'Emprendimiento Verde',
-                    negocios.where((n) => n.emprendimientoVerde).length,
-                    totalParaBarras,
-                  ),
-                  _filaMunicipio(
-                    'Sello Marca',
-                    negocios.where((n) => n.selloMarca).length,
-                    totalParaBarras,
-                  ),
-                  _filaMunicipio(
-                    'Avalado',
-                    negocios.where((n) => n.avalado).length,
-                    totalParaBarras,
-                  ),
-                ],
+            if (_vista == _Vista.global) ...[
+              const SizedBox(height: 28),
+              Text('Por reconocimiento',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 12),
+              NVCard(
+                child: Column(
+                  children: [
+                    _filaMunicipio(
+                      'Emprendimiento Verde',
+                      todos.where((n) => n.emprendimientoVerde).length,
+                      todos.isEmpty ? 1 : todos.length,
+                    ),
+                    _filaMunicipio(
+                      'Sello Marca',
+                      todos.where((n) => n.selloMarca).length,
+                      todos.isEmpty ? 1 : todos.length,
+                    ),
+                    _filaMunicipio(
+                      'Avalado',
+                      todos.where((n) => n.avalado).length,
+                      todos.isEmpty ? 1 : todos.length,
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),

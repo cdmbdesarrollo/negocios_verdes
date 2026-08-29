@@ -195,7 +195,7 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
               // formato de columnas — ver AdminNegociosImportarPage. Pensado
               // para altas futuras en lote, no se usó para los 295 reales
               // de CDMB (esos entraron por migración SQL, ver
-              // lib/migraciones/0023_datos_cdmb_negocios_verdes_*.sql).
+              // lib/migraciones/0025_datos_cdmb_negocios_verdes_*.sql).
               OutlinedButton.icon(
                 onPressed: () => exportarNegociosComoCsv(_negocios!),
                 icon: const Icon(Icons.download_outlined, size: 18),

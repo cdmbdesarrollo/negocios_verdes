@@ -54,6 +54,12 @@ class FichaTecnicaNegocio {
   final String? cotaMsnm;
   final String? aplicacionFicha2025;
   final String? observaciones;
+  /// Coordenadas tal cual las escribe CDMB (Este/Norte, no necesariamente
+  /// decimal ni un formato único) — [latitud]/[longitud] del propio
+  /// [Negocio] siguen siendo las que de verdad usa el mapa; estas son la
+  /// fuente admin-only de referencia/edición (ver 0024_este_norte_ubicacion.sql).
+  final String? este;
+  final String? norte;
   final Map<int, double> puntajes;
 
   const FichaTecnicaNegocio({
@@ -106,6 +112,8 @@ class FichaTecnicaNegocio {
     this.cotaMsnm,
     this.aplicacionFicha2025,
     this.observaciones,
+    this.este,
+    this.norte,
     this.puntajes = const {},
   });
 
@@ -165,6 +173,8 @@ class FichaTecnicaNegocio {
       cotaMsnm: json['cota_msnm']?.toString(),
       aplicacionFicha2025: json['aplicacion_ficha_2025']?.toString(),
       observaciones: json['observaciones']?.toString(),
+      este: json['este']?.toString(),
+      norte: json['norte']?.toString(),
       puntajes: {
         for (final p in puntajesJson)
           (p['anio'] as num).toInt(): (p['puntaje'] as num).toDouble(),

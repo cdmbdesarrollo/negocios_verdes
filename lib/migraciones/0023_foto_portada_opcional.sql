@@ -1,4 +1,4 @@
--- 0024_foto_portada_opcional.sql
+-- 0023_foto_portada_opcional.sql
 --
 -- Pedido explícito: la foto de portada no debe ser obligatoria para
 -- publicar un negocio — con 295 negocios reales recién importados y

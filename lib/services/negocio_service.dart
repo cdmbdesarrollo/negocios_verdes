@@ -300,7 +300,8 @@ class NegocioService {
               'posicionamiento_marca, beneficios_ventanilla, fortalezas_ambiental, '
               'fortalezas_social, fortalezas_economico, debilidades_ambiental, '
               'debilidades_social, debilidades_financiera, novedad, tipo_negocio_verde, '
-              'codigo_marca, anio_registro, cota_msnm, aplicacion_ficha_2025, observaciones')
+              'codigo_marca, anio_registro, cota_msnm, aplicacion_ficha_2025, observaciones, '
+              'este, norte')
           .eq('id', negocioId)
           .single();
       final puntajes = await _supabase
@@ -364,6 +365,8 @@ class NegocioService {
     String? debilidadesAmbiental,
     String? debilidadesSocial,
     String? debilidadesFinanciera,
+    String? este,
+    String? norte,
   }) async {
     String? fecha(DateTime? d) => d?.toIso8601String().split('T').first;
     try {
@@ -417,6 +420,8 @@ class NegocioService {
         'p_debilidades_ambiental': debilidadesAmbiental,
         'p_debilidades_social': debilidadesSocial,
         'p_debilidades_financiera': debilidadesFinanciera,
+        'p_este': este,
+        'p_norte': norte,
       });
     } catch (e) {
       throw Exception('No se pudo guardar la ficha técnica: $e');

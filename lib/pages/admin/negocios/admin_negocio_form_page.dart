@@ -165,6 +165,14 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
   String? _naturalezaJuridica;
   double? _latitud;
   double? _longitud;
+  /// Cambia cada vez que Este/Norte calculan un punto nuevo — se usa como
+  /// key de SelectorUbicacionMapa para forzar que se vuelva a montar con
+  /// el lat/lng recién calculado (ese widget solo lee su lat/lng inicial
+  /// una vez, en su propio initState).
+  int _mapaVersion = 0;
+  final _esteCtrl = TextEditingController();
+  final _norteCtrl = TextEditingController();
+  String? _errorEsteNorte;
   bool _destacado = false;
   bool _activo = false;
   bool _emprendimientoVerde = false;
@@ -200,6 +208,8 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
     _nitCtrl.dispose();
     _anioRegistroCtrl.dispose();
     _observacionesCtrl.dispose();
+    _esteCtrl.dispose();
+    _norteCtrl.dispose();
     for (final c in _fichaCtrls.values) {
       c.dispose();
     }
@@ -349,6 +359,8 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
         f.debilidadesFinanciera ?? '';
     _anioRegistroCtrl.text = f.anioRegistro?.toString() ?? '';
     _observacionesCtrl.text = f.observaciones ?? '';
+    _esteCtrl.text = f.este ?? '';
+    _norteCtrl.text = f.norte ?? '';
     for (final anio in _kAniosPuntaje) {
       final valor = f.puntajes[anio];
       if (valor != null) _puntajeCtrls[anio]!.text = valor.toString();
@@ -366,7 +378,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
       return;
     }
     // La foto de portada ya no es obligatoria para activar un negocio
-    // (ver 0024_foto_portada_opcional.sql) — sin ella se muestra el logo
+    // (ver 0023_foto_portada_opcional.sql) — sin ella se muestra el logo
     // de Negocios Verdes en la ficha pública y las tarjetas.
 
     setState(() => _guardando = true);
@@ -478,6 +490,8 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
       debilidadesAmbiental: _c('debilidadesAmbiental'),
       debilidadesSocial: _c('debilidadesSocial'),
       debilidadesFinanciera: _c('debilidadesFinanciera'),
+      este: _vacioANulo(_esteCtrl.text),
+      norte: _vacioANulo(_norteCtrl.text),
     );
 
     for (final anio in _kAniosPuntaje) {
@@ -514,6 +528,49 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
 
   String? _vacioANulo(String texto) =>
       texto.trim().isEmpty ? null : texto.trim();
+
+  /// Grados decimales (siempre positivos) desde un texto Este/Norte, o null
+  /// si no calza con ningún formato reconocible — mismo criterio que
+  /// generar_0025.py (nunca "adivina" un valor a medias): acepta grados
+  /// decimales ya listos (ej. "72.87") o el patrón DMS más común
+  /// (73°12'34.5"), rechaza minutos/segundos fuera de rango.
+  double? _parsearGrados(String texto) {
+    final s = texto.trim();
+    if (s.isEmpty) return null;
+    final directo = double.tryParse(s.replaceAll(',', '.'));
+    if (directo != null && directo > 0 && directo < 200) return directo;
+    final m = RegExp(r'^\(?-?\)?\s*(\d{1,3})[°:]\s*(\d{1,2})[' "'’:" r']\s*([\d.,]+)')
+        .firstMatch(s);
+    if (m == null) return null;
+    final grados = int.tryParse(m.group(1)!);
+    final minutos = int.tryParse(m.group(2)!);
+    final segundos = double.tryParse(m.group(3)!.replaceAll(',', '.'));
+    if (grados == null || minutos == null || segundos == null) return null;
+    if (minutos >= 60 || segundos >= 60) return null;
+    return grados + minutos / 60 + segundos / 3600;
+  }
+
+  /// Este/Norte quedan guardados tal cual los escribió CDMB (ver
+  /// guardarFichaTecnica) — este botón es solo un atajo para no tener que
+  /// convertirlos a mano: calcula latitud/longitud y fuerza a
+  /// SelectorUbicacionMapa a remontarse con el punto nuevo (_mapaVersion
+  /// cambia su key). Santander es siempre oeste, por eso la longitud
+  /// calculada de Este siempre queda negativa.
+  void _calcularUbicacionDesdeEsteNorte() {
+    final este = _parsearGrados(_esteCtrl.text);
+    final norte = _parsearGrados(_norteCtrl.text);
+    if (este == null || norte == null) {
+      setState(() => _errorEsteNorte =
+          'No se pudo leer Este/Norte — revisa el formato (ej. 72°58\'36.7" o 72.976861).');
+      return;
+    }
+    setState(() {
+      _errorEsteNorte = null;
+      _latitud = norte;
+      _longitud = -este;
+      _mapaVersion++;
+    });
+  }
 
   void _avisar(String mensaje) {
     if (!mounted) return;
@@ -722,9 +779,57 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             controller: _direccionCtrl,
             decoration: const InputDecoration(labelText: 'Dirección (opcional)'),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+          const Text(
+            'Este/Norte/Cota — tal cual vienen de la base de CDMB (opcional). '
+            'Se guardan como referencia y "Calcular" arma el punto en el '
+            'mapa de abajo a partir de ellos.',
+            style: TextStyle(color: NVColors.textoSecundario, fontSize: 12),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _esteCtrl,
+                  decoration: const InputDecoration(
+                      labelText: 'Este', isDense: true, hintText: '72°58\'36.7"'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextFormField(
+                  controller: _norteCtrl,
+                  decoration: const InputDecoration(
+                      labelText: 'Norte', isDense: true, hintText: '7°23\'2.0"'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextFormField(
+                  controller: _fichaCtrls['cotaMsnm'],
+                  decoration: const InputDecoration(
+                      labelText: 'Cota', isDense: true, hintText: '999 msnm'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _calcularUbicacionDesdeEsteNorte,
+            icon: const Icon(Icons.my_location, size: 18),
+            label: const Text('Calcular ubicación en el mapa'),
+          ),
+          if (_errorEsteNorte != null) ...[
+            const SizedBox(height: 6),
+            Text(_errorEsteNorte!,
+                style: const TextStyle(color: NVColors.error, fontSize: 12)),
+          ],
+          const SizedBox(height: 16),
           if (_municipio != null)
             SelectorUbicacionMapa(
+              key: ValueKey(_mapaVersion),
               municipio: _municipio!,
               direccionController: _direccionCtrl,
               latitudInicial: _latitud,

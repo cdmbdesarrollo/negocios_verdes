@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Genera 0023_datos_cdmb_negocios_verdes.sql a partir del Excel real de CDMB
+Genera 0025_datos_cdmb_negocios_verdes.sql a partir del Excel real de CDMB
 (BASE_ACTUALIZADA_NV_ka.xlsx, hoja "BASE DE DATOS", 304 filas x 73
 columnas). No se ejecuta como parte de la app — es una herramienta de una
 sola vez, documentada acá para que quede claro cómo se produjo la
@@ -28,7 +28,7 @@ migración de datos. Reglas seguidas (acordadas con el usuario):
   (ACTIVO/RETIRADO/SUSPENDIDO/...) para que el admin sepa cuáles corresponde
   publicar primero.
 
-Uso: python generar_0023.py <ruta_excel> > 0023_datos_cdmb_negocios_verdes.sql
+Uso: python generar_0025.py <ruta_excel> > 0025_datos_cdmb_negocios_verdes.sql
 (el reporte de incidencias se imprime aparte, a un .txt, ver REPORTE_PATH).
 """
 import openpyxl
@@ -37,7 +37,7 @@ import re
 import uuid
 import datetime
 
-SQL_PATH = sys.argv[2] if len(sys.argv) > 2 else '0023_datos_cdmb_negocios_verdes.sql'
+SQL_PATH = sys.argv[2] if len(sys.argv) > 2 else '0025_datos_cdmb_negocios_verdes.sql'
 REPORTE_PATH = sys.argv[3] if len(sys.argv) > 3 else 'reporte_import_negocios.txt'
 
 MUNICIPIOS_VALIDOS = [
@@ -416,6 +416,10 @@ def main():
                     f"{nombre} (ESTE={r[i['este']]!r} NORTE={r[i['norte']]!r})")
         longitud = -este if este is not None else None  # Santander es oeste
         latitud = norte if norte is not None else None
+        # Crudos, tal cual venían en el Excel — para poder corregir/recalcular
+        # a mano desde el admin si la conversión automática no da bien.
+        este_raw = limpio(r[i['este']])
+        norte_raw = limpio(r[i['norte']])
 
         # --- badges (3 independientes, ver 0021) ---
         nvemp = (limpio(r[i['nvemp']]) or '').upper()
@@ -443,6 +447,24 @@ def main():
 
         novedad = limpio(r[i['novedad']])
         reporte['por_novedad'][novedad] = reporte['por_novedad'].get(novedad, 0) + 1
+        # activo=true directo para todo lo que CDMB ya marca ACTIVO — la
+        # foto de portada dejó de ser obligatoria (0023_foto_portada_opcional.sql),
+        # así que ya no hay motivo para dejarlos todos ocultos a esperar
+        # que alguien suba una foto uno por uno.
+        activo = novedad == 'ACTIVO'
+
+        # Repetido a propósito en telefono Y whatsapp (pedido explícito):
+        # casi todos los números de la base son celular, no fijo — así
+        # funcionan tanto "Llamar" como el botón de WhatsApp sin depender
+        # de que alguien lo complete después. Normaliza a formato wa.me
+        # (57 + 10 dígitos) solo cuando el número ya parece un celular
+        # colombiano de 10 dígitos empezando en 3 — cualquier otro formato
+        # se deja tal cual, sin inventar un indicativo que no se sabe si
+        # aplica.
+        telefono_valor = telefono_str(r[i['telefono']])
+        whatsapp_valor = telefono_valor
+        if whatsapp_valor and len(whatsapp_valor) == 10 and whatsapp_valor.startswith('3'):
+            whatsapp_valor = '57' + whatsapp_valor
 
         descripcion = limpio(r[i['descripcion']])
         descripcion_corta = None
@@ -466,8 +488,8 @@ def main():
             'descripcion_corta': sql_str(descripcion_corta),
             'descripcion': sql_str(descripcion),
             'producto': sql_str(limpio(r[i['producto']])),
-            'telefono': sql_str(telefono_str(r[i['telefono']])),
-            'whatsapp': 'null',
+            'telefono': sql_str(telefono_valor),
+            'whatsapp': sql_str(whatsapp_valor),
             'email': sql_str(limpio(r[i['correo']])),
             'representante_legal': sql_str(limpio(r[i['repleg']])),
             'nit': sql_str(limpio(r[i['nit']])),
@@ -481,6 +503,8 @@ def main():
             'codigo_marca': sql_str(limpio(r[i['codigo_marca']])),
             'anio_registro': sql_int(r[i['anio']] if isinstance(r[i['anio']], (int, float)) else None),
             'cota_msnm': sql_str(limpio(r[i['cota']])),
+            'este': sql_str(este_raw),
+            'norte': sql_str(norte_raw),
             'aplicacion_ficha_2025': sql_str(limpio(r[i['aplicacion_2025']])),
             'observaciones': sql_str(limpio(r[i['observaciones']])),
             'registro_nacional_turismo': sql_str(limpio(r[i['rnt']])),
@@ -524,7 +548,7 @@ def main():
             'sello_marca': sql_bool(sello_marca),
             'avalado': sql_bool(avalado),
             'destacado': 'false',
-            'activo': 'false',
+            'activo': sql_bool(activo),
         }
 
         columnas = ', '.join(campos)
@@ -567,7 +591,7 @@ def main():
     LIMITE_BYTES = 120_000
     preambulo_txt = '\n\n'.join(preambulo)
     encabezado_comun = (
-        "-- Generado por lib/migraciones/generar_0023.py desde "
+        "-- Generado por lib/migraciones/generar_0025.py desde "
         "BASE_ACTUALIZADA_NV_ka.xlsx — no editar a mano.\n"
         "-- Uno de varios archivos partidos (ver README.md) — correr TODOS, "
         "en cualquier orden, cada uno es su propia transacción.\n"

@@ -19,7 +19,7 @@
 -- y pidió que quedara "alguna información solo se verá públicamente, otra
 -- para la gestión del administrador". Este archivo es la parte estructural
 -- (columnas + RPCs); los datos reales se cargan en
--- 0023_datos_cdmb_negocios_verdes.sql (generado desde el Excel, no a
+-- 0025_datos_cdmb_negocios_verdes.sql (generado desde el Excel, no a
 -- mano). El campo por campo de qué es público quedó documentado en cada
 -- columna de abajo — regla general acordada con CDMB: nada de lo nuevo es
 -- público salvo vereda_id, representante_legal y producto (ver negocio_service.dart,
@@ -75,11 +75,11 @@ alter table negocios add column if not exists responsable_cdmb text;
 --    original de la base de CDMB (ACTIVO/RETIRADO/SUSPENDIDO/INACTIVO/...)
 --    para auditoría y filtro admin, aunque negocios.activo (ya existente,
 --    booleano) sigue siendo la única fuente de verdad de "se publica o
---    no": activo = true únicamente cuando novedad = 'ACTIVO' Y el negocio
---    tiene foto de portada (constraint negocios_publicado_necesita_foto,
---    sin tocar). tipo_negocio_verde es la clasificación de madurez de
---    CDMB (Dinamizadoras/Inicial/Intermedio/Avanzado/...), un eje
---    completamente distinto de los 3 reconocimientos del punto 1.
+--    no": activo = true cuando novedad = 'ACTIVO' (ver 0025, que ya no
+--    necesita esperar una foto de portada — ver 0023_foto_portada_opcional.sql).
+--    tipo_negocio_verde es la clasificación de madurez de CDMB
+--    (Dinamizadoras/Inicial/Intermedio/Avanzado/...), un eje completamente
+--    distinto de los 3 reconocimientos del punto 1.
 alter table negocios add column if not exists novedad text;
 alter table negocios add column if not exists tipo_negocio_verde text;
 alter table negocios add column if not exists codigo_marca text;

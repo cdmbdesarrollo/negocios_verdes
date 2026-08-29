@@ -111,37 +111,55 @@ en un Supabase nuevo:
     público dejó de usar `*` y pasó a una lista explícita de columnas, para
     que las admin-only ni siquiera viajen en la respuesta a un visitante
     anónimo.
-23. `0023_datos_cdmb_negocios_verdes_01.sql` … `_10.sql` — **generado**, no
-    escrito a mano: script en `lib/migraciones/generar_0023.py` que lee el
+23. `0023_foto_portada_opcional.sql` — quita el CHECK
+    `negocios_publicado_necesita_foto` (0004): la foto de portada deja de
+    ser obligatoria para publicar. Con los 295 negocios reales que carga
+    0025 y ninguno con foto todavía, exigirla los habría dejado a todos
+    sin poder activarse. Mientras no tenga foto, la ficha pública/tarjetas
+    muestran el logo de Negocios Verdes en su lugar (ver
+    `assets/images/iconografia/logo_negocios_verdes.png`). **Correr ANTES
+    de 0025** — si no, el insert de los negocios `activo = true` falla
+    contra este mismo CHECK.
+24. `0024_este_norte_ubicacion.sql` — columnas `negocios.este`/`negocios.norte`
+    (texto, admin-only): las coordenadas tal cual las escribe CDMB, no solo
+    ya convertidas a `latitud`/`longitud` (que siguen siendo las que de
+    verdad usa el mapa — `cota_msnm` ya existía desde 0022). El admin
+    puede escribirlas o corregirlas desde el formulario y pedirle que
+    calcule el punto del mapa a partir de ahí; agrega `p_este`/`p_norte`
+    a `guardar_ficha_tecnica_negocio` **como parámetros nuevos al final,
+    con default `null`** — a diferencia de los cambios de firma anteriores,
+    esto no rompe la firma existente ante Postgres, así que no hace falta
+    un `drop function` explícito. **Correr ANTES de 0025** (usa estas
+    columnas).
+25. `0025_datos_cdmb_negocios_verdes_01.sql` … `_10.sql` — **generado**, no
+    escrito a mano: script en `lib/migraciones/generar_0025.py` que lee el
     Excel real de CDMB (`BASE_ACTUALIZADA_NV_ka.xlsx`) y produce estos 10
     archivos (partido en varios porque el editor SQL del dashboard de
     Supabase truncó el archivo único de ~1 MB a mitad de una línea —
     limitación del editor web, no un error de sintaxis). Cargan entre
     todos 295 de los 304 negocios reales (borra el único negocio de prueba
     que había en producción), las veredas encontradas, y las
-    categorías/subcategorías/actividades de cada uno. Cada archivo es
-    ~120 KB, su propia transacción (`begin`/`commit`), y trae el mismo
-    preámbulo idempotente al principio (`where not exists`/`on conflict do
-    nothing`) — **correr los 10, en cualquier orden**, y repetir uno no
-    duplica nada porque cada `insert into negocios` sin `ON CONFLICT`
-    queda protegido por el `begin`/`commit` de su propio archivo (si algo
-    falla a mitad, ese archivo entero se revierte solo, sin dejar filas a
-    medias). Ningún dato se inventa: lo que el Excel no trae queda `null`
-    (o, solo para categoría oficial —campo obligatorio—, en la
-    categoría-comodín "Pendiente de clasificar" creada en el primer
-    archivo). **Correr DESPUÉS de 0022** (usan columnas que esa migración
-    crea). Ver `reporte_import_negocios.txt` (generado junto con estos
-    archivos) para la lista de los 8 negocios sin municipio en el Excel
-    que quedaron fuera y necesitan completarse a mano, y de los ~89 que
-    quedaron en "Pendiente de clasificar" para revisión manual desde
+    categorías/subcategorías/actividades de cada uno. `activo = true`
+    directo para los 166 que CDMB ya marca `NOVEDAD = 'ACTIVO'` (posible
+    recién con 0023, que quita la exigencia de foto); `whatsapp` se llena
+    con el mismo número de `telefono` (casi todos son celular, no fijo),
+    normalizado a `57` + 10 dígitos cuando el formato lo permite. Cada
+    archivo es ~120 KB, su propia transacción (`begin`/`commit`), y trae
+    el mismo preámbulo idempotente al principio (`where not exists`/`on
+    conflict do nothing`) — **correr los 10, en cualquier orden**, y
+    repetir uno no duplica nada porque cada `insert into negocios` sin
+    `ON CONFLICT` queda protegido por el `begin`/`commit` de su propio
+    archivo (si algo falla a mitad, ese archivo entero se revierte solo,
+    sin dejar filas a medias). Ningún dato se inventa: lo que el Excel no
+    trae queda `null` (o, solo para categoría oficial —campo
+    obligatorio—, en la categoría-comodín "Pendiente de clasificar" creada
+    en el primer archivo). **Correr DESPUÉS de 0022/0023/0024** (usa
+    columnas y el CHECK relajado de esas 3). Ver
+    `reporte_import_negocios.txt` (generado junto con estos archivos) para
+    la lista de los 8 negocios sin municipio en el Excel que quedaron
+    fuera y necesitan completarse a mano, y de los ~89 que quedaron en
+    "Pendiente de clasificar" para revisión manual desde
     `/admin/negocios`.
-24. `0024_foto_portada_opcional.sql` — quita el CHECK
-    `negocios_publicado_necesita_foto` (0004): la foto de portada deja de
-    ser obligatoria para publicar. Con los 295 negocios reales recién
-    importados y ninguno con foto todavía, exigirla los habría dejado a
-    todos sin poder activarse. Mientras no tenga foto, la ficha
-    pública/tarjetas muestran el logo de Negocios Verdes en su lugar (ver
-    `assets/images/iconografia/logo_negocios_verdes.png`).
 
 ## Sobre trabajo concurrente de dos sesiones
 
