@@ -152,16 +152,30 @@ en un Supabase nuevo:
     firma de `guardar_ficha_tecnica_negocio` (pierde los 12 parámetros de
     las columnas borradas) — **correr ANTES de desplegar**, mismo motivo
     que las anteriores.
-26. `0026_datos_cdmb_negocios_verdes_01.sql` … `_09.sql` — **generado**, no
+26. `0026_datos_cdmb_negocios_verdes_01.sql` … `_17.sql` — **generado**, no
     escrito a mano: script en `lib/migraciones/generar_0026.py` que lee el
-    Excel real de CDMB (`BASE_ACTUALIZADA_NV_ka.xlsx`) y produce estos 9
+    Excel real de CDMB (`BASE_ACTUALIZADA_NV_ka.xlsx`) y produce estos 17
     archivos (partidos porque el editor SQL del dashboard de Supabase
     truncó el archivo único de ~1 MB a mitad de una línea — limitación
-    del editor web, no un error de sintaxis). Cargan entre todos 295 de
-    los 304 negocios reales (borra el único negocio de prueba que había
-    en producción), las veredas encontradas, las opciones reales de cada
-    campo categórico (para `opciones_campo`, ver 0025), y las
-    categorías/subcategorías/actividades de cada uno. `activo = true`
+    del editor web, no un error de sintaxis). **UPSERT por `nombre`, no
+    INSERT ciego**: una corrida parcial de una versión vieja de este
+    mismo script (antes de las correcciones de esta sesión) ya había
+    dejado los 295 negocios reales cargados en producción con
+    `activo = false` para todos — confirmado por el usuario
+    directamente contra la base (`select count(*), novedad, activo from
+    negocios group by novedad, activo` sumó exactamente 295). Pedido
+    explícito: "agrupen todo sin eliminar nada" — cada negocio hace
+    `update ... where nombre = X` primero (refresca whatsapp, este/norte,
+    novedad ya unificado, activo, categorías, etc. sobre el que ya
+    existía) y el `insert` que sigue solo entra por un
+    `where not exists (...)` si de verdad es nuevo; las tablas puente
+    (categorías/subcategorías/actividades) se borran y reinsertan
+    apuntando al `id` que ya tenía cada negocio, nunca a uno nuevo. Corre
+    igual de bien contra una base vacía o ya poblada, y repetir un
+    archivo no duplica nada. Cargan entre todos 295 de los 304 negocios
+    reales (borra el único negocio de prueba que había en producción),
+    las veredas encontradas, y las opciones reales de cada campo
+    categórico (para `opciones_campo`, ver 0025). `activo = true`
     directo para los 166 que CDMB ya marca `NOVEDAD = 'ACTIVO'` (posible
     recién con 0023, que quita la exigencia de foto); `whatsapp` se llena
     con el mismo número de `telefono` (casi todos son celular, no fijo),
@@ -186,11 +200,11 @@ en un Supabase nuevo:
     encabezados del Excel se leen completos, ninguno se pierde ni se cruza
     con otro. Cada archivo es ~120 KB, su propia transacción
     (`begin`/`commit`), y trae el mismo preámbulo idempotente al principio
-    (`where not exists`/`on conflict do nothing`) — **correr todos, en
-    cualquier orden**, y repetir uno no duplica nada porque cada `insert
-    into negocios` sin `ON CONFLICT` queda protegido por el
-    `begin`/`commit` de su propio archivo (si algo falla a mitad, ese
-    archivo entero se revierte solo, sin dejar filas a medias). Ningún
+    — **correr todos, en cualquier orden**, y repetir uno no duplica nada
+    (el upsert por nombre de cada negocio es idempotente por diseño, no
+    solo por el `begin`/`commit` de su archivo — aunque ese sigue
+    garantizando que si algo falla a mitad, ese archivo entero se
+    revierte solo, sin dejar filas a medias). Ningún
     dato se inventa: lo que el Excel no trae queda `null` (o, solo para
     categoría oficial —campo obligatorio—, en la categoría-comodín
     "Pendiente de clasificar" creada en el primer archivo). **Correr

@@ -44,10 +44,21 @@ alter table negocios drop column if exists beneficios_ventanilla;
 -- 2) novedad: estandarizado a exactamente 4 valores (antes tenía variantes
 --    como "ACTIVO (RETIRADO)"/"ACTIVO (RETIRADO) P"/"ACTIVO (SUSPENDIDO)"
 --    que en la práctica son "RETIRADO"/"RETIRADO"/"SUSPENDIDO" — pedido
---    explícito de estandarizarlas). El CHECK es la garantía real de que
---    no vuelva a haber una quinta variante suelta.
-alter table negocios add constraint negocios_novedad_valida
-  check (novedad is null or novedad in ('ACTIVO', 'INACTIVO', 'RETIRADO', 'SUSPENDIDO'));
+--    explícito de estandarizarlas). Normaliza primero lo que ya haya en
+--    la tabla (import parcial de una corrida anterior con el generador
+--    viejo, antes de esta estandarización) — si no, el ADD CONSTRAINT de
+--    abajo falla contra esas filas ya existentes. El CHECK es la
+--    garantía real de que no vuelva a haber una quinta variante suelta.
+update negocios set novedad = 'RETIRADO' where novedad ilike '%retirado%';
+update negocios set novedad = 'SUSPENDIDO' where novedad ilike '%suspendido%';
+
+do $$
+begin
+  alter table negocios add constraint negocios_novedad_valida
+    check (novedad is null or novedad in ('ACTIVO', 'INACTIVO', 'RETIRADO', 'SUSPENDIDO'));
+exception
+  when duplicate_object then null;
+end $$;
 
 -- 3) Catálogo genérico de opciones por campo — reemplaza el texto libre en
 --    los campos categóricos de la ficha técnica. select público sin

@@ -3,7 +3,7 @@ begin;
 -- Generado por lib/migraciones/generar_0026.py desde BASE_ACTUALIZADA_NV_ka.xlsx — no editar a mano.
 -- Uno de varios archivos partidos (ver README.md) — correr TODOS, en cualquier orden, cada uno es su propia transacción.
 
--- Parte 7 de 9.
+-- Parte 7 de 17.
 
 -- Categoría comodín para negocios sin categoría reconocible en el
 -- Excel (columna NOT NULL, no se puede dejar en blanco). activo=false
@@ -267,258 +267,1362 @@ on conflict (campo, valor) do nothing;
 
 -- Negocios de esta parte (INSERT + categoría/subcategoría/actividad + puntajes de cada uno, juntos).
 
--- DAVINCCI
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('e9d8559f-0864-4f7c-9623-996a4fd0bf02', 'DAVINCCI', generar_slug_unico('DAVINCCI', 'e9d8559f-0864-4f7c-9623-996a4fd0bf02'), (select id from categorias_oficiales where slug = 'ecoproductos-industriales'), 'Bucaramanga', (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'), 'CARRERA 23 # 32 - 46', 7.128888888888889, null, 'Diseño impresión 3d elaborados en fabricadis en materia pla(acido politatoco) botellas pet', 'Diseño impresión 3d elaborados en fabricadis en materia pla(acido politatoco) botellas pet', 'DISEÑOS EN IMPRESIÓN 3D MAQUETAS,ROBOTS,TROFEOS,FIGURAS DE COLECCIÓN', '3246559212', '573246559212', 'davincci.3d@gmail.com', 'MIGUEL ANGEL VARGAS', '1005163160', 'Natural', null, 'Cámara de comercio', 'SUJEY DÍAZ', 'ACTIVO', 'Satisfactorio', 2024, '1004.9', '73°7''214''''', '7°7''44''''', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, null, 'Acueducto', null, null, null, 'No', 'No', null, 'Sí', null, null, null, null, null, null, null, null, null, null, 'No', 'B2C', 'No', 'NO', 'Se cambia el uso de plástico derivados del petróleo por polímeros  extraídos del maíz, los desechos son utilizados en nuevas piezas en macetas.  Aprovechamiento de las botellas plásticas para uso de materia prima, embalaje bolsa de papel', 'Se dan capacitaciones en el uso de nuevas tecnologias    a estudiantes sobre el aprovechamiento de los recursos renovables , capacitaciones en colegiosy universidades, encadenamiento comercial con la universidad Santo Tomas', 'Es novedoso en el mercado , generan buenos ingresos  , estan en proceso de apertura de un local .', false, false, true, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('e9d8559f-0864-4f7c-9623-996a4fd0bf02', (select id from categorias_oficiales where slug = 'ecoproductos-industriales'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select 'e9d8559f-0864-4f7c-9623-996a4fd0bf02', id from subcategorias where slug = 'construccion-infraestructura-sostenible';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select 'e9d8559f-0864-4f7c-9623-996a4fd0bf02', id from actividades_productivas where slug = 'biomateriales-ecomateriales-equipos-ecoeficientes';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('e9d8559f-0864-4f7c-9623-996a4fd0bf02', 2024, 47.2) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('e9d8559f-0864-4f7c-9623-996a4fd0bf02', 2025, 55.5) on conflict (negocio_id, anio) do nothing;
+-- ASOCIACION FAMILIAS CAFICULTORAS-AGROPECUARIAS DE GIRON SANTANDER -GIROCAFE
+update negocios set
+  categoria_oficial_id = (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'),
+  municipio = 'Girón',
+  vereda_id = (select id from veredas where municipio = 'Girón' and slug = 'altamira'),
+  direccion = 'FINCA ALTAMIRA, VEREDA ALTAMIRA',
+  latitud = 7.110555555555555,
+  longitud = -73.25972222222222,
+  descripcion_corta = 'Es una asociacion de productores de café en pergamino y descafeinado naturalmente, cultivado sin agrotoxicos, sistemas agroforestales -Bajo sombrio. Ademas…',
+  descripcion = 'Es una asociacion de productores de café en pergamino y descafeinado naturalmente, cultivado sin agrotoxicos, sistemas agroforestales -Bajo sombrio. Ademas cuentan con su propia molienda de Café.',
+  producto = 'CULTIVO Y VENTA DE CAFÉ TRANFORMADO',
+  telefono = '3155100788',
+  whatsapp = '573155100788',
+  email = 'girocafesantander@gmail.com',
+  representante_legal = 'ELIBERTO GARCÍA TORRES',
+  nit = '900969115-2',
+  naturaleza_juridica = 'Jurídica',
+  delegado = null,
+  rut_camara_comercio = 'Cámara de comercio',
+  responsable_cdmb = 'ANDRES VALDERRAMA',
+  novedad = 'SUSPENDIDO',
+  tipo_negocio_verde = 'Dinamizadoras',
+  anio_registro = 2018,
+  cota_msnm = '1432 msnm',
+  este = '73°15''35''''',
+  norte = '7°6''38''''',
+  aplicacion_ficha_2025 = 'No actualizó',
+  observaciones = 'No se realizo visita ni actualizo ficha de verificacion',
+  registro_nacional_turismo = null,
+  uso_suelo = 'Sí',
+  concesion_aguas = 'Sí',
+  concesion_aguas_vencimiento = null,
+  vertimientos = 'No',
+  vertimientos_vencimiento = null,
+  pueaa = 'No',
+  pgris = 'No',
+  pozo_septico = null,
+  alcantarillado = null,
+  ica = null,
+  ica_vencimiento = null,
+  invima = 'Sí',
+  invima_vencimiento = null,
+  certificado_tenencia_animales = null,
+  buenas_practicas_agricolas = null,
+  buenas_practicas_apicolas = null,
+  registro_apicola = null,
+  intervencion_cauce = null,
+  capacidad_carga = null,
+  sstt = 'No',
+  canal_venta = 'B2C',
+  exportacion = null,
+  huella_carbono = null,
+  fortalezas_ambiental = 'Educación en el manejo ambiental. -Actividades sostenibles con el medio ambientes. -Conservación y preservación de los servicios ecosistémicos',
+  fortalezas_social = 'Capacitación a la comunidad y empleados. Educación ambiental con respeto al café',
+  fortalezas_economico = 'Modelo de negocio rentable. -Empresa legalmente registrada en Cámara de Comercio. -Venta en la región',
+  emprendimiento_verde = true,
+  sello_marca = false,
+  avalado = false,
+  destacado = false,
+  activo = false
+where nombre = 'ASOCIACION FAMILIAS CAFICULTORAS-AGROPECUARIAS DE GIRON SANTANDER -GIROCAFE';
+insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo)
+select 'd7f9b899-c45e-447a-8094-aee89ea506bc', 'ASOCIACION FAMILIAS CAFICULTORAS-AGROPECUARIAS DE GIRON SANTANDER -GIROCAFE', generar_slug_unico('ASOCIACION FAMILIAS CAFICULTORAS-AGROPECUARIAS DE GIRON SANTANDER -GIROCAFE', 'd7f9b899-c45e-447a-8094-aee89ea506bc'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Girón', (select id from veredas where municipio = 'Girón' and slug = 'altamira'), 'FINCA ALTAMIRA, VEREDA ALTAMIRA', 7.110555555555555, -73.25972222222222, 'Es una asociacion de productores de café en pergamino y descafeinado naturalmente, cultivado sin agrotoxicos, sistemas agroforestales -Bajo sombrio. Ademas…', 'Es una asociacion de productores de café en pergamino y descafeinado naturalmente, cultivado sin agrotoxicos, sistemas agroforestales -Bajo sombrio. Ademas cuentan con su propia molienda de Café.', 'CULTIVO Y VENTA DE CAFÉ TRANFORMADO', '3155100788', '573155100788', 'girocafesantander@gmail.com', 'ELIBERTO GARCÍA TORRES', '900969115-2', 'Jurídica', null, 'Cámara de comercio', 'ANDRES VALDERRAMA', 'SUSPENDIDO', 'Dinamizadoras', 2018, '1432 msnm', '73°15''35''''', '7°6''38''''', 'No actualizó', 'No se realizo visita ni actualizo ficha de verificacion', null, 'Sí', 'Sí', null, 'No', null, 'No', 'No', null, null, null, null, 'Sí', null, null, null, null, null, null, null, 'No', 'B2C', null, null, 'Educación en el manejo ambiental. -Actividades sostenibles con el medio ambientes. -Conservación y preservación de los servicios ecosistémicos', 'Capacitación a la comunidad y empleados. Educación ambiental con respeto al café', 'Modelo de negocio rentable. -Empresa legalmente registrada en Cámara de Comercio. -Venta en la región', true, false, false, false, false
+where not exists (select 1 from negocios where nombre = 'ASOCIACION FAMILIAS CAFICULTORAS-AGROPECUARIAS DE GIRON SANTANDER -GIROCAFE');
+delete from negocios_categorias where negocio_id = (select id from negocios where nombre = 'ASOCIACION FAMILIAS CAFICULTORAS-AGROPECUARIAS DE GIRON SANTANDER -GIROCAFE');
+insert into negocios_categorias (negocio_id, categoria_oficial_id) select (select id from negocios where nombre = 'ASOCIACION FAMILIAS CAFICULTORAS-AGROPECUARIAS DE GIRON SANTANDER -GIROCAFE'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles');
+delete from negocios_subcategorias where negocio_id = (select id from negocios where nombre = 'ASOCIACION FAMILIAS CAFICULTORAS-AGROPECUARIAS DE GIRON SANTANDER -GIROCAFE');
+insert into negocios_subcategorias (negocio_id, subcategoria_id) select (select id from negocios where nombre = 'ASOCIACION FAMILIAS CAFICULTORAS-AGROPECUARIAS DE GIRON SANTANDER -GIROCAFE'), id from subcategorias where slug = 'agrosistemas-sostenibles';
+delete from negocios_actividades where negocio_id = (select id from negocios where nombre = 'ASOCIACION FAMILIAS CAFICULTORAS-AGROPECUARIAS DE GIRON SANTANDER -GIROCAFE');
+insert into negocios_actividades (negocio_id, actividad_productiva_id) select (select id from negocios where nombre = 'ASOCIACION FAMILIAS CAFICULTORAS-AGROPECUARIAS DE GIRON SANTANDER -GIROCAFE'), id from actividades_productivas where slug = 'agroecologia';
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'ASOCIACION FAMILIAS CAFICULTORAS-AGROPECUARIAS DE GIRON SANTANDER -GIROCAFE'), 2020, 33.85 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'ASOCIACION FAMILIAS CAFICULTORAS-AGROPECUARIAS DE GIRON SANTANDER -GIROCAFE'), 2021, 33.85 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'ASOCIACION FAMILIAS CAFICULTORAS-AGROPECUARIAS DE GIRON SANTANDER -GIROCAFE'), 2022, 70.4 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'ASOCIACION FAMILIAS CAFICULTORAS-AGROPECUARIAS DE GIRON SANTANDER -GIROCAFE'), 2023, 65.56 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'ASOCIACION FAMILIAS CAFICULTORAS-AGROPECUARIAS DE GIRON SANTANDER -GIROCAFE'), 2024, 54.0 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
 
--- ALROVA
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('b38a3b91-8436-4b3c-a9a5-daef37c936b1', 'ALROVA', generar_slug_unico('ALROVA', 'b38a3b91-8436-4b3c-a9a5-daef37c936b1'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Tona', (select id from veredas where municipio = 'Tona' and slug = 'perimetro-urbano'), 'AVENIDA 3 # 3-70 BERLIN - TONA', 7.186944444444444, -72.87638888888888, 'Cultivo y proceso de tranformacion de la maca y la cebolla enrama', 'Cultivo y proceso de tranformacion de la maca y la cebolla enrama', 'MACA', '3153268849', '573153268849', 'alfonsomaca10@hotmail.com', 'ALFONSO RODRIGUEZ VANEGAS', '13818933-6', 'Natural', null, 'Cámara de comercio', 'HEINER ORTIZ', 'ACTIVO', 'Intermedio', 2018, '3319', '72°52''35''''', '7°11''13''''', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, 'No', 'Acueducto', null, null, null, 'No', 'No', null, 'Sí', null, null, 'No', null, null, 'No', null, null, null, null, 'No', 'B2C', 'No', 'NO', null, null, null, true, false, false, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('b38a3b91-8436-4b3c-a9a5-daef37c936b1', (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select 'b38a3b91-8436-4b3c-a9a5-daef37c936b1', id from subcategorias where slug = 'agrosistemas-sostenibles';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select 'b38a3b91-8436-4b3c-a9a5-daef37c936b1', id from actividades_productivas where slug = 'agricultura-organica';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('b38a3b91-8436-4b3c-a9a5-daef37c936b1', 2020, 35.8) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('b38a3b91-8436-4b3c-a9a5-daef37c936b1', 2021, 35.88) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('b38a3b91-8436-4b3c-a9a5-daef37c936b1', 2022, 34.26) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('b38a3b91-8436-4b3c-a9a5-daef37c936b1', 2023, 34.26) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('b38a3b91-8436-4b3c-a9a5-daef37c936b1', 2024, 23.8) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('b38a3b91-8436-4b3c-a9a5-daef37c936b1', 2025, 23.8) on conflict (negocio_id, anio) do nothing;
+-- CARTON Y ESTIBAS SAS
+update negocios set
+  categoria_oficial_id = (select id from categorias_oficiales where slug = 'pendiente-clasificar'),
+  municipio = 'Bucaramanga',
+  vereda_id = null,
+  direccion = 'AVENIDA QUEBRADA SECA # 14 - 44',
+  latitud = null,
+  longitud = null,
+  descripcion_corta = null,
+  descripcion = null,
+  producto = 'ECONOMIA CIRCULAR',
+  telefono = '6700176 -  3012656074',
+  whatsapp = '6700176 -  3012656074',
+  email = 'info@cartonyestiba.com',
+  representante_legal = 'TOMAS SERRANO CHICA',
+  nit = '900475406-1',
+  naturaleza_juridica = null,
+  delegado = null,
+  rut_camara_comercio = null,
+  responsable_cdmb = null,
+  novedad = 'RETIRADO',
+  tipo_negocio_verde = 'No aplica',
+  anio_registro = 2022,
+  cota_msnm = null,
+  este = null,
+  norte = null,
+  aplicacion_ficha_2025 = null,
+  observaciones = 'No cumplimiento de requisitos',
+  registro_nacional_turismo = null,
+  uso_suelo = null,
+  concesion_aguas = null,
+  concesion_aguas_vencimiento = null,
+  vertimientos = null,
+  vertimientos_vencimiento = null,
+  pueaa = null,
+  pgris = null,
+  pozo_septico = null,
+  alcantarillado = null,
+  ica = null,
+  ica_vencimiento = null,
+  invima = null,
+  invima_vencimiento = null,
+  certificado_tenencia_animales = null,
+  buenas_practicas_agricolas = null,
+  buenas_practicas_apicolas = null,
+  registro_apicola = null,
+  intervencion_cauce = null,
+  capacidad_carga = null,
+  sstt = null,
+  canal_venta = null,
+  exportacion = null,
+  huella_carbono = null,
+  fortalezas_ambiental = null,
+  fortalezas_social = null,
+  fortalezas_economico = null,
+  emprendimiento_verde = true,
+  sello_marca = false,
+  avalado = false,
+  destacado = false,
+  activo = false
+where nombre = 'CARTON Y ESTIBAS SAS';
+insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo)
+select '3600f8e8-163b-4992-9d01-6359c378b7a7', 'CARTON Y ESTIBAS SAS', generar_slug_unico('CARTON Y ESTIBAS SAS', '3600f8e8-163b-4992-9d01-6359c378b7a7'), (select id from categorias_oficiales where slug = 'pendiente-clasificar'), 'Bucaramanga', null, 'AVENIDA QUEBRADA SECA # 14 - 44', null, null, null, null, 'ECONOMIA CIRCULAR', '6700176 -  3012656074', '6700176 -  3012656074', 'info@cartonyestiba.com', 'TOMAS SERRANO CHICA', '900475406-1', null, null, null, null, 'RETIRADO', 'No aplica', 2022, null, null, null, null, 'No cumplimiento de requisitos', null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, false, false, false, false
+where not exists (select 1 from negocios where nombre = 'CARTON Y ESTIBAS SAS');
+delete from negocios_categorias where negocio_id = (select id from negocios where nombre = 'CARTON Y ESTIBAS SAS');
+insert into negocios_categorias (negocio_id, categoria_oficial_id) select (select id from negocios where nombre = 'CARTON Y ESTIBAS SAS'), (select id from categorias_oficiales where slug = 'pendiente-clasificar');
+delete from negocios_subcategorias where negocio_id = (select id from negocios where nombre = 'CARTON Y ESTIBAS SAS');
+delete from negocios_actividades where negocio_id = (select id from negocios where nombre = 'CARTON Y ESTIBAS SAS');
 
--- SETAS COMESTIBLES
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('96579460-5f99-4add-b1ef-3e049383bd78', 'SETAS COMESTIBLES', generar_slug_unico('SETAS COMESTIBLES', '96579460-5f99-4add-b1ef-3e049383bd78'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Girón', (select id from veredas where municipio = 'Girón' and slug = 'perimetro-urbano'), 'CALLLE 35 # 36-21 TORRE B 703 CONJ FLORIDA DEL COUNTRY', null, null, 'Producccion de hongos setas orellanas a base de sustratos de desechos organicos junto con  maderables o no maderables .', 'Producccion de hongos setas orellanas a base de sustratos de desechos organicos junto con  maderables o no maderables .', 'SETAS', '3114561756', '573114561756', 'fernandovesga31@hotmail.com', 'JOSE FERNANDO VESGA ROJAS', '91291409-7', 'Natural', null, 'Sin verificar', 'SUJEY DÍAZ', 'RETIRADO', 'Inicial', 2023, null, null, null, 'No actualizó', 'No se realizo visita ni actualizo ficha de verificacion', null, 'No', null, null, null, null, 'No', 'No', 'No', 'No', null, null, null, null, null, 'No', null, null, null, null, 'No', null, null, null, 'Al finalizar la cosecha de los hongos en los tobulares  son utilizados como abono orgánico para la tierra', 'Realiza charlas  familiares y amigos  sobre el reino fungui , cultura ambiental y social.', 'Actitud de ampliar su mercado', true, false, false, false, false);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('96579460-5f99-4add-b1ef-3e049383bd78', (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select '96579460-5f99-4add-b1ef-3e049383bd78', id from subcategorias where slug = 'agroindustria-sostenible';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select '96579460-5f99-4add-b1ef-3e049383bd78', id from actividades_productivas where slug = 'agroindustrial-alimentario';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('96579460-5f99-4add-b1ef-3e049383bd78', 2024, 41.6) on conflict (negocio_id, anio) do nothing;
+-- GIRALDO CARVAJAL CABALLERO - VINO DE NARANJA
+update negocios set
+  categoria_oficial_id = (select id from categorias_oficiales where slug = 'pendiente-clasificar'),
+  municipio = 'Charta',
+  vereda_id = null,
+  direccion = null,
+  latitud = null,
+  longitud = null,
+  descripcion_corta = null,
+  descripcion = null,
+  producto = 'VINO',
+  telefono = '3123221058',
+  whatsapp = '573123221058',
+  email = 'gcarvajalcaballero@gmailcom',
+  representante_legal = 'GIRALDO CARVAJAL CABALLERO',
+  nit = null,
+  naturaleza_juridica = null,
+  delegado = null,
+  rut_camara_comercio = null,
+  responsable_cdmb = 'JULIAN CACERES',
+  novedad = 'INACTIVO',
+  tipo_negocio_verde = null,
+  anio_registro = 2022,
+  cota_msnm = null,
+  este = null,
+  norte = null,
+  aplicacion_ficha_2025 = null,
+  observaciones = 'Posible retiro',
+  registro_nacional_turismo = null,
+  uso_suelo = null,
+  concesion_aguas = null,
+  concesion_aguas_vencimiento = null,
+  vertimientos = null,
+  vertimientos_vencimiento = null,
+  pueaa = null,
+  pgris = null,
+  pozo_septico = null,
+  alcantarillado = null,
+  ica = null,
+  ica_vencimiento = null,
+  invima = null,
+  invima_vencimiento = null,
+  certificado_tenencia_animales = null,
+  buenas_practicas_agricolas = null,
+  buenas_practicas_apicolas = null,
+  registro_apicola = null,
+  intervencion_cauce = null,
+  capacidad_carga = null,
+  sstt = null,
+  canal_venta = null,
+  exportacion = null,
+  huella_carbono = null,
+  fortalezas_ambiental = null,
+  fortalezas_social = null,
+  fortalezas_economico = null,
+  emprendimiento_verde = true,
+  sello_marca = false,
+  avalado = false,
+  destacado = false,
+  activo = false
+where nombre = 'GIRALDO CARVAJAL CABALLERO - VINO DE NARANJA';
+insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo)
+select '051b2b73-e822-46b4-b760-02ed993f5620', 'GIRALDO CARVAJAL CABALLERO - VINO DE NARANJA', generar_slug_unico('GIRALDO CARVAJAL CABALLERO - VINO DE NARANJA', '051b2b73-e822-46b4-b760-02ed993f5620'), (select id from categorias_oficiales where slug = 'pendiente-clasificar'), 'Charta', null, null, null, null, null, null, 'VINO', '3123221058', '573123221058', 'gcarvajalcaballero@gmailcom', 'GIRALDO CARVAJAL CABALLERO', null, null, null, null, 'JULIAN CACERES', 'INACTIVO', null, 2022, null, null, null, null, 'Posible retiro', null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, false, false, false, false
+where not exists (select 1 from negocios where nombre = 'GIRALDO CARVAJAL CABALLERO - VINO DE NARANJA');
+delete from negocios_categorias where negocio_id = (select id from negocios where nombre = 'GIRALDO CARVAJAL CABALLERO - VINO DE NARANJA');
+insert into negocios_categorias (negocio_id, categoria_oficial_id) select (select id from negocios where nombre = 'GIRALDO CARVAJAL CABALLERO - VINO DE NARANJA'), (select id from categorias_oficiales where slug = 'pendiente-clasificar');
+delete from negocios_subcategorias where negocio_id = (select id from negocios where nombre = 'GIRALDO CARVAJAL CABALLERO - VINO DE NARANJA');
+delete from negocios_actividades where negocio_id = (select id from negocios where nombre = 'GIRALDO CARVAJAL CABALLERO - VINO DE NARANJA');
 
--- CHOCOLATE CASERO HOREB
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('1c49c121-c627-4b8f-bb4b-6ee1f6f6719d', 'CHOCOLATE CASERO HOREB', generar_slug_unico('CHOCOLATE CASERO HOREB', '1c49c121-c627-4b8f-bb4b-6ee1f6f6719d'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Lebrija', (select id from veredas where municipio = 'Lebrija' and slug = 'lisboa'), 'FINCA BRISAS, VEREDA LISBOA', 7.149552777777778, -73.29869444444444, 'Empresa dedicada a la producción, transformación y comercialización de productos derivados del cultivo de cacao con prácticas naturales, certificada con…', 'Empresa dedicada a la producción, transformación y comercialización de productos derivados del cultivo de cacao con prácticas naturales, certificada con buenas prácticas agrícolas, con políticas de conservación y preservación del medio ambiente a través de campañas de educación ambiental.', 'CHOCOLATE SIN AZUCAR', '3023720078', '573023720078', 'banderaalcira@gmail.com', 'ALCIRA BANDERA DE GARCIA', '28403921-0', 'Natural', null, 'Cámara de comercio', 'NATALY RAMIREZ', 'ACTIVO', null, 2023, '840 msnm', '73°17''55,30"', '7°8''58,39"', 'Actualizó', 'Se realizo visita y se aplico ficha de verificacion', 'Sí', 'Sí', 'Acueducto veredal', null, null, null, 'No', 'No', 'Sí', null, null, null, 'Sí', '2034-09-20', null, 'Sí', null, null, null, 'No', 'No', 'B2C', 'No', 'NO', 'Cultivo de manejo Agroecológico con sistema agroforestal. Buenas prácticas hídricas (uso de aguas lluvias)', 'Buenas prácticas en la cadena de valor (encadenamiento comercial)', 'Diversificación de productos', false, false, true, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('1c49c121-c627-4b8f-bb4b-6ee1f6f6719d', (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select '1c49c121-c627-4b8f-bb4b-6ee1f6f6719d', id from subcategorias where slug = 'agroindustria-sostenible';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select '1c49c121-c627-4b8f-bb4b-6ee1f6f6719d', id from actividades_productivas where slug = 'agroindustrial-alimentario';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('1c49c121-c627-4b8f-bb4b-6ee1f6f6719d', 2023, 59.31) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('1c49c121-c627-4b8f-bb4b-6ee1f6f6719d', 2024, 53.8) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('1c49c121-c627-4b8f-bb4b-6ee1f6f6719d', 2025, 59.0) on conflict (negocio_id, anio) do nothing;
+-- WEPA COLOMBIA
+update negocios set
+  categoria_oficial_id = (select id from categorias_oficiales where slug = 'pendiente-clasificar'),
+  municipio = 'Girón',
+  vereda_id = null,
+  direccion = 'Vereda Parinoquia',
+  latitud = null,
+  longitud = null,
+  descripcion_corta = null,
+  descripcion = null,
+  producto = 'ECOTURISMO',
+  telefono = '3153948469',
+  whatsapp = '573153948469',
+  email = 'wepacolombiasantander@gmail.com',
+  representante_legal = 'SANDRA NORIEGA GROSO',
+  nit = null,
+  naturaleza_juridica = null,
+  delegado = null,
+  rut_camara_comercio = null,
+  responsable_cdmb = null,
+  novedad = 'RETIRADO',
+  tipo_negocio_verde = 'No aplica',
+  anio_registro = 2022,
+  cota_msnm = null,
+  este = null,
+  norte = null,
+  aplicacion_ficha_2025 = null,
+  observaciones = 'No cumplimiento de requisitos',
+  registro_nacional_turismo = null,
+  uso_suelo = null,
+  concesion_aguas = null,
+  concesion_aguas_vencimiento = null,
+  vertimientos = null,
+  vertimientos_vencimiento = null,
+  pueaa = null,
+  pgris = null,
+  pozo_septico = null,
+  alcantarillado = null,
+  ica = null,
+  ica_vencimiento = null,
+  invima = null,
+  invima_vencimiento = null,
+  certificado_tenencia_animales = null,
+  buenas_practicas_agricolas = null,
+  buenas_practicas_apicolas = null,
+  registro_apicola = null,
+  intervencion_cauce = null,
+  capacidad_carga = null,
+  sstt = null,
+  canal_venta = null,
+  exportacion = null,
+  huella_carbono = null,
+  fortalezas_ambiental = null,
+  fortalezas_social = null,
+  fortalezas_economico = null,
+  emprendimiento_verde = true,
+  sello_marca = false,
+  avalado = false,
+  destacado = false,
+  activo = false
+where nombre = 'WEPA COLOMBIA';
+insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo)
+select 'e9684a8a-0c80-44ca-8960-f93a8acc8a8d', 'WEPA COLOMBIA', generar_slug_unico('WEPA COLOMBIA', 'e9684a8a-0c80-44ca-8960-f93a8acc8a8d'), (select id from categorias_oficiales where slug = 'pendiente-clasificar'), 'Girón', null, 'Vereda Parinoquia', null, null, null, null, 'ECOTURISMO', '3153948469', '573153948469', 'wepacolombiasantander@gmail.com', 'SANDRA NORIEGA GROSO', null, null, null, null, null, 'RETIRADO', 'No aplica', 2022, null, null, null, null, 'No cumplimiento de requisitos', null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, false, false, false, false
+where not exists (select 1 from negocios where nombre = 'WEPA COLOMBIA');
+delete from negocios_categorias where negocio_id = (select id from negocios where nombre = 'WEPA COLOMBIA');
+insert into negocios_categorias (negocio_id, categoria_oficial_id) select (select id from negocios where nombre = 'WEPA COLOMBIA'), (select id from categorias_oficiales where slug = 'pendiente-clasificar');
+delete from negocios_subcategorias where negocio_id = (select id from negocios where nombre = 'WEPA COLOMBIA');
+delete from negocios_actividades where negocio_id = (select id from negocios where nombre = 'WEPA COLOMBIA');
 
--- SEA & SEAMS
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('57d6505e-5557-4925-93a7-90fd24c613d5', 'SEA & SEAMS', generar_slug_unico('SEA & SEAMS', '57d6505e-5557-4925-93a7-90fd24c613d5'), (select id from categorias_oficiales where slug = 'ecoproductos-industriales'), 'Bucaramanga', (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'), 'CARRERA 23 # 54 - 75 LOCAL 102 EDIFICIO HUNZAA, BOLARQUI', 7.110305555555555, -73.11526666666666, 'En Sea & Seams, nos dedicamos a crear experiencias únicas a través de la moda sostenible ofreciendo alternativas de consumo en moda responsables y…', 'En Sea & Seams, nos dedicamos a crear experiencias únicas a través de la moda sostenible ofreciendo alternativas de consumo en moda responsables y soluciones acordes a las necesidades actuales de las personas. Tienda de moda Circular.', 'COLECCIONES UPCYCLING', '3508648893', '573508648893', 'seaams.co@gmail.com', 'DANIELA ANDREA GOMEZ RODRIGUEZ', '1095940672-9', 'Natural', null, 'Cámara de comercio y RUT', 'CRISTAL VILLAREAL', 'RETIRADO', null, 2024, '969,5 msnm', '73°6''54,96"', '7°6''37,10"', 'No actualizó', 'No realizo visita ni se aplico ficha de verificacion', null, 'No', null, null, null, null, 'No', 'No', 'No', 'Sí', null, null, null, null, null, null, null, null, null, null, 'No', 'B2C', null, null, 'Reduce la cantidad residuos textiles que terminan en los vertederos. Economía Circular', 'Acceso a moda asequible. Promueve un estilo de vida menos consumista', 'Ventaja competitiva clara. Enfoque en nichos con potencial.', true, false, false, false, false);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('57d6505e-5557-4925-93a7-90fd24c613d5', (select id from categorias_oficiales where slug = 'ecoproductos-industriales'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select '57d6505e-5557-4925-93a7-90fd24c613d5', id from subcategorias where slug = 'moda-sostenible';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select '57d6505e-5557-4925-93a7-90fd24c613d5', id from actividades_productivas where slug = 'confeccion-manufactura';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('57d6505e-5557-4925-93a7-90fd24c613d5', 2024, 75.5) on conflict (negocio_id, anio) do nothing;
+-- MAX PULPAS COMPANY
+update negocios set
+  categoria_oficial_id = (select id from categorias_oficiales where slug = 'pendiente-clasificar'),
+  municipio = 'Floridablanca',
+  vereda_id = null,
+  direccion = 'CARRERA 25 # 202-62 BARRIO BAVIERA',
+  latitud = null,
+  longitud = null,
+  descripcion_corta = null,
+  descripcion = null,
+  producto = 'PULPAS DE FRUTA',
+  telefono = '313358117',
+  whatsapp = '313358117',
+  email = 'gustavodejlopera@hotmail.com',
+  representante_legal = 'GUSTAVO LOPEZ YEPES',
+  nit = '15319058-2',
+  naturaleza_juridica = null,
+  delegado = null,
+  rut_camara_comercio = null,
+  responsable_cdmb = null,
+  novedad = 'RETIRADO',
+  tipo_negocio_verde = 'No aplica',
+  anio_registro = 2022,
+  cota_msnm = null,
+  este = null,
+  norte = null,
+  aplicacion_ficha_2025 = null,
+  observaciones = 'Por definir',
+  registro_nacional_turismo = null,
+  uso_suelo = null,
+  concesion_aguas = null,
+  concesion_aguas_vencimiento = null,
+  vertimientos = null,
+  vertimientos_vencimiento = null,
+  pueaa = null,
+  pgris = null,
+  pozo_septico = null,
+  alcantarillado = null,
+  ica = null,
+  ica_vencimiento = null,
+  invima = null,
+  invima_vencimiento = null,
+  certificado_tenencia_animales = null,
+  buenas_practicas_agricolas = null,
+  buenas_practicas_apicolas = null,
+  registro_apicola = null,
+  intervencion_cauce = null,
+  capacidad_carga = null,
+  sstt = null,
+  canal_venta = null,
+  exportacion = null,
+  huella_carbono = null,
+  fortalezas_ambiental = null,
+  fortalezas_social = null,
+  fortalezas_economico = null,
+  emprendimiento_verde = true,
+  sello_marca = false,
+  avalado = false,
+  destacado = false,
+  activo = false
+where nombre = 'MAX PULPAS COMPANY';
+insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo)
+select 'caeba991-10e1-4377-9fa9-3e2254a3ca5f', 'MAX PULPAS COMPANY', generar_slug_unico('MAX PULPAS COMPANY', 'caeba991-10e1-4377-9fa9-3e2254a3ca5f'), (select id from categorias_oficiales where slug = 'pendiente-clasificar'), 'Floridablanca', null, 'CARRERA 25 # 202-62 BARRIO BAVIERA', null, null, null, null, 'PULPAS DE FRUTA', '313358117', '313358117', 'gustavodejlopera@hotmail.com', 'GUSTAVO LOPEZ YEPES', '15319058-2', null, null, null, null, 'RETIRADO', 'No aplica', 2022, null, null, null, null, 'Por definir', null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, false, false, false, false
+where not exists (select 1 from negocios where nombre = 'MAX PULPAS COMPANY');
+delete from negocios_categorias where negocio_id = (select id from negocios where nombre = 'MAX PULPAS COMPANY');
+insert into negocios_categorias (negocio_id, categoria_oficial_id) select (select id from negocios where nombre = 'MAX PULPAS COMPANY'), (select id from categorias_oficiales where slug = 'pendiente-clasificar');
+delete from negocios_subcategorias where negocio_id = (select id from negocios where nombre = 'MAX PULPAS COMPANY');
+delete from negocios_actividades where negocio_id = (select id from negocios where nombre = 'MAX PULPAS COMPANY');
 
--- GREEN TEAM INGENIERIA SAS
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('4f99d8a5-6f60-43fe-a42b-d4d4ac4b73f0', 'GREEN TEAM INGENIERIA SAS', generar_slug_unico('GREEN TEAM INGENIERIA SAS', '4f99d8a5-6f60-43fe-a42b-d4d4ac4b73f0'), (select id from categorias_oficiales where slug = 'ecoproductos-industriales'), 'Rionegro', (select id from veredas where municipio = 'Rionegro' and slug = 'perimetro-urbano'), 'AV LA ROSITA No. 18-80 OFICINA 302 EDIFICIO ROSITA', 73.55035, -7.616174999999999, 'Green Team es una empresa dedicada a la descarbonizacion de diversas industrias a partir de la utilización de la pirólisis para procesar residuos…', 'Green Team es una empresa dedicada a la descarbonizacion de diversas industrias a partir de la utilización de la pirólisis para procesar residuos agroindustriales y urbanos.Producen Biochar, vinagre de madera también llamado ácido piroleñoso y aceite piroleñoso. Se especializan también en el montaje de proyectos de generación de créditos de carbono a partir de Biochar usando la tecnología de pirólisis', 'BIOCHAR', '3212139080', '573212139080', 'greenteamingenieria@gmail.com', 'GONZALO ANDRES JAIMES PRADA', '901265544-0', 'Jurídica', null, 'Cámara de comercio y RUT', 'LAURA RUIZ', 'RETIRADO', null, 2024, null, '7°36''58,23"', '73°33''1,26"', 'No actualizó', 'No realizo visita ni se aplico ficha de verificacion', null, 'No', null, null, null, null, null, 'No', null, null, 'Sí', null, null, null, null, null, null, null, null, null, 'No', 'Mixta', null, null, 'Reducción de gases efecto invernadero. Aprovechamiento de residuos. Mejora de suelos (aumenta la retención de agua y nutrientes)', 'Desarrollo local y regional. Generación de empleo verde', 'Demanda creciente en mercados verdes. Valor agregado a residuos. Generación de créditos de carbono', true, false, false, false, false);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('4f99d8a5-6f60-43fe-a42b-d4d4ac4b73f0', (select id from categorias_oficiales where slug = 'ecoproductos-industriales'));
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select '4f99d8a5-6f60-43fe-a42b-d4d4ac4b73f0', id from actividades_productivas where slug = 'aprovechamiento-residuos-organicos';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('4f99d8a5-6f60-43fe-a42b-d4d4ac4b73f0', 2024, 71.7) on conflict (negocio_id, anio) do nothing;
+-- ANA BOTANICA NATURAL
+update negocios set
+  categoria_oficial_id = (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'),
+  municipio = 'Floridablanca',
+  vereda_id = (select id from veredas where municipio = 'Floridablanca' and slug = 'perimetro-urbano'),
+  direccion = 'CARRERA 4 NO 3A-06 CONJUNTO EL VERDE',
+  latitud = 7.063611111111111,
+  longitud = -73.07777777777777,
+  descripcion_corta = 'Produccion y comercializacion de jabones artesanales usando flora medicina colombiana, shampoo solidos, acondicionador solido y sales relajantes donde se…',
+  descripcion = 'Produccion y comercializacion de jabones artesanales usando flora medicina colombiana, shampoo solidos, acondicionador solido y sales relajantes donde se promueven el uso y acondicionador solido utilizando derivados del coco, tinturas obtenidas de las plantas, picado de hojas, tallos y flores, y aceites esenciales, teniendo en cuenta el tipo de cuero cabelludo: seco, normal, graso y sensible.',
+  producto = 'JABON SOLIDO ARTESANAL PARA CARA Y CUERPO',
+  telefono = '3156447828',
+  whatsapp = '573156447828',
+  email = 'anitavillamizar11@gmail.com',
+  representante_legal = 'ANA VICTORIA VILLAMIZAR GAMBOA',
+  nit = '60251559-1',
+  naturaleza_juridica = 'Natural',
+  delegado = null,
+  rut_camara_comercio = 'Cámara de comercio',
+  responsable_cdmb = 'XIMENA REYES',
+  novedad = 'ACTIVO',
+  tipo_negocio_verde = 'Dinamizadoras',
+  anio_registro = 2022,
+  cota_msnm = null,
+  este = '73°4''40''''',
+  norte = '7°3''49''''',
+  aplicacion_ficha_2025 = 'Actualizó',
+  observaciones = 'Se realizo visita y se actualizo ficha de verificacion',
+  registro_nacional_turismo = null,
+  uso_suelo = 'No',
+  concesion_aguas = null,
+  concesion_aguas_vencimiento = null,
+  vertimientos = null,
+  vertimientos_vencimiento = null,
+  pueaa = 'No',
+  pgris = 'No',
+  pozo_septico = null,
+  alcantarillado = 'Sí',
+  ica = null,
+  ica_vencimiento = null,
+  invima = 'No',
+  invima_vencimiento = null,
+  certificado_tenencia_animales = null,
+  buenas_practicas_agricolas = null,
+  buenas_practicas_apicolas = null,
+  registro_apicola = null,
+  intervencion_cauce = null,
+  capacidad_carga = null,
+  sstt = 'No',
+  canal_venta = 'Mixta',
+  exportacion = 'No',
+  huella_carbono = 'NO',
+  fortalezas_ambiental = 'Se implementan acciones para combatir el cambio climático y sus impactos. Cuenta con fichas técnicas detalladas.',
+  fortalezas_social = 'Define y aplica estrategias de adquisición de insumos, materias primas o servicios por parte de organizaciones de economía solidaria, comunidades vulnerables, MYPIMES, proveedores verdes en toda su cadena de valor.',
+  fortalezas_economico = 'Cuenta con libro contable y tiene identificado claramente los costos y gastos de la operación.',
+  emprendimiento_verde = true,
+  sello_marca = false,
+  avalado = false,
+  destacado = false,
+  activo = true
+where nombre = 'ANA BOTANICA NATURAL';
+insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo)
+select '8dc8fa50-0c62-45e5-a9d5-e91cd3651ee8', 'ANA BOTANICA NATURAL', generar_slug_unico('ANA BOTANICA NATURAL', '8dc8fa50-0c62-45e5-a9d5-e91cd3651ee8'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Floridablanca', (select id from veredas where municipio = 'Floridablanca' and slug = 'perimetro-urbano'), 'CARRERA 4 NO 3A-06 CONJUNTO EL VERDE', 7.063611111111111, -73.07777777777777, 'Produccion y comercializacion de jabones artesanales usando flora medicina colombiana, shampoo solidos, acondicionador solido y sales relajantes donde se…', 'Produccion y comercializacion de jabones artesanales usando flora medicina colombiana, shampoo solidos, acondicionador solido y sales relajantes donde se promueven el uso y acondicionador solido utilizando derivados del coco, tinturas obtenidas de las plantas, picado de hojas, tallos y flores, y aceites esenciales, teniendo en cuenta el tipo de cuero cabelludo: seco, normal, graso y sensible.', 'JABON SOLIDO ARTESANAL PARA CARA Y CUERPO', '3156447828', '573156447828', 'anitavillamizar11@gmail.com', 'ANA VICTORIA VILLAMIZAR GAMBOA', '60251559-1', 'Natural', null, 'Cámara de comercio', 'XIMENA REYES', 'ACTIVO', 'Dinamizadoras', 2022, null, '73°4''40''''', '7°3''49''''', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, 'No', null, null, null, null, 'No', 'No', null, 'Sí', null, null, 'No', null, null, null, null, null, null, null, 'No', 'Mixta', 'No', 'NO', 'Se implementan acciones para combatir el cambio climático y sus impactos. Cuenta con fichas técnicas detalladas.', 'Define y aplica estrategias de adquisición de insumos, materias primas o servicios por parte de organizaciones de economía solidaria, comunidades vulnerables, MYPIMES, proveedores verdes en toda su cadena de valor.', 'Cuenta con libro contable y tiene identificado claramente los costos y gastos de la operación.', true, false, false, false, true
+where not exists (select 1 from negocios where nombre = 'ANA BOTANICA NATURAL');
+delete from negocios_categorias where negocio_id = (select id from negocios where nombre = 'ANA BOTANICA NATURAL');
+insert into negocios_categorias (negocio_id, categoria_oficial_id) select (select id from negocios where nombre = 'ANA BOTANICA NATURAL'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles');
+delete from negocios_subcategorias where negocio_id = (select id from negocios where nombre = 'ANA BOTANICA NATURAL');
+insert into negocios_subcategorias (negocio_id, subcategoria_id) select (select id from negocios where nombre = 'ANA BOTANICA NATURAL'), id from subcategorias where slug = 'agroindustria-sostenible';
+delete from negocios_actividades where negocio_id = (select id from negocios where nombre = 'ANA BOTANICA NATURAL');
+insert into negocios_actividades (negocio_id, actividad_productiva_id) select (select id from negocios where nombre = 'ANA BOTANICA NATURAL'), id from actividades_productivas where slug = 'agroindustrial-no-alimentario';
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'ANA BOTANICA NATURAL'), 2022, 42.4 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'ANA BOTANICA NATURAL'), 2023, 46.53 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'ANA BOTANICA NATURAL'), 2024, 74.6 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'ANA BOTANICA NATURAL'), 2025, 70.2 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
 
--- BETTAS MAS ARTE
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('af8a080d-10e1-4024-8742-c4799817733d', 'BETTAS MAS ARTE', generar_slug_unico('BETTAS MAS ARTE', 'af8a080d-10e1-4024-8742-c4799817733d'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Floridablanca', (select id from veredas where municipio = 'Floridablanca' and slug = 'perimetro-urbano'), 'CALLE 29 # 12 -54 BARRIO LAGOS I', 7.072125, -73.10527777777777, 'Diseño y Creación de Acuarios Naturales o plantados con una variedad de plantas acuáticas naturales, que aporten un ecosistema saludable para peces y otros…', 'Diseño y Creación de Acuarios Naturales o plantados con una variedad de plantas acuáticas naturales, que aporten un ecosistema saludable para peces y otros organismos acuáticos, incluye un diseño personalizado, la preparación del sustrato adecuado, el uso de equipos de filtración y la iluminación necesaria para el crecimiento de las plantas, además asesoría para clientes interesados en personalizar sus acuarios con plantas naturales y diferentes especies de peces. Esto puede incluir la selección de plantas, consejos sobre el tipo de sustrato, luz y parámetros de agua adecuados. Producción y Venta de Alimento Vivo.', 'ACUARIOS PLANTADOS (NATURALES)', '3005528452', '573005528452', 'bettasmasarte@gmail.com', 'JORGE ALFREDO GÓMEZ BUITRAGO', '91293384-0', 'Natural', null, 'Cámara de comercio', 'LILIANA CACERES', 'ACTIVO', 'Satisfactorio', 2024, '855.2 msnm', '73°6''19,00"', '7°4''19,65"', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, null, 'Acueducto', null, null, null, 'No', 'No', null, 'Sí', null, null, null, null, null, null, null, null, null, null, 'No', 'Mixta', 'No', 'NO', 'Promueve ecosistemas acuáticos saludables.', 'Educa a clientes en cuidado ambiental y biodiversidad.', 'Nicho de mercado creciente', false, false, true, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('af8a080d-10e1-4024-8742-c4799817733d', (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select 'af8a080d-10e1-4024-8742-c4799817733d', id from subcategorias where slug = 'biocomercio';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select 'af8a080d-10e1-4024-8742-c4799817733d', id from actividades_productivas where slug = 'productos-fauna-silvestre';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('af8a080d-10e1-4024-8742-c4799817733d', 2024, 51.8) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('af8a080d-10e1-4024-8742-c4799817733d', 2025, 55.1) on conflict (negocio_id, anio) do nothing;
+-- CONTROL Y CONTROLES INDUSTRIALES LIMITADA (3MESES)
+update negocios set
+  categoria_oficial_id = (select id from categorias_oficiales where slug = 'ecoproductos-industriales'),
+  municipio = 'Bucaramanga',
+  vereda_id = (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'),
+  direccion = 'CALLE 42 #27-63  A OFF 1003',
+  latitud = 7.119166666666667,
+  longitud = -73.115,
+  descripcion_corta = 'Desarrollar tecnología que por medio de la pirolisis,transforma los residuos  a materiales aprovechables biocumbustibles,biocarbón y gas natural.',
+  descripcion = 'Desarrollar tecnología que por medio de la pirolisis,transforma los residuos  a materiales aprovechables biocumbustibles,biocarbón y gas natural.',
+  producto = 'VENTA DE MAQUINARIA PARA LA VALORIZACIÓN DE RESIDUOS',
+  telefono = '3105515960',
+  whatsapp = '573105515960',
+  email = 'cciltda.javier@gmail.com',
+  representante_legal = 'JAVIER RICARDO MARTINEZ CASTILLO',
+  nit = '800150133-6',
+  naturaleza_juridica = 'Jurídica',
+  delegado = null,
+  rut_camara_comercio = 'Cámara de comercio y RUT',
+  responsable_cdmb = 'SEBASTIAN BONNET',
+  novedad = 'SUSPENDIDO',
+  tipo_negocio_verde = 'Satisfactorio',
+  anio_registro = 2022,
+  cota_msnm = '1018.2 msnm',
+  este = '73°6''54''''',
+  norte = '7°7''09''''',
+  aplicacion_ficha_2025 = 'No actualizó',
+  observaciones = 'No se realizo visita ni se actualizo ficha de verificacion',
+  registro_nacional_turismo = null,
+  uso_suelo = 'No',
+  concesion_aguas = 'Sí',
+  concesion_aguas_vencimiento = null,
+  vertimientos = null,
+  vertimientos_vencimiento = null,
+  pueaa = null,
+  pgris = 'Sí',
+  pozo_septico = null,
+  alcantarillado = null,
+  ica = null,
+  ica_vencimiento = null,
+  invima = null,
+  invima_vencimiento = null,
+  certificado_tenencia_animales = null,
+  buenas_practicas_agricolas = null,
+  buenas_practicas_apicolas = null,
+  registro_apicola = null,
+  intervencion_cauce = null,
+  capacidad_carga = null,
+  sstt = 'En implementación',
+  canal_venta = 'B2B',
+  exportacion = null,
+  huella_carbono = null,
+  fortalezas_ambiental = null,
+  fortalezas_social = null,
+  fortalezas_economico = null,
+  emprendimiento_verde = true,
+  sello_marca = false,
+  avalado = false,
+  destacado = false,
+  activo = false
+where nombre = 'CONTROL Y CONTROLES INDUSTRIALES LIMITADA (3MESES)';
+insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo)
+select '015e2ac0-a80e-48e5-96d1-b883676745ae', 'CONTROL Y CONTROLES INDUSTRIALES LIMITADA (3MESES)', generar_slug_unico('CONTROL Y CONTROLES INDUSTRIALES LIMITADA (3MESES)', '015e2ac0-a80e-48e5-96d1-b883676745ae'), (select id from categorias_oficiales where slug = 'ecoproductos-industriales'), 'Bucaramanga', (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'), 'CALLE 42 #27-63  A OFF 1003', 7.119166666666667, -73.115, 'Desarrollar tecnología que por medio de la pirolisis,transforma los residuos  a materiales aprovechables biocumbustibles,biocarbón y gas natural.', 'Desarrollar tecnología que por medio de la pirolisis,transforma los residuos  a materiales aprovechables biocumbustibles,biocarbón y gas natural.', 'VENTA DE MAQUINARIA PARA LA VALORIZACIÓN DE RESIDUOS', '3105515960', '573105515960', 'cciltda.javier@gmail.com', 'JAVIER RICARDO MARTINEZ CASTILLO', '800150133-6', 'Jurídica', null, 'Cámara de comercio y RUT', 'SEBASTIAN BONNET', 'SUSPENDIDO', 'Satisfactorio', 2022, '1018.2 msnm', '73°6''54''''', '7°7''09''''', 'No actualizó', 'No se realizo visita ni se actualizo ficha de verificacion', null, 'No', 'Sí', null, null, null, null, 'Sí', null, null, null, null, null, null, null, null, null, null, null, null, 'En implementación', 'B2B', null, null, null, null, null, true, false, false, false, false
+where not exists (select 1 from negocios where nombre = 'CONTROL Y CONTROLES INDUSTRIALES LIMITADA (3MESES)');
+delete from negocios_categorias where negocio_id = (select id from negocios where nombre = 'CONTROL Y CONTROLES INDUSTRIALES LIMITADA (3MESES)');
+insert into negocios_categorias (negocio_id, categoria_oficial_id) select (select id from negocios where nombre = 'CONTROL Y CONTROLES INDUSTRIALES LIMITADA (3MESES)'), (select id from categorias_oficiales where slug = 'ecoproductos-industriales');
+delete from negocios_subcategorias where negocio_id = (select id from negocios where nombre = 'CONTROL Y CONTROLES INDUSTRIALES LIMITADA (3MESES)');
+delete from negocios_actividades where negocio_id = (select id from negocios where nombre = 'CONTROL Y CONTROLES INDUSTRIALES LIMITADA (3MESES)');
+insert into negocios_actividades (negocio_id, actividad_productiva_id) select (select id from negocios where nombre = 'CONTROL Y CONTROLES INDUSTRIALES LIMITADA (3MESES)'), id from actividades_productivas where slug = 'aprovechamiento-residuos-organicos';
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'CONTROL Y CONTROLES INDUSTRIALES LIMITADA (3MESES)'), 2022, 51.66 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'CONTROL Y CONTROLES INDUSTRIALES LIMITADA (3MESES)'), 2023, 58.83 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'CONTROL Y CONTROLES INDUSTRIALES LIMITADA (3MESES)'), 2024, 0.668 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
 
--- TOPICO
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('1887b3ea-80e3-4c54-8c90-ec7a86bd375c', 'TOPICO', generar_slug_unico('TOPICO', '1887b3ea-80e3-4c54-8c90-ec7a86bd375c'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Bucaramanga', (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'), 'CRA 17 B1 # 57-70 BARRIO RICAUTE', 7.106574999999999, -73.11783888888888, 'Es la producción y distribución de productos fitoterapéuticos. Estos se obtienen de plantas medicinales, asociaciones de estas o extractos con fines…', 'Es la producción y distribución de productos fitoterapéuticos. Estos se obtienen de plantas medicinales, asociaciones de estas o extractos con fines terapéuticos.', 'KIT BIENESTAR PRODUCTOS FITOTERAPEUTICOS', '3163528683', '573163528683', 'topicobga@gmail.com', 'LAURA ANDREA ROJAS PALOMINO', '1098192540-0', 'Natural', null, 'Cámara de comercio y RUT', 'DIEGO GUTIERREZ', 'RETIRADO', null, 2024, '839 msnm', '73°7''4,22"', '7°6''23,67"', 'No actualizó', 'No realizo visita ni se aplico ficha de verificacion', null, 'No', null, null, null, null, 'No', 'No', 'No', 'Sí', null, null, 'No', null, null, null, null, null, null, null, 'No', 'B2C', null, null, 'Reducción de impactos químicos (medicamentos sintéticos)', 'Rescate de saberes ancestrales. Otras alternativas de bienestar (salud comunitaria)', 'Acceso a un mercado en crecimiento (productos naturales, Fitoterapéuticos). Alto valor agregado', true, false, false, false, false);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('1887b3ea-80e3-4c54-8c90-ec7a86bd375c', (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select '1887b3ea-80e3-4c54-8c90-ec7a86bd375c', id from subcategorias where slug = 'agroindustria-sostenible';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select '1887b3ea-80e3-4c54-8c90-ec7a86bd375c', id from actividades_productivas where slug = 'agroindustrial-no-alimentario';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('1887b3ea-80e3-4c54-8c90-ec7a86bd375c', 2024, 56.0) on conflict (negocio_id, anio) do nothing;
+-- MENORAH
+update negocios set
+  categoria_oficial_id = (select id from categorias_oficiales where slug = 'pendiente-clasificar'),
+  municipio = 'Piedecuesta',
+  vereda_id = null,
+  direccion = 'VEREDA BUENOS AIRES CASA 2 FINCA VERACRUZ RUITOQUE PIEDECUESTA',
+  latitud = 7.008333333333334,
+  longitud = -73.10555555555555,
+  descripcion_corta = null,
+  descripcion = null,
+  producto = 'LAMPARAS ARTESANALES',
+  telefono = '3002180895 - 3125040252',
+  whatsapp = '3002180895 - 3125040252',
+  email = 'adrianaba-84@hotmail.com',
+  representante_legal = 'BEATRIZ ADRIANA BARRETO ACEVEDO',
+  nit = '63550826-5',
+  naturaleza_juridica = null,
+  delegado = null,
+  rut_camara_comercio = null,
+  responsable_cdmb = 'XIMENA REYES',
+  novedad = 'INACTIVO',
+  tipo_negocio_verde = null,
+  anio_registro = 2022,
+  cota_msnm = '1257 msnm',
+  este = '73°06''20''''',
+  norte = '7°00''30''''',
+  aplicacion_ficha_2025 = null,
+  observaciones = 'Posible retiro',
+  registro_nacional_turismo = null,
+  uso_suelo = null,
+  concesion_aguas = null,
+  concesion_aguas_vencimiento = null,
+  vertimientos = null,
+  vertimientos_vencimiento = null,
+  pueaa = null,
+  pgris = null,
+  pozo_septico = null,
+  alcantarillado = null,
+  ica = null,
+  ica_vencimiento = null,
+  invima = null,
+  invima_vencimiento = null,
+  certificado_tenencia_animales = null,
+  buenas_practicas_agricolas = null,
+  buenas_practicas_apicolas = null,
+  registro_apicola = null,
+  intervencion_cauce = null,
+  capacidad_carga = null,
+  sstt = null,
+  canal_venta = null,
+  exportacion = null,
+  huella_carbono = null,
+  fortalezas_ambiental = null,
+  fortalezas_social = null,
+  fortalezas_economico = null,
+  emprendimiento_verde = true,
+  sello_marca = false,
+  avalado = false,
+  destacado = false,
+  activo = false
+where nombre = 'MENORAH';
+insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo)
+select '75d4e350-cec7-4140-bc4b-a306ed6a5a86', 'MENORAH', generar_slug_unico('MENORAH', '75d4e350-cec7-4140-bc4b-a306ed6a5a86'), (select id from categorias_oficiales where slug = 'pendiente-clasificar'), 'Piedecuesta', null, 'VEREDA BUENOS AIRES CASA 2 FINCA VERACRUZ RUITOQUE PIEDECUESTA', 7.008333333333334, -73.10555555555555, null, null, 'LAMPARAS ARTESANALES', '3002180895 - 3125040252', '3002180895 - 3125040252', 'adrianaba-84@hotmail.com', 'BEATRIZ ADRIANA BARRETO ACEVEDO', '63550826-5', null, null, null, 'XIMENA REYES', 'INACTIVO', null, 2022, '1257 msnm', '73°06''20''''', '7°00''30''''', null, 'Posible retiro', null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, false, false, false, false
+where not exists (select 1 from negocios where nombre = 'MENORAH');
+delete from negocios_categorias where negocio_id = (select id from negocios where nombre = 'MENORAH');
+insert into negocios_categorias (negocio_id, categoria_oficial_id) select (select id from negocios where nombre = 'MENORAH'), (select id from categorias_oficiales where slug = 'pendiente-clasificar');
+delete from negocios_subcategorias where negocio_id = (select id from negocios where nombre = 'MENORAH');
+delete from negocios_actividades where negocio_id = (select id from negocios where nombre = 'MENORAH');
 
--- ORQUÍDEAS Y PLANTAS ORNAMENTALES MANANTIAL
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('b5c3c3e7-479f-438e-a788-075271f59579', 'ORQUÍDEAS Y PLANTAS ORNAMENTALES MANANTIAL', generar_slug_unico('ORQUÍDEAS Y PLANTAS ORNAMENTALES MANANTIAL', 'b5c3c3e7-479f-438e-a788-075271f59579'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Lebrija', (select id from veredas where municipio = 'Lebrija' and slug = 'san-nicolas-alto'), 'VEREDA SAN NICOLAS ALTO - FINCA EL MANANTIAL', 7.142326111111111, -73.24567611111111, 'Se compran las especies y con las matas madres se realiza el proceso de reproducciòn por hijos, reproducciòn de orquideas y plantas ornamentales', 'Se compran las especies y con las matas madres se realiza el proceso de reproducciòn por hijos, reproducciòn de orquideas y plantas ornamentales', 'PRODUCCIÒN Y VENTA DE ORQUIDEAS Y PLANTAS ORNAMENTALES', '3157542994', '573157542994', 'jeannethem07@gmail.com', 'JEANNETHE MENJURA CALLEJAS', '37626191-0', 'Natural', null, 'Cámara de comercio', 'HEINER ORTIZ', 'ACTIVO', 'Intermedio', 2021, '1.0600 msnm', '73°14''44.434"', '7°8''32.374"', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, 'No', 'Sí', null, 'No', null, 'No', 'No', 'No', null, 'No', null, null, null, null, 'No', null, null, null, null, 'No', 'B2B', 'No', 'NO', 'Realizan  reproducción de material vegetal     para la educación de poder cuidar   y mantener el ecosistema con productos orgánicos y mantenimientos naturales. Utilizan insumos naturales , la madera se recicla  , realizan reforestación con la CDMB , en la misma producción de material se utiliza para otros cultivos.', 'Hacen parte de la asociación "Hecho en Lebrija", se da a conocer como mujer rural  y enseña a  mas mujeres  dar su impacto positivo, comparte su producto y proceso productivo', 'Participación en los eventos , ferias locales', true, false, false, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('b5c3c3e7-479f-438e-a788-075271f59579', (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select 'b5c3c3e7-479f-438e-a788-075271f59579', id from subcategorias where slug = 'biocomercio';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select 'b5c3c3e7-479f-438e-a788-075271f59579', id from actividades_productivas where slug = 'productos-fauna-silvestre';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('b5c3c3e7-479f-438e-a788-075271f59579', 2024, 38.6) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('b5c3c3e7-479f-438e-a788-075271f59579', 2025, 41.1) on conflict (negocio_id, anio) do nothing;
+-- MANPOPLAST S.A.S.
+update negocios set
+  categoria_oficial_id = (select id from categorias_oficiales where slug = 'ecoproductos-industriales'),
+  municipio = 'Bucaramanga',
+  vereda_id = (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'),
+  direccion = 'CARRERA 17# 5-25 BARRIO COMUNEROS',
+  latitud = 7.140000000000001,
+  longitud = -73.13027777777778,
+  descripcion_corta = 'Fabricación de manguera agrícola, postes y/o madera plástica a base del plástico reciclado  con el fin de contribuir con el medio ambiente.',
+  descripcion = 'Fabricación de manguera agrícola, postes y/o madera plástica a base del plástico reciclado  con el fin de contribuir con el medio ambiente.',
+  producto = 'MANGUERA Y POSTES PLASTICOS',
+  telefono = '3173983166 - 3214208331',
+  whatsapp = '3173983166 - 3214208331',
+  email = 'manpoplast@hotmail.com',
+  representante_legal = 'SILVESTRE ROJAS BARRERA',
+  nit = '901301557-0',
+  naturaleza_juridica = 'Jurídica',
+  delegado = 'EDINSON ROJAS - INGRID ROJAS',
+  rut_camara_comercio = 'Cámara de comercio',
+  responsable_cdmb = 'CLAUDIA SANCHEZ',
+  novedad = 'ACTIVO',
+  tipo_negocio_verde = 'Dinamizadoras',
+  anio_registro = 2022,
+  cota_msnm = '945.3 msnm',
+  este = '73°7''49''''',
+  norte = '7°8''24''''',
+  aplicacion_ficha_2025 = 'Actualizó',
+  observaciones = 'Se realizo visita y se actualizo ficha de verificacion',
+  registro_nacional_turismo = null,
+  uso_suelo = null,
+  concesion_aguas = 'Acueducto',
+  concesion_aguas_vencimiento = null,
+  vertimientos = null,
+  vertimientos_vencimiento = null,
+  pueaa = 'No',
+  pgris = 'No',
+  pozo_septico = null,
+  alcantarillado = 'Sí',
+  ica = null,
+  ica_vencimiento = null,
+  invima = null,
+  invima_vencimiento = null,
+  certificado_tenencia_animales = null,
+  buenas_practicas_agricolas = null,
+  buenas_practicas_apicolas = null,
+  registro_apicola = null,
+  intervencion_cauce = null,
+  capacidad_carga = null,
+  sstt = 'No',
+  canal_venta = 'B2C',
+  exportacion = 'No',
+  huella_carbono = 'NO',
+  fortalezas_ambiental = 'Desarrollo de actividades para reducir, reciclar y reutilizar el plástico que desechan. -Con cada 2 toneladas evitamos la tala de 1 árbol de mas de 20 años de crecimiento. -Economía circular mediante el reciclaje. -concientización al cuidado del medio ambiente',
+  fortalezas_social = 'Personal motivado. -Talleres educativos con niños de colegios. -Oportunidad de crecimiento personal y laboral. -Nos capacitamos para cada proceso. -Personificación del producto final',
+  fortalezas_economico = 'Modelo de negocio en crecimiento. -Empresa legalmente registrada. -Facturador electrónico. -Garantía de la mejor calidad del mercado',
+  emprendimiento_verde = false,
+  sello_marca = false,
+  avalado = true,
+  destacado = false,
+  activo = true
+where nombre = 'MANPOPLAST S.A.S.';
+insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo)
+select 'ff6567ab-c4d1-4a9d-91e2-4c72b2407ae0', 'MANPOPLAST S.A.S.', generar_slug_unico('MANPOPLAST S.A.S.', 'ff6567ab-c4d1-4a9d-91e2-4c72b2407ae0'), (select id from categorias_oficiales where slug = 'ecoproductos-industriales'), 'Bucaramanga', (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'), 'CARRERA 17# 5-25 BARRIO COMUNEROS', 7.140000000000001, -73.13027777777778, 'Fabricación de manguera agrícola, postes y/o madera plástica a base del plástico reciclado  con el fin de contribuir con el medio ambiente.', 'Fabricación de manguera agrícola, postes y/o madera plástica a base del plástico reciclado  con el fin de contribuir con el medio ambiente.', 'MANGUERA Y POSTES PLASTICOS', '3173983166 - 3214208331', '3173983166 - 3214208331', 'manpoplast@hotmail.com', 'SILVESTRE ROJAS BARRERA', '901301557-0', 'Jurídica', 'EDINSON ROJAS - INGRID ROJAS', 'Cámara de comercio', 'CLAUDIA SANCHEZ', 'ACTIVO', 'Dinamizadoras', 2022, '945.3 msnm', '73°7''49''''', '7°8''24''''', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, null, 'Acueducto', null, null, null, 'No', 'No', null, 'Sí', null, null, null, null, null, null, null, null, null, null, 'No', 'B2C', 'No', 'NO', 'Desarrollo de actividades para reducir, reciclar y reutilizar el plástico que desechan. -Con cada 2 toneladas evitamos la tala de 1 árbol de mas de 20 años de crecimiento. -Economía circular mediante el reciclaje. -concientización al cuidado del medio ambiente', 'Personal motivado. -Talleres educativos con niños de colegios. -Oportunidad de crecimiento personal y laboral. -Nos capacitamos para cada proceso. -Personificación del producto final', 'Modelo de negocio en crecimiento. -Empresa legalmente registrada. -Facturador electrónico. -Garantía de la mejor calidad del mercado', false, false, true, false, true
+where not exists (select 1 from negocios where nombre = 'MANPOPLAST S.A.S.');
+delete from negocios_categorias where negocio_id = (select id from negocios where nombre = 'MANPOPLAST S.A.S.');
+insert into negocios_categorias (negocio_id, categoria_oficial_id) select (select id from negocios where nombre = 'MANPOPLAST S.A.S.'), (select id from categorias_oficiales where slug = 'ecoproductos-industriales');
+delete from negocios_subcategorias where negocio_id = (select id from negocios where nombre = 'MANPOPLAST S.A.S.');
+delete from negocios_actividades where negocio_id = (select id from negocios where nombre = 'MANPOPLAST S.A.S.');
+insert into negocios_actividades (negocio_id, actividad_productiva_id) select (select id from negocios where nombre = 'MANPOPLAST S.A.S.'), id from actividades_productivas where slug = 'aprovechamiento-residuos-inorganicos';
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'MANPOPLAST S.A.S.'), 2022, 54.47 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'MANPOPLAST S.A.S.'), 2023, 56.22 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'MANPOPLAST S.A.S.'), 2024, 62.4 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'MANPOPLAST S.A.S.'), 2025, 68.5 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
 
--- EL VELERO
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('fd7697fa-0417-46eb-8e7c-8a14f76a974c', 'EL VELERO', generar_slug_unico('EL VELERO', 'fd7697fa-0417-46eb-8e7c-8a14f76a974c'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Lebrija', (select id from veredas where municipio = 'Lebrija' and slug = 'perimetro-urbano'), 'CALLE 105 #17-176 TORRE 2 APTO 2008 - CONDOMINIO CLUB PROVENZA', null, null, 'Iniciativa de negocio verde, donde se busca brindar al visitante una experiencia de naturaleza con la flora silvestre y bosque natural', 'Iniciativa de negocio verde, donde se busca brindar al visitante una experiencia de naturaleza con la flora silvestre y bosque natural', 'PARADOR TURISTICO', '3133717151', '573133717151', null, 'NESTOR JACINTO LEON', '91040650-1', 'Natural', null, null, 'DIEGO GUTIERREZ', 'RETIRADO', null, 2023, '73°18''19,4"', null, null, 'No actualizó', 'No se realizo visita ni se aplico ficha de verificacion', 'No', null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 'B2B', null, null, 'Espacio dedicado a la conservación de fauna y flora para turismo sostenible. Recolección de aguas lluvias y actividades de reciclaje en el parador. Implementación de paneles solares para energías más limpias.', 'Ofrecer salarios justos atrae y retiene talento local. Priorizar la contratación local fortalece la comunidad y reduce costos. Un ambiente laboral seguro mejora la productividad y el bienestar del personal. Las oportunidades de formación aumentan las habilidades y la motivación del equipo. Los espacios de esparcimiento fomentan la creatividad y el trabajo en equipo.', 'Agilidad para ajustar gastos y optimizar operaciones en fase inicial.', true, false, false, false, false);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('fd7697fa-0417-46eb-8e7c-8a14f76a974c', (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select 'fd7697fa-0417-46eb-8e7c-8a14f76a974c', id from subcategorias where slug = 'turismo-sostenible';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select 'fd7697fa-0417-46eb-8e7c-8a14f76a974c', id from actividades_productivas where slug = 'otros-servicios-turismo-sostenible';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('fd7697fa-0417-46eb-8e7c-8a14f76a974c', 2024, 27.7) on conflict (negocio_id, anio) do nothing;
+-- FRUITS EXPORT
+update negocios set
+  categoria_oficial_id = (select id from categorias_oficiales where slug = 'pendiente-clasificar'),
+  municipio = 'Bucaramanga',
+  vereda_id = null,
+  direccion = 'CALLE 33 # 25-85 BARRIO ANTONIA SANTOS',
+  latitud = null,
+  longitud = null,
+  descripcion_corta = null,
+  descripcion = null,
+  producto = 'FRUTAS',
+  telefono = '3245112271',
+  whatsapp = '573245112271',
+  email = null,
+  representante_legal = 'JORGE HUMBERTO CRUZ',
+  nit = '1102372697',
+  naturaleza_juridica = null,
+  delegado = null,
+  rut_camara_comercio = null,
+  responsable_cdmb = null,
+  novedad = 'RETIRADO',
+  tipo_negocio_verde = 'No aplica',
+  anio_registro = 2022,
+  cota_msnm = null,
+  este = null,
+  norte = null,
+  aplicacion_ficha_2025 = null,
+  observaciones = 'No cumplimiento de requisitos',
+  registro_nacional_turismo = null,
+  uso_suelo = null,
+  concesion_aguas = null,
+  concesion_aguas_vencimiento = null,
+  vertimientos = null,
+  vertimientos_vencimiento = null,
+  pueaa = null,
+  pgris = null,
+  pozo_septico = null,
+  alcantarillado = null,
+  ica = null,
+  ica_vencimiento = null,
+  invima = null,
+  invima_vencimiento = null,
+  certificado_tenencia_animales = null,
+  buenas_practicas_agricolas = null,
+  buenas_practicas_apicolas = null,
+  registro_apicola = null,
+  intervencion_cauce = null,
+  capacidad_carga = null,
+  sstt = null,
+  canal_venta = null,
+  exportacion = null,
+  huella_carbono = null,
+  fortalezas_ambiental = null,
+  fortalezas_social = null,
+  fortalezas_economico = null,
+  emprendimiento_verde = true,
+  sello_marca = false,
+  avalado = false,
+  destacado = false,
+  activo = false
+where nombre = 'FRUITS EXPORT';
+insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo)
+select '9ad3aa9d-5862-4643-8367-eb56ce180778', 'FRUITS EXPORT', generar_slug_unico('FRUITS EXPORT', '9ad3aa9d-5862-4643-8367-eb56ce180778'), (select id from categorias_oficiales where slug = 'pendiente-clasificar'), 'Bucaramanga', null, 'CALLE 33 # 25-85 BARRIO ANTONIA SANTOS', null, null, null, null, 'FRUTAS', '3245112271', '573245112271', null, 'JORGE HUMBERTO CRUZ', '1102372697', null, null, null, null, 'RETIRADO', 'No aplica', 2022, null, null, null, null, 'No cumplimiento de requisitos', null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, false, false, false, false
+where not exists (select 1 from negocios where nombre = 'FRUITS EXPORT');
+delete from negocios_categorias where negocio_id = (select id from negocios where nombre = 'FRUITS EXPORT');
+insert into negocios_categorias (negocio_id, categoria_oficial_id) select (select id from negocios where nombre = 'FRUITS EXPORT'), (select id from categorias_oficiales where slug = 'pendiente-clasificar');
+delete from negocios_subcategorias where negocio_id = (select id from negocios where nombre = 'FRUITS EXPORT');
+delete from negocios_actividades where negocio_id = (select id from negocios where nombre = 'FRUITS EXPORT');
 
--- LIMPIEZA URBANA S.A.S ESP
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('0c6d0104-72b8-43c9-949b-53053e1b2c80', 'LIMPIEZA URBANA S.A.S ESP', generar_slug_unico('LIMPIEZA URBANA S.A.S ESP', '0c6d0104-72b8-43c9-949b-53053e1b2c80'), (select id from categorias_oficiales where slug = 'ecoproductos-industriales'), 'Bucaramanga', (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'), 'CARRERA 19 # 34 -64', 6.974987777777778, -73.09429666666666, 'Recoleccion y transformación de residuos de poda y tala derivados de las actividades clus de la empresa generando un acondicionador de suelos', 'Recoleccion y transformación de residuos de poda y tala derivados de las actividades clus de la empresa generando un acondicionador de suelos', 'PODA DE ÁRBOLES - ACTIVIDADES DE LIMPIEZA URBANA', '3045904380 - 3112485155', '3045904380 - 3112485155', 'gerencia@limpiezaurbana.com.co', 'SHADIA GOMEZ HERNANDEZ', '900028989-5', 'Jurídica', 'ANDREA JULIANA MORENO - CRISTIAN SALGUERO', 'Cámara de comercio', 'SILVIA VALDIVIESO', 'ACTIVO', 'Dinamizadoras', 2024, '879.1 msnm', '73°5''39.468"', '6°58''29.956"', 'Actualizó', 'Se realizo visita y se aplico ficha de verificacion', null, 'Sí', 'Acueducto', null, null, null, 'No', 'Sí', null, 'Sí', 'Sí', null, null, null, null, null, null, null, null, null, 'Sí', 'Mixta', 'No', 'NO', 'TRANFORMACION DE RESIDUOS VERDES A BASE DE LAS ACTIVIDADES CLUS DE LA EMPRESA LIMPIEZA URBANA SAS ESP DERIVADO DEL COMPORTAMIENTO DE TRASNFORMACION', 'La forma de contratar su personal con un enfoque diferencial', 'La empresa cuenta con un componente económico alto , sus ingresos son estables y generan una estabilidad comercial', false, false, true, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('0c6d0104-72b8-43c9-949b-53053e1b2c80', (select id from categorias_oficiales where slug = 'ecoproductos-industriales'));
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select '0c6d0104-72b8-43c9-949b-53053e1b2c80', id from actividades_productivas where slug = 'aprovechamiento-residuos-organicos';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('0c6d0104-72b8-43c9-949b-53053e1b2c80', 2024, 88.4) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('0c6d0104-72b8-43c9-949b-53053e1b2c80', 2025, 76.3) on conflict (negocio_id, anio) do nothing;
+-- FINCA LAS DAMAS
+update negocios set
+  categoria_oficial_id = (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'),
+  municipio = 'Bucaramanga',
+  vereda_id = (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'),
+  direccion = 'CARRERA 3 MANZANA CCASA 30',
+  latitud = 7.098333333333333,
+  longitud = -73.12488888888888,
+  descripcion_corta = 'La elaboración de bebidas alcohólicas fermentadas pero no destiladas',
+  descripcion = 'La elaboración de bebidas alcohólicas fermentadas pero no destiladas',
+  producto = 'VINO DE COROZO SEMIDULCE',
+  telefono = '3164644896',
+  whatsapp = '573164644896',
+  email = 'carlosjuliobaena@gmail.com',
+  representante_legal = 'CARLOS JULIO BAENA FLOREZ',
+  nit = '1124040427-3',
+  naturaleza_juridica = 'Natural',
+  delegado = null,
+  rut_camara_comercio = 'Cámara de comercio y RUT',
+  responsable_cdmb = 'SUJEY DÍAZ',
+  novedad = 'RETIRADO',
+  tipo_negocio_verde = 'Satisfactorio',
+  anio_registro = 2022,
+  cota_msnm = '3.023 msnm',
+  este = '73°7''29,6''''',
+  norte = '7°5''54''''',
+  aplicacion_ficha_2025 = 'Actualizó',
+  observaciones = 'Se realizo visita y se actualizo ficha de verificacion',
+  registro_nacional_turismo = null,
+  uso_suelo = 'No',
+  concesion_aguas = 'No',
+  concesion_aguas_vencimiento = null,
+  vertimientos = null,
+  vertimientos_vencimiento = null,
+  pueaa = 'No',
+  pgris = 'No',
+  pozo_septico = null,
+  alcantarillado = 'Sí',
+  ica = null,
+  ica_vencimiento = null,
+  invima = 'No',
+  invima_vencimiento = null,
+  certificado_tenencia_animales = null,
+  buenas_practicas_agricolas = null,
+  buenas_practicas_apicolas = null,
+  registro_apicola = null,
+  intervencion_cauce = null,
+  capacidad_carga = null,
+  sstt = 'No',
+  canal_venta = 'B2B',
+  exportacion = null,
+  huella_carbono = null,
+  fortalezas_ambiental = 'La conservación de la palma de corozo costeño contribuye al mantenimiento del habitat para las especies , la provición de alimentos y la polinización . La elaboración del vino es de forma artesanal  sin el uso de equipos ni conservantes , su producción es en Guamal Magdalena',
+  fortalezas_social = 'Realizan jornadas academicas en universidades  y eventos empresariales, se ha dado a conocer por medios masivos como Vanguardia dandose a conocer en la gastronomia local .',
+  fortalezas_economico = 'Buenos ingresos ante las ventas del vino de corozo y de la coctelería en eventos',
+  emprendimiento_verde = true,
+  sello_marca = false,
+  avalado = false,
+  destacado = false,
+  activo = false
+where nombre = 'FINCA LAS DAMAS';
+insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo)
+select 'f59f742d-98df-4ab5-a477-347bf6777fae', 'FINCA LAS DAMAS', generar_slug_unico('FINCA LAS DAMAS', 'f59f742d-98df-4ab5-a477-347bf6777fae'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Bucaramanga', (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'), 'CARRERA 3 MANZANA CCASA 30', 7.098333333333333, -73.12488888888888, 'La elaboración de bebidas alcohólicas fermentadas pero no destiladas', 'La elaboración de bebidas alcohólicas fermentadas pero no destiladas', 'VINO DE COROZO SEMIDULCE', '3164644896', '573164644896', 'carlosjuliobaena@gmail.com', 'CARLOS JULIO BAENA FLOREZ', '1124040427-3', 'Natural', null, 'Cámara de comercio y RUT', 'SUJEY DÍAZ', 'RETIRADO', 'Satisfactorio', 2022, '3.023 msnm', '73°7''29,6''''', '7°5''54''''', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, 'No', 'No', null, null, null, 'No', 'No', null, 'Sí', null, null, 'No', null, null, null, null, null, null, null, 'No', 'B2B', null, null, 'La conservación de la palma de corozo costeño contribuye al mantenimiento del habitat para las especies , la provición de alimentos y la polinización . La elaboración del vino es de forma artesanal  sin el uso de equipos ni conservantes , su producción es en Guamal Magdalena', 'Realizan jornadas academicas en universidades  y eventos empresariales, se ha dado a conocer por medios masivos como Vanguardia dandose a conocer en la gastronomia local .', 'Buenos ingresos ante las ventas del vino de corozo y de la coctelería en eventos', true, false, false, false, false
+where not exists (select 1 from negocios where nombre = 'FINCA LAS DAMAS');
+delete from negocios_categorias where negocio_id = (select id from negocios where nombre = 'FINCA LAS DAMAS');
+insert into negocios_categorias (negocio_id, categoria_oficial_id) select (select id from negocios where nombre = 'FINCA LAS DAMAS'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles');
+delete from negocios_subcategorias where negocio_id = (select id from negocios where nombre = 'FINCA LAS DAMAS');
+insert into negocios_subcategorias (negocio_id, subcategoria_id) select (select id from negocios where nombre = 'FINCA LAS DAMAS'), id from subcategorias where slug = 'agroindustria-sostenible';
+delete from negocios_actividades where negocio_id = (select id from negocios where nombre = 'FINCA LAS DAMAS');
+insert into negocios_actividades (negocio_id, actividad_productiva_id) select (select id from negocios where nombre = 'FINCA LAS DAMAS'), id from actividades_productivas where slug = 'agroindustrial-alimentario';
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'FINCA LAS DAMAS'), 2023, 53.58 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'FINCA LAS DAMAS'), 2024, 47.3 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'FINCA LAS DAMAS'), 2025, 60.5 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
 
--- LEBRIJENSE
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('cd3b73b6-0824-4198-b5fe-46d0263a3525', 'LEBRIJENSE', generar_slug_unico('LEBRIJENSE', 'cd3b73b6-0824-4198-b5fe-46d0263a3525'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Lebrija', (select id from veredas where municipio = 'Lebrija' and slug = 'perimetro-urbano'), 'CARRERA 7 #10-05', 7.112777777777778, -73.21666666666667, 'Transformación de la piña para la producción de licor de piña', 'Transformación de la piña para la producción de licor de piña', 'LICOR DE PIÑA', '3123124350', '573123124350', 'claudialrm23@gmail.com', 'HARID STIWEN JACOME ABUCHAIBE', '1006555021', 'Natural', 'CLAUDIA LORENA RUEDA', 'RUT', 'SUJEY DÍAZ', 'ACTIVO', 'Satisfactorio', 2024, '1015.9', '73°13''0"', '7°6''46"', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, null, 'Acueducto', null, null, null, 'No', 'No', null, 'Sí', null, null, 'No', null, null, null, null, null, null, null, 'No', 'B2C', 'No', 'NO', 'El proceso de fermentación es tradicional ,  hacen uso eficiente del agua, las botellas de vidrio que utilizan son reutilizables.', 'Apoyo institucional a proyectos con impacto social y ambiental.', 'Identidad territorial producto hecho 100% en la región, turismo regional como canal de promoción y venta del producto.', true, false, false, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('cd3b73b6-0824-4198-b5fe-46d0263a3525', (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select 'cd3b73b6-0824-4198-b5fe-46d0263a3525', id from subcategorias where slug = 'agroindustria-sostenible';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select 'cd3b73b6-0824-4198-b5fe-46d0263a3525', id from actividades_productivas where slug = 'agroindustrial-alimentario';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('cd3b73b6-0824-4198-b5fe-46d0263a3525', 2024, 46.4) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('cd3b73b6-0824-4198-b5fe-46d0263a3525', 2025, 52.6) on conflict (negocio_id, anio) do nothing;
+-- CAMPO JARDIN
+update negocios set
+  categoria_oficial_id = (select id from categorias_oficiales where slug = 'ecoproductos-industriales'),
+  municipio = 'Piedecuesta',
+  vereda_id = (select id from veredas where municipio = 'Piedecuesta' and slug = 'caneyes'),
+  direccion = 'VEREDA CANEYES, FINCA LA PRIMAVERA',
+  latitud = 6.946388888888889,
+  longitud = -73.025,
+  descripcion_corta = 'Nace a raiz de un proceso llamado economia campesina, impartido por la corporacion compromiso del municipio de Bucaramanga, en donde se recibio capacitacion…',
+  descripcion = 'Nace a raiz de un proceso llamado economia campesina, impartido por la corporacion compromiso del municipio de Bucaramanga, en donde se recibio capacitacion en produccion limpia y seguridad alimentaria. De esta forma, se pudo identificar una forma de generar ingresos, mediante el aprovechamiento de materias primas compostadas y minerales para sacar al mercado un producto de calidad y que aporte a la recuperacion del suelo y a la descontaminacion ambiental, a traves de la transformacion de residuos organicos.',
+  producto = 'ABONOS ORGÁNICOS PARA JARDINERIA',
+  telefono = '3023363730 - 3212701633',
+  whatsapp = '3023363730 - 3212701633',
+  email = 'campojardinbga1@gmail.com',
+  representante_legal = 'ABELARDO ROMERO',
+  nit = '91353617-1',
+  naturaleza_juridica = 'Natural',
+  delegado = 'LUZ DARY',
+  rut_camara_comercio = 'Cámara de comercio',
+  responsable_cdmb = 'SILVIA VALDIVIESO',
+  novedad = 'ACTIVO',
+  tipo_negocio_verde = 'Intermedio',
+  anio_registro = 2022,
+  cota_msnm = '1.049 msnm',
+  este = '73°01''30''''',
+  norte = '6°56''47''''',
+  aplicacion_ficha_2025 = 'Actualizó',
+  observaciones = 'Se realizo visita y se actualizo ficha de verificacion',
+  registro_nacional_turismo = null,
+  uso_suelo = 'No',
+  concesion_aguas = 'Acueducto',
+  concesion_aguas_vencimiento = null,
+  vertimientos = null,
+  vertimientos_vencimiento = null,
+  pueaa = 'No',
+  pgris = 'No',
+  pozo_septico = null,
+  alcantarillado = 'Sí',
+  ica = 'Sí',
+  ica_vencimiento = null,
+  invima = null,
+  invima_vencimiento = null,
+  certificado_tenencia_animales = null,
+  buenas_practicas_agricolas = null,
+  buenas_practicas_apicolas = null,
+  registro_apicola = null,
+  intervencion_cauce = null,
+  capacidad_carga = null,
+  sstt = 'No',
+  canal_venta = 'Mixta',
+  exportacion = 'No',
+  huella_carbono = 'NO',
+  fortalezas_ambiental = 'Se implementan acciones para combatir el cambio climático y sus impactos. No se utilizan materiales peligros ni tóxicos en el proceso. No hace uso del recurso agua, ni genera vertimientos en su proceso de producción.',
+  fortalezas_social = 'Generación de empleo con enfoque diferencial y realiza campañas donde promueve el consumo consciente y economía circular.',
+  fortalezas_economico = 'El negocio define algunas estrategias haciendo uso de su impacto social y ambiental para generar diferenciación, beneficios, sostenibilidad y crecimiento.',
+  emprendimiento_verde = true,
+  sello_marca = false,
+  avalado = false,
+  destacado = false,
+  activo = true
+where nombre = 'CAMPO JARDIN';
+insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo)
+select '8552e0b5-8cfb-4784-b134-f14a3f186bdb', 'CAMPO JARDIN', generar_slug_unico('CAMPO JARDIN', '8552e0b5-8cfb-4784-b134-f14a3f186bdb'), (select id from categorias_oficiales where slug = 'ecoproductos-industriales'), 'Piedecuesta', (select id from veredas where municipio = 'Piedecuesta' and slug = 'caneyes'), 'VEREDA CANEYES, FINCA LA PRIMAVERA', 6.946388888888889, -73.025, 'Nace a raiz de un proceso llamado economia campesina, impartido por la corporacion compromiso del municipio de Bucaramanga, en donde se recibio capacitacion…', 'Nace a raiz de un proceso llamado economia campesina, impartido por la corporacion compromiso del municipio de Bucaramanga, en donde se recibio capacitacion en produccion limpia y seguridad alimentaria. De esta forma, se pudo identificar una forma de generar ingresos, mediante el aprovechamiento de materias primas compostadas y minerales para sacar al mercado un producto de calidad y que aporte a la recuperacion del suelo y a la descontaminacion ambiental, a traves de la transformacion de residuos organicos.', 'ABONOS ORGÁNICOS PARA JARDINERIA', '3023363730 - 3212701633', '3023363730 - 3212701633', 'campojardinbga1@gmail.com', 'ABELARDO ROMERO', '91353617-1', 'Natural', 'LUZ DARY', 'Cámara de comercio', 'SILVIA VALDIVIESO', 'ACTIVO', 'Intermedio', 2022, '1.049 msnm', '73°01''30''''', '6°56''47''''', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, 'No', 'Acueducto', null, null, null, 'No', 'No', null, 'Sí', 'Sí', null, null, null, null, null, null, null, null, null, 'No', 'Mixta', 'No', 'NO', 'Se implementan acciones para combatir el cambio climático y sus impactos. No se utilizan materiales peligros ni tóxicos en el proceso. No hace uso del recurso agua, ni genera vertimientos en su proceso de producción.', 'Generación de empleo con enfoque diferencial y realiza campañas donde promueve el consumo consciente y economía circular.', 'El negocio define algunas estrategias haciendo uso de su impacto social y ambiental para generar diferenciación, beneficios, sostenibilidad y crecimiento.', true, false, false, false, true
+where not exists (select 1 from negocios where nombre = 'CAMPO JARDIN');
+delete from negocios_categorias where negocio_id = (select id from negocios where nombre = 'CAMPO JARDIN');
+insert into negocios_categorias (negocio_id, categoria_oficial_id) select (select id from negocios where nombre = 'CAMPO JARDIN'), (select id from categorias_oficiales where slug = 'ecoproductos-industriales');
+delete from negocios_subcategorias where negocio_id = (select id from negocios where nombre = 'CAMPO JARDIN');
+delete from negocios_actividades where negocio_id = (select id from negocios where nombre = 'CAMPO JARDIN');
+insert into negocios_actividades (negocio_id, actividad_productiva_id) select (select id from negocios where nombre = 'CAMPO JARDIN'), id from actividades_productivas where slug = 'aprovechamiento-residuos-organicos';
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'CAMPO JARDIN'), 2023, 44.66 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'CAMPO JARDIN'), 2025, 47.0 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
 
--- SABER ANCESTRAL S.A.S
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('ae4e2d9a-3580-457b-b8ea-985e5e155a2c', 'SABER ANCESTRAL S.A.S', generar_slug_unico('SABER ANCESTRAL S.A.S', 'ae4e2d9a-3580-457b-b8ea-985e5e155a2c'), (select id from categorias_oficiales where slug = 'ecoproductos-industriales'), 'Rionegro', (select id from veredas where municipio = 'Rionegro' and slug = 'portachuelo'), 'KM 24 VÍA AL MAR PARCELA 26 PORTAL PARAISO NATURAL, VDA PUERTACHUELO', 7.3325, -73.16361111111112, 'Especializarse en tinturado natural, estampación botánica y serigrafía en textiles de fibra natural empleando plantas, semillas y minerales para lograr…', 'Especializarse en tinturado natural, estampación botánica y serigrafía en textiles de fibra natural empleando plantas, semillas y minerales para lograr creaciones que fusionen el arte con la naturaleza', 'PRENDAS ECÓLOGICAS', '3164425062', '573164425062', 'saberancestral2022@gmail.com', 'LAURA LILIANA QUINTERO MARIN', '901810309-4', 'Jurídica', null, 'Cámara de comercio', 'CARINE GARCIA', 'ACTIVO', 'Satisfactorio', 2024, '590 msnm', '73°9''49"', '7°19''57"', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, 'Sí', 'Acueducto veredal', null, null, null, 'No', 'No', 'Sí', null, null, null, null, null, null, null, null, null, null, null, 'No', 'Mixta', 'No', 'NO', 'Prendas y tintes biodegradables', 'Vinculación con escuelas y fundaciones', 'Buena oferta económica', false, false, true, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('ae4e2d9a-3580-457b-b8ea-985e5e155a2c', (select id from categorias_oficiales where slug = 'ecoproductos-industriales'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select 'ae4e2d9a-3580-457b-b8ea-985e5e155a2c', id from subcategorias where slug = 'moda-sostenible';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select 'ae4e2d9a-3580-457b-b8ea-985e5e155a2c', id from actividades_productivas where slug = 'textiles-sostenibles';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('ae4e2d9a-3580-457b-b8ea-985e5e155a2c', 2024, 69.7) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('ae4e2d9a-3580-457b-b8ea-985e5e155a2c', 2025, 69.3) on conflict (negocio_id, anio) do nothing;
+-- T4I SAS BIC
+update negocios set
+  categoria_oficial_id = (select id from categorias_oficiales where slug = 'calidad-ambiental'),
+  municipio = 'Bucaramanga',
+  vereda_id = (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'),
+  direccion = 'CARRERA 23 # 102- 37 PROVENZA',
+  latitud = 7.086607222222222,
+  longitud = -73.11356166666666,
+  descripcion_corta = 'El diseño y desarrollo de software o plataformas de ingenieria, asi como la compra, venta, distribucion o comercializacion de soluciones informaticas qu',
+  descripcion = 'El diseño y desarrollo de software o plataformas de ingenieria, asi como la compra, venta, distribucion o comercializacion de soluciones informaticas qu',
+  producto = 'DISEÑO Y DESARROLLO DE SOFTWARE Y/O PLATAFORMAS DE INGENIERIA CON ENFOQUE AMBIENTAL',
+  telefono = '3167425113',
+  whatsapp = '573167425113',
+  email = 'ggaravit@technology4i.com',
+  representante_legal = 'GERARDO ARMANDO GARAVITO FLOREZ',
+  nit = '800225066-4',
+  naturaleza_juridica = 'Jurídica',
+  delegado = 'JAZMIN RODRIGUEZ',
+  rut_camara_comercio = 'Cámara de comercio',
+  responsable_cdmb = 'SEBASTIAN BONNET',
+  novedad = 'ACTIVO',
+  tipo_negocio_verde = null,
+  anio_registro = 2022,
+  cota_msnm = '911 msnm',
+  este = '73°6''48.822''''',
+  norte = '7°5''11.786''''',
+  aplicacion_ficha_2025 = 'Actualizó',
+  observaciones = 'Se realizo visita y se aplico ficha de verificacion',
+  registro_nacional_turismo = null,
+  uso_suelo = 'No',
+  concesion_aguas = 'Acueducto',
+  concesion_aguas_vencimiento = null,
+  vertimientos = null,
+  vertimientos_vencimiento = null,
+  pueaa = 'No',
+  pgris = 'Sí',
+  pozo_septico = null,
+  alcantarillado = 'Sí',
+  ica = null,
+  ica_vencimiento = null,
+  invima = null,
+  invima_vencimiento = null,
+  certificado_tenencia_animales = null,
+  buenas_practicas_agricolas = null,
+  buenas_practicas_apicolas = null,
+  registro_apicola = null,
+  intervencion_cauce = null,
+  capacidad_carga = null,
+  sstt = 'Sí',
+  canal_venta = 'Mixta',
+  exportacion = 'Sí',
+  huella_carbono = 'NO',
+  fortalezas_ambiental = 'Disminución de emisiones de carbono gracias al uso de energía solar. Monitoreo ambiental en tiempo real ayuda a prevenir o mitigar impactos ambientales.',
+  fortalezas_social = 'Promueve una cultura de conciencia ambiental y tecnológica. Genera empleo calificado en áreas de tecnología e ingeniería.',
+  fortalezas_economico = 'Alta demanda por soluciones tecnológicas y sostenibles (crecimiento de mercados verdes).',
+  emprendimiento_verde = false,
+  sello_marca = true,
+  avalado = true,
+  destacado = false,
+  activo = true
+where nombre = 'T4I SAS BIC';
+insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo)
+select '145bc1a5-473f-4343-9ef4-f92bfbe21b8e', 'T4I SAS BIC', generar_slug_unico('T4I SAS BIC', '145bc1a5-473f-4343-9ef4-f92bfbe21b8e'), (select id from categorias_oficiales where slug = 'calidad-ambiental'), 'Bucaramanga', (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'), 'CARRERA 23 # 102- 37 PROVENZA', 7.086607222222222, -73.11356166666666, 'El diseño y desarrollo de software o plataformas de ingenieria, asi como la compra, venta, distribucion o comercializacion de soluciones informaticas qu', 'El diseño y desarrollo de software o plataformas de ingenieria, asi como la compra, venta, distribucion o comercializacion de soluciones informaticas qu', 'DISEÑO Y DESARROLLO DE SOFTWARE Y/O PLATAFORMAS DE INGENIERIA CON ENFOQUE AMBIENTAL', '3167425113', '573167425113', 'ggaravit@technology4i.com', 'GERARDO ARMANDO GARAVITO FLOREZ', '800225066-4', 'Jurídica', 'JAZMIN RODRIGUEZ', 'Cámara de comercio', 'SEBASTIAN BONNET', 'ACTIVO', null, 2022, '911 msnm', '73°6''48.822''''', '7°5''11.786''''', 'Actualizó', 'Se realizo visita y se aplico ficha de verificacion', null, 'No', 'Acueducto', null, null, null, 'No', 'Sí', null, 'Sí', null, null, null, null, null, null, null, null, null, null, 'Sí', 'Mixta', 'Sí', 'NO', 'Disminución de emisiones de carbono gracias al uso de energía solar. Monitoreo ambiental en tiempo real ayuda a prevenir o mitigar impactos ambientales.', 'Promueve una cultura de conciencia ambiental y tecnológica. Genera empleo calificado en áreas de tecnología e ingeniería.', 'Alta demanda por soluciones tecnológicas y sostenibles (crecimiento de mercados verdes).', false, true, true, false, true
+where not exists (select 1 from negocios where nombre = 'T4I SAS BIC');
+delete from negocios_categorias where negocio_id = (select id from negocios where nombre = 'T4I SAS BIC');
+insert into negocios_categorias (negocio_id, categoria_oficial_id) select (select id from negocios where nombre = 'T4I SAS BIC'), (select id from categorias_oficiales where slug = 'calidad-ambiental');
+delete from negocios_subcategorias where negocio_id = (select id from negocios where nombre = 'T4I SAS BIC');
+insert into negocios_subcategorias (negocio_id, subcategoria_id) select (select id from negocios where nombre = 'T4I SAS BIC'), id from subcategorias where slug = 'tecnologias-verdes';
+delete from negocios_actividades where negocio_id = (select id from negocios where nombre = 'T4I SAS BIC');
+insert into negocios_actividades (negocio_id, actividad_productiva_id) select (select id from negocios where nombre = 'T4I SAS BIC'), id from actividades_productivas where slug = 'tecnologias-informacion-ambiental';
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'T4I SAS BIC'), 2022, 65.42 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'T4I SAS BIC'), 2023, 72.35 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'T4I SAS BIC'), 2024, 75.8 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'T4I SAS BIC'), 2025, 77.0 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
 
--- SDROLL
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('95f04f00-ad01-4255-87b1-1ea9f8272bf1', 'SDROLL', generar_slug_unico('SDROLL', '95f04f00-ad01-4255-87b1-1ea9f8272bf1'), (select id from categorias_oficiales where slug = 'calidad-ambiental'), 'Bucaramanga', (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'), 'CARRERA 22 # 35 - 35', 7.121944444444444, -73.11555555555555, 'Venta y reparación de patinetas, motocicletas, motopatines, patines eléctricos', 'Venta y reparación de patinetas, motocicletas, motopatines, patines eléctricos', 'VENTA Y SERVICIOS DE REPARACIÓN Y MANTENIMIENTOS DE VEHICULOS ELECTRICOS', '3154234916', '573154234916', 'sdroll.co@gmail.com', 'DANIEL SANCHEZ QUIROZ', '1098702563-5', 'Natural', 'PAOLA ORTEGA', 'Cámara de comercio', 'SEBASTIAN BONNET', 'ACTIVO', 'Satisfactorio', 2024, '980 msnm', '73°6''56"', '7°7''19"', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, 'No', 'Acueducto', null, null, null, 'No', 'No', null, 'Sí', null, null, null, null, null, null, null, null, null, null, 'No', 'B2C', 'No', 'NO', 'Baterías de mejor calidad y mayor duración', 'Mejorar la movilidad de las personas', 'Buena oferta económica', false, false, true, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('95f04f00-ad01-4255-87b1-1ea9f8272bf1', (select id from categorias_oficiales where slug = 'calidad-ambiental'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select '95f04f00-ad01-4255-87b1-1ea9f8272bf1', id from subcategorias where slug = 'transporte-sostenible';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select '95f04f00-ad01-4255-87b1-1ea9f8272bf1', id from actividades_productivas where slug = 'motorizado';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('95f04f00-ad01-4255-87b1-1ea9f8272bf1', 2024, 51.5) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('95f04f00-ad01-4255-87b1-1ea9f8272bf1', 2025, 58.1) on conflict (negocio_id, anio) do nothing;
+-- RICO`S CAKES
+update negocios set
+  categoria_oficial_id = (select id from categorias_oficiales where slug = 'pendiente-clasificar'),
+  municipio = 'Bucaramanga',
+  vereda_id = null,
+  direccion = 'CRA 21 Nº 38-11. TORRE DE LA VITA, APTO 1707',
+  latitud = null,
+  longitud = null,
+  descripcion_corta = null,
+  descripcion = null,
+  producto = 'PANADERIA Y PASTELERIA',
+  telefono = '3176476503',
+  whatsapp = '573176476503',
+  email = 'maryoris_rico@hotmail.com',
+  representante_legal = 'MARYORIS RICO PRADILLA',
+  nit = null,
+  naturaleza_juridica = null,
+  delegado = null,
+  rut_camara_comercio = null,
+  responsable_cdmb = null,
+  novedad = 'RETIRADO',
+  tipo_negocio_verde = 'No aplica',
+  anio_registro = 2022,
+  cota_msnm = null,
+  este = null,
+  norte = null,
+  aplicacion_ficha_2025 = null,
+  observaciones = 'No cumplimiento de requisitos',
+  registro_nacional_turismo = null,
+  uso_suelo = null,
+  concesion_aguas = null,
+  concesion_aguas_vencimiento = null,
+  vertimientos = null,
+  vertimientos_vencimiento = null,
+  pueaa = null,
+  pgris = null,
+  pozo_septico = null,
+  alcantarillado = null,
+  ica = null,
+  ica_vencimiento = null,
+  invima = null,
+  invima_vencimiento = null,
+  certificado_tenencia_animales = null,
+  buenas_practicas_agricolas = null,
+  buenas_practicas_apicolas = null,
+  registro_apicola = null,
+  intervencion_cauce = null,
+  capacidad_carga = null,
+  sstt = null,
+  canal_venta = null,
+  exportacion = null,
+  huella_carbono = null,
+  fortalezas_ambiental = 'üMonitoreo ambiental en tiempo real ayuda a prevenir o mitigar impactos ambientales.',
+  fortalezas_social = null,
+  fortalezas_economico = null,
+  emprendimiento_verde = true,
+  sello_marca = false,
+  avalado = false,
+  destacado = false,
+  activo = false
+where nombre = 'RICO`S CAKES';
+insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo)
+select '523e12da-0081-4c5b-9b8d-2417eb6c31e0', 'RICO`S CAKES', generar_slug_unico('RICO`S CAKES', '523e12da-0081-4c5b-9b8d-2417eb6c31e0'), (select id from categorias_oficiales where slug = 'pendiente-clasificar'), 'Bucaramanga', null, 'CRA 21 Nº 38-11. TORRE DE LA VITA, APTO 1707', null, null, null, null, 'PANADERIA Y PASTELERIA', '3176476503', '573176476503', 'maryoris_rico@hotmail.com', 'MARYORIS RICO PRADILLA', null, null, null, null, null, 'RETIRADO', 'No aplica', 2022, null, null, null, null, 'No cumplimiento de requisitos', null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 'üMonitoreo ambiental en tiempo real ayuda a prevenir o mitigar impactos ambientales.', null, null, true, false, false, false, false
+where not exists (select 1 from negocios where nombre = 'RICO`S CAKES');
+delete from negocios_categorias where negocio_id = (select id from negocios where nombre = 'RICO`S CAKES');
+insert into negocios_categorias (negocio_id, categoria_oficial_id) select (select id from negocios where nombre = 'RICO`S CAKES'), (select id from categorias_oficiales where slug = 'pendiente-clasificar');
+delete from negocios_subcategorias where negocio_id = (select id from negocios where nombre = 'RICO`S CAKES');
+delete from negocios_actividades where negocio_id = (select id from negocios where nombre = 'RICO`S CAKES');
 
--- SOLUCIONES AMBIENTALES ECOAM S.A.S
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('638e6dad-45bc-4c62-a520-4af855dfdd71', 'SOLUCIONES AMBIENTALES ECOAM S.A.S', generar_slug_unico('SOLUCIONES AMBIENTALES ECOAM S.A.S', '638e6dad-45bc-4c62-a520-4af855dfdd71'), (select id from categorias_oficiales where slug = 'calidad-ambiental'), 'California', (select id from veredas where municipio = 'California' and slug = 'perimetro-urbano'), 'DIAGONAL 1 #1-61 California', 7.347222222222222, -72.94777777777779, 'Recuperación paisajista, comercialización de productos agricolas y forestales, consultoria y asesorías en ambientales y forestales para la recuperación…', 'Recuperación paisajista, comercialización de productos agricolas y forestales, consultoria y asesorías en ambientales y forestales para la recuperación morfologica y paisajista de áreas intervenidas, prestación de asesorías para la implementación de buenas prácticas agropecuarias y ambientales', 'RECUPERACIÓN DE ECOSISTEMAS', '3138501405', '573138501405', 'facturacion@ecoamsa.com - leilygarcia1@gmail.com', 'LEILY VIVIANA GARCIA PARADA', '901420061-1', 'Jurídica', null, 'Cámara de comercio', 'SEBASTIAN BONNET', 'ACTIVO', 'Avanzado', 2024, '2.005 msnm', '72°56''52"', '7°20''50"', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, 'No', 'Acueducto veredal', null, null, null, 'No', 'Sí', null, 'Sí', null, null, null, null, null, null, null, null, null, null, 'Sí', 'B2B', 'No', 'NO', 'Recuperación de ecosistemas', 'Impacto positivo en las comunidades por medio de la recuperación de ecosisrenas y transmitiendo información a los niños y niñas', 'Buena oferta económica', false, true, true, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('638e6dad-45bc-4c62-a520-4af855dfdd71', (select id from categorias_oficiales where slug = 'calidad-ambiental'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select '638e6dad-45bc-4c62-a520-4af855dfdd71', id from subcategorias where slug = 'preservacion-restauracion-ecosistemas';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select '638e6dad-45bc-4c62-a520-4af855dfdd71', id from actividades_productivas where slug = 'recuperacion-remediacion';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('638e6dad-45bc-4c62-a520-4af855dfdd71', 2024, 72.2) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('638e6dad-45bc-4c62-a520-4af855dfdd71', 2025, 75.9) on conflict (negocio_id, anio) do nothing;
+-- MANUALIDADES ATHOZ
+update negocios set
+  categoria_oficial_id = (select id from categorias_oficiales where slug = 'pendiente-clasificar'),
+  municipio = 'Bucaramanga',
+  vereda_id = null,
+  direccion = 'AV bucaros 2-108. Los laureles casa 23',
+  latitud = null,
+  longitud = null,
+  descripcion_corta = null,
+  descripcion = null,
+  producto = 'ARTESANIAS CON MATERIAL RECICLADO',
+  telefono = '3153708265',
+  whatsapp = '573153708265',
+  email = 'tottovesga@gmail.com',
+  representante_legal = 'ALBA LUCIA VESGA',
+  nit = null,
+  naturaleza_juridica = null,
+  delegado = null,
+  rut_camara_comercio = null,
+  responsable_cdmb = null,
+  novedad = 'RETIRADO',
+  tipo_negocio_verde = 'No aplica',
+  anio_registro = 2022,
+  cota_msnm = null,
+  este = null,
+  norte = null,
+  aplicacion_ficha_2025 = null,
+  observaciones = 'No cumplimiento de requisitos',
+  registro_nacional_turismo = null,
+  uso_suelo = null,
+  concesion_aguas = null,
+  concesion_aguas_vencimiento = null,
+  vertimientos = null,
+  vertimientos_vencimiento = null,
+  pueaa = null,
+  pgris = null,
+  pozo_septico = null,
+  alcantarillado = null,
+  ica = null,
+  ica_vencimiento = null,
+  invima = null,
+  invima_vencimiento = null,
+  certificado_tenencia_animales = null,
+  buenas_practicas_agricolas = null,
+  buenas_practicas_apicolas = null,
+  registro_apicola = null,
+  intervencion_cauce = null,
+  capacidad_carga = null,
+  sstt = null,
+  canal_venta = null,
+  exportacion = null,
+  huella_carbono = null,
+  fortalezas_ambiental = null,
+  fortalezas_social = null,
+  fortalezas_economico = null,
+  emprendimiento_verde = true,
+  sello_marca = false,
+  avalado = false,
+  destacado = false,
+  activo = false
+where nombre = 'MANUALIDADES ATHOZ';
+insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo)
+select 'f5d09116-22bb-4e64-9788-3d8aec4f0245', 'MANUALIDADES ATHOZ', generar_slug_unico('MANUALIDADES ATHOZ', 'f5d09116-22bb-4e64-9788-3d8aec4f0245'), (select id from categorias_oficiales where slug = 'pendiente-clasificar'), 'Bucaramanga', null, 'AV bucaros 2-108. Los laureles casa 23', null, null, null, null, 'ARTESANIAS CON MATERIAL RECICLADO', '3153708265', '573153708265', 'tottovesga@gmail.com', 'ALBA LUCIA VESGA', null, null, null, null, null, 'RETIRADO', 'No aplica', 2022, null, null, null, null, 'No cumplimiento de requisitos', null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, false, false, false, false
+where not exists (select 1 from negocios where nombre = 'MANUALIDADES ATHOZ');
+delete from negocios_categorias where negocio_id = (select id from negocios where nombre = 'MANUALIDADES ATHOZ');
+insert into negocios_categorias (negocio_id, categoria_oficial_id) select (select id from negocios where nombre = 'MANUALIDADES ATHOZ'), (select id from categorias_oficiales where slug = 'pendiente-clasificar');
+delete from negocios_subcategorias where negocio_id = (select id from negocios where nombre = 'MANUALIDADES ATHOZ');
+delete from negocios_actividades where negocio_id = (select id from negocios where nombre = 'MANUALIDADES ATHOZ');
 
--- CHONCHOS DE LA MONTAÑA S.A.S.
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('1f6d2c5e-d0bc-424f-b82b-a2f222f98d99', 'CHONCHOS DE LA MONTAÑA S.A.S.', generar_slug_unico('CHONCHOS DE LA MONTAÑA S.A.S.', '1f6d2c5e-d0bc-424f-b82b-a2f222f98d99'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Suratá', (select id from veredas where municipio = 'Suratá' and slug = 'la-violeta'), 'FINCA CASA DE TEJA, VEREDA LA VIOLETA, CACHIRÍ SURATA', 7.474166666666667, -72.99305555555556, 'Cria, ceba, producción y beneficio de ganado porcino, así como su transformación en productos carnicos y subproductos, su comercialización y distribución a…', 'Cria, ceba, producción y beneficio de ganado porcino, así como su transformación en productos carnicos y subproductos, su comercialización y distribución a nivel nacional e internacional, el comercio al por menor de carnes y productos carnicos, cria del ganado porcino', 'PORCINO EN PIE', '3105607016', '573105607016', 'michelldanilobautista@gmail.com', 'MICHELL DANILO BAUTISTA DIAZ', '901817891-1', 'Jurídica', null, 'Cámara de comercio', 'SEBASTIAN BONNET', 'ACTIVO', 'Satisfactorio', 2024, '2.118 msnm', '72°59''35"', '7°28''27"', 'No actualizó', 'No se realizo visita ni se actualizo ficha de verificacion', null, 'Sí', 'No', null, 'No', null, 'No', 'No', 'No', null, 'Sí', null, null, null, 'No', null, null, null, 'No', null, 'No', 'B2B', 'No', 'NO', 'Silvopastoreo', 'Creación de asociación con victimas del conflicto armado', 'Buena oferta económica', true, false, false, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('1f6d2c5e-d0bc-424f-b82b-a2f222f98d99', (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select '1f6d2c5e-d0bc-424f-b82b-a2f222f98d99', id from subcategorias where slug = 'agrosistemas-sostenibles';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select '1f6d2c5e-d0bc-424f-b82b-a2f222f98d99', id from actividades_productivas where slug = 'ganaderia-sostenible';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('1f6d2c5e-d0bc-424f-b82b-a2f222f98d99', 2024, 66.1) on conflict (negocio_id, anio) do nothing;
+-- GREEN PEAK COLOMBIA
+update negocios set
+  categoria_oficial_id = (select id from categorias_oficiales where slug = 'pendiente-clasificar'),
+  municipio = 'Bucaramanga',
+  vereda_id = null,
+  direccion = 'Calle 36 Nº 33-40. BUCARAMANGA',
+  latitud = null,
+  longitud = null,
+  descripcion_corta = null,
+  descripcion = null,
+  producto = 'CANNABIS MEDICINAL',
+  telefono = '3168431456',
+  whatsapp = '573168431456',
+  email = 'greenpeakcol@gmail.com',
+  representante_legal = 'CARLOS PINO',
+  nit = null,
+  naturaleza_juridica = null,
+  delegado = null,
+  rut_camara_comercio = null,
+  responsable_cdmb = null,
+  novedad = 'RETIRADO',
+  tipo_negocio_verde = null,
+  anio_registro = 2022,
+  cota_msnm = null,
+  este = null,
+  norte = null,
+  aplicacion_ficha_2025 = null,
+  observaciones = 'Retirado',
+  registro_nacional_turismo = null,
+  uso_suelo = null,
+  concesion_aguas = null,
+  concesion_aguas_vencimiento = null,
+  vertimientos = null,
+  vertimientos_vencimiento = null,
+  pueaa = null,
+  pgris = null,
+  pozo_septico = null,
+  alcantarillado = null,
+  ica = null,
+  ica_vencimiento = null,
+  invima = null,
+  invima_vencimiento = null,
+  certificado_tenencia_animales = null,
+  buenas_practicas_agricolas = null,
+  buenas_practicas_apicolas = null,
+  registro_apicola = null,
+  intervencion_cauce = null,
+  capacidad_carga = null,
+  sstt = null,
+  canal_venta = null,
+  exportacion = null,
+  huella_carbono = null,
+  fortalezas_ambiental = null,
+  fortalezas_social = null,
+  fortalezas_economico = null,
+  emprendimiento_verde = true,
+  sello_marca = false,
+  avalado = false,
+  destacado = false,
+  activo = false
+where nombre = 'GREEN PEAK COLOMBIA';
+insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo)
+select 'ce1a06c8-0fbb-47a5-9ab5-600dc7bf6c04', 'GREEN PEAK COLOMBIA', generar_slug_unico('GREEN PEAK COLOMBIA', 'ce1a06c8-0fbb-47a5-9ab5-600dc7bf6c04'), (select id from categorias_oficiales where slug = 'pendiente-clasificar'), 'Bucaramanga', null, 'Calle 36 Nº 33-40. BUCARAMANGA', null, null, null, null, 'CANNABIS MEDICINAL', '3168431456', '573168431456', 'greenpeakcol@gmail.com', 'CARLOS PINO', null, null, null, null, null, 'RETIRADO', null, 2022, null, null, null, null, 'Retirado', null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, false, false, false, false
+where not exists (select 1 from negocios where nombre = 'GREEN PEAK COLOMBIA');
+delete from negocios_categorias where negocio_id = (select id from negocios where nombre = 'GREEN PEAK COLOMBIA');
+insert into negocios_categorias (negocio_id, categoria_oficial_id) select (select id from negocios where nombre = 'GREEN PEAK COLOMBIA'), (select id from categorias_oficiales where slug = 'pendiente-clasificar');
+delete from negocios_subcategorias where negocio_id = (select id from negocios where nombre = 'GREEN PEAK COLOMBIA');
+delete from negocios_actividades where negocio_id = (select id from negocios where nombre = 'GREEN PEAK COLOMBIA');
 
--- CALZADO SASHA SAS
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('9ee1f0a1-a61b-4afb-9a39-ca9fd951f5df', 'CALZADO SASHA SAS', generar_slug_unico('CALZADO SASHA SAS', '9ee1f0a1-a61b-4afb-9a39-ca9fd951f5df'), (select id from categorias_oficiales where slug = 'ecoproductos-industriales'), 'Bucaramanga', (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'), 'CRA 27 #20-24', null, -73.11944444444444, 'Fabricación de calzado para dama, caballero, niño y niña, en materiales como cueros, sintéticos o textiles. Comercializar calzado a nivel nacional e…', 'Fabricación de calzado para dama, caballero, niño y niña, en materiales como cueros, sintéticos o textiles. Comercializar calzado a nivel nacional e internacional', 'ZAPATO TEXTIL', '3208677489', '573208677489', 'gerencia.calzadosacha@gmail.com', 'SANDRA PATRICIA OLIVEROS CASTELLANOS', '900583203-4', 'Jurídica', null, 'Cámara de comercio y RUT', 'CRISTAL VILLAREAL', 'ACTIVO', 'Satisfactorio', 2024, '959 msnm', '73°7''10"', '7°7''145"', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, 'No', 'Acueducto', null, null, null, 'No', 'No', null, 'Sí', null, null, null, null, null, null, null, null, null, null, 'No', 'B2B', null, null, null, null, 'Buena oferta económica', true, false, false, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('9ee1f0a1-a61b-4afb-9a39-ca9fd951f5df', (select id from categorias_oficiales where slug = 'ecoproductos-industriales'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select '9ee1f0a1-a61b-4afb-9a39-ca9fd951f5df', id from subcategorias where slug = 'moda-sostenible';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select '9ee1f0a1-a61b-4afb-9a39-ca9fd951f5df', id from actividades_productivas where slug = 'confeccion-manufactura';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('9ee1f0a1-a61b-4afb-9a39-ca9fd951f5df', 2024, 57.2) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('9ee1f0a1-a61b-4afb-9a39-ca9fd951f5df', 2025, 51.5) on conflict (negocio_id, anio) do nothing;
+-- INDUSTRIA PRINCESA Y REGIS
+update negocios set
+  categoria_oficial_id = (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'),
+  municipio = 'Bucaramanga',
+  vereda_id = (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'),
+  direccion = 'CRA 30 Nº 33-69, LA AURORA',
+  latitud = 7.124722222222222,
+  longitud = -73.11472222222221,
+  descripcion_corta = 'La empresa Industrias vinagre y regis, es una empresa de tradición familiar, que nació en 1.968 en la ciudad de Buacaramanga, y hoy 55 años después sigue…',
+  descripcion = 'La empresa Industrias vinagre y regis, es una empresa de tradición familiar, que nació en 1.968 en la ciudad de Buacaramanga, y hoy 55 años después sigue innovando productos con sus fórmulas de vinagres de manzana, durazno, mora, piña, coco, ajo, pera y siete hierbas, que hacen parte de su línea premium. La empresa se dedica a la transformación de frutas por medio del sistema de oxidación, artesanalmente reservadas durante siete meses hasta su maduración. Antes de ser embotellado, pasa por un periodo de  48 horas, despertando así, su aroma y coloración natural. Se aseguran que la fruta provenga de cultivos agroecológicos, libre de agroquímicos y plaguicidas, su materia prima proviene de campesinos directos de Boyacá, Norte de Santander  y del municipio de Tona, Berlín, y Suratá.',
+  producto = 'VINAGRES LINEA PREMIUM',
+  telefono = '3183989242',
+  whatsapp = '573183989242',
+  email = 'vinagresregis@gmail.com',
+  representante_legal = 'BEATRIZ FRANCO DE MARQUEZ',
+  nit = '27911710-9',
+  naturaleza_juridica = 'Natural',
+  delegado = 'GABRIEL ALBERTO MARQUEZ FRANCO',
+  rut_camara_comercio = 'Cámara de comercio',
+  responsable_cdmb = 'XIMENA REYES',
+  novedad = 'ACTIVO',
+  tipo_negocio_verde = 'Dinamizadoras',
+  anio_registro = 2022,
+  cota_msnm = '101.3 msnm',
+  este = '73°6''53''''',
+  norte = '7°7''29''''',
+  aplicacion_ficha_2025 = 'Actualizó',
+  observaciones = 'Se realizo visita y se actualizo ficha de verificacion',
+  registro_nacional_turismo = null,
+  uso_suelo = 'No',
+  concesion_aguas = null,
+  concesion_aguas_vencimiento = null,
+  vertimientos = null,
+  vertimientos_vencimiento = null,
+  pueaa = 'No',
+  pgris = 'No',
+  pozo_septico = null,
+  alcantarillado = 'Sí',
+  ica = null,
+  ica_vencimiento = null,
+  invima = 'Sí',
+  invima_vencimiento = '2031-02-03',
+  certificado_tenencia_animales = null,
+  buenas_practicas_agricolas = null,
+  buenas_practicas_apicolas = null,
+  registro_apicola = null,
+  intervencion_cauce = null,
+  capacidad_carga = null,
+  sstt = 'Sí',
+  canal_venta = 'Mixta',
+  exportacion = 'No',
+  huella_carbono = 'SI',
+  fortalezas_ambiental = 'No generan contaminación',
+  fortalezas_social = 'Promueven la educación y conciencia sobre la importancia del reciclaje y la sostenibilidad.',
+  fortalezas_economico = 'Ampliación de puntos distribuidores',
+  emprendimiento_verde = false,
+  sello_marca = true,
+  avalado = true,
+  destacado = false,
+  activo = true
+where nombre = 'INDUSTRIA PRINCESA Y REGIS';
+insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo)
+select '0e3b8792-05f5-4b87-8cc3-ac3c85ce7be0', 'INDUSTRIA PRINCESA Y REGIS', generar_slug_unico('INDUSTRIA PRINCESA Y REGIS', '0e3b8792-05f5-4b87-8cc3-ac3c85ce7be0'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Bucaramanga', (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'), 'CRA 30 Nº 33-69, LA AURORA', 7.124722222222222, -73.11472222222221, 'La empresa Industrias vinagre y regis, es una empresa de tradición familiar, que nació en 1.968 en la ciudad de Buacaramanga, y hoy 55 años después sigue…', 'La empresa Industrias vinagre y regis, es una empresa de tradición familiar, que nació en 1.968 en la ciudad de Buacaramanga, y hoy 55 años después sigue innovando productos con sus fórmulas de vinagres de manzana, durazno, mora, piña, coco, ajo, pera y siete hierbas, que hacen parte de su línea premium. La empresa se dedica a la transformación de frutas por medio del sistema de oxidación, artesanalmente reservadas durante siete meses hasta su maduración. Antes de ser embotellado, pasa por un periodo de  48 horas, despertando así, su aroma y coloración natural. Se aseguran que la fruta provenga de cultivos agroecológicos, libre de agroquímicos y plaguicidas, su materia prima proviene de campesinos directos de Boyacá, Norte de Santander  y del municipio de Tona, Berlín, y Suratá.', 'VINAGRES LINEA PREMIUM', '3183989242', '573183989242', 'vinagresregis@gmail.com', 'BEATRIZ FRANCO DE MARQUEZ', '27911710-9', 'Natural', 'GABRIEL ALBERTO MARQUEZ FRANCO', 'Cámara de comercio', 'XIMENA REYES', 'ACTIVO', 'Dinamizadoras', 2022, '101.3 msnm', '73°6''53''''', '7°7''29''''', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, 'No', null, null, null, null, 'No', 'No', null, 'Sí', null, null, 'Sí', '2031-02-03', null, null, null, null, null, null, 'Sí', 'Mixta', 'No', 'SI', 'No generan contaminación', 'Promueven la educación y conciencia sobre la importancia del reciclaje y la sostenibilidad.', 'Ampliación de puntos distribuidores', false, true, true, false, true
+where not exists (select 1 from negocios where nombre = 'INDUSTRIA PRINCESA Y REGIS');
+delete from negocios_categorias where negocio_id = (select id from negocios where nombre = 'INDUSTRIA PRINCESA Y REGIS');
+insert into negocios_categorias (negocio_id, categoria_oficial_id) select (select id from negocios where nombre = 'INDUSTRIA PRINCESA Y REGIS'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles');
+delete from negocios_subcategorias where negocio_id = (select id from negocios where nombre = 'INDUSTRIA PRINCESA Y REGIS');
+insert into negocios_subcategorias (negocio_id, subcategoria_id) select (select id from negocios where nombre = 'INDUSTRIA PRINCESA Y REGIS'), id from subcategorias where slug = 'agroindustria-sostenible';
+delete from negocios_actividades where negocio_id = (select id from negocios where nombre = 'INDUSTRIA PRINCESA Y REGIS');
+insert into negocios_actividades (negocio_id, actividad_productiva_id) select (select id from negocios where nombre = 'INDUSTRIA PRINCESA Y REGIS'), id from actividades_productivas where slug = 'agroindustrial-alimentario';
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'INDUSTRIA PRINCESA Y REGIS'), 2023, 56.24 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'INDUSTRIA PRINCESA Y REGIS'), 2024, 73.6 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'INDUSTRIA PRINCESA Y REGIS'), 2025, 74.5 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
 
--- HORMAS Y FORMAS MODELLI S.A.S.
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('cd977641-18f2-4778-8617-07e3fe1189e1', 'HORMAS Y FORMAS MODELLI S.A.S.', generar_slug_unico('HORMAS Y FORMAS MODELLI S.A.S.', 'cd977641-18f2-4778-8617-07e3fe1189e1'), (select id from categorias_oficiales where slug = 'ecoproductos-industriales'), 'Bucaramanga', (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'), 'CALLE 31 #12-18 CENTRO', 7.120277777777777, -73.12972222222221, 'Fabricación de partes del calzado, sus moldes, hormas entre otras en materiales reciclados y reciclables', 'Fabricación de partes del calzado, sus moldes, hormas entre otras en materiales reciclados y reciclables', 'HORMAS PARA CALZADO', '3153814218', '573153814218', 'hormasyformasmodelli@gmail.com', 'JEAN PIERRE JOVANDOU ESCANDON', '901535496-4', 'Jurídica', null, 'Cámara de comercio', 'CLAUDIA SANCHEZ', 'ACTIVO', 'Satisfactorio', 2024, '944 msnm', '73°7''47"', '7°7''13"', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, null, 'Acueducto', null, null, null, 'No', 'No', null, 'Sí', null, null, null, null, null, null, null, null, null, null, 'Sí', 'B2B', 'No', 'NO', 'Reutilización de materiales recilados', 'Impacto positivo en universidades', 'Buena oferta económica', false, false, true, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('cd977641-18f2-4778-8617-07e3fe1189e1', (select id from categorias_oficiales where slug = 'ecoproductos-industriales'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select 'cd977641-18f2-4778-8617-07e3fe1189e1', id from subcategorias where slug = 'moda-sostenible';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select 'cd977641-18f2-4778-8617-07e3fe1189e1', id from actividades_productivas where slug = 'confeccion-manufactura';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('cd977641-18f2-4778-8617-07e3fe1189e1', 2024, 66.1) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('cd977641-18f2-4778-8617-07e3fe1189e1', 2025, 69.4) on conflict (negocio_id, anio) do nothing;
+-- SAAGAM SAS
+update negocios set
+  categoria_oficial_id = (select id from categorias_oficiales where slug = 'pendiente-clasificar'),
+  municipio = 'Bucaramanga',
+  vereda_id = null,
+  direccion = 'CALLE 7A Nº 1W - 39, BARRIO EL REFUGIO',
+  latitud = null,
+  longitud = null,
+  descripcion_corta = null,
+  descripcion = null,
+  producto = 'EDUCACION AMBIENTAL',
+  telefono = '3167373259',
+  whatsapp = '573167373259',
+  email = 'saagamsasc@gmail.com',
+  representante_legal = 'EIDY JOHANA DIAZ',
+  nit = null,
+  naturaleza_juridica = null,
+  delegado = null,
+  rut_camara_comercio = null,
+  responsable_cdmb = null,
+  novedad = 'RETIRADO',
+  tipo_negocio_verde = 'No aplica',
+  anio_registro = 2022,
+  cota_msnm = null,
+  este = null,
+  norte = null,
+  aplicacion_ficha_2025 = null,
+  observaciones = 'No cumplimiento de requisitos',
+  registro_nacional_turismo = null,
+  uso_suelo = null,
+  concesion_aguas = null,
+  concesion_aguas_vencimiento = null,
+  vertimientos = null,
+  vertimientos_vencimiento = null,
+  pueaa = null,
+  pgris = null,
+  pozo_septico = null,
+  alcantarillado = null,
+  ica = null,
+  ica_vencimiento = null,
+  invima = null,
+  invima_vencimiento = null,
+  certificado_tenencia_animales = null,
+  buenas_practicas_agricolas = null,
+  buenas_practicas_apicolas = null,
+  registro_apicola = null,
+  intervencion_cauce = null,
+  capacidad_carga = null,
+  sstt = null,
+  canal_venta = null,
+  exportacion = null,
+  huella_carbono = null,
+  fortalezas_ambiental = null,
+  fortalezas_social = null,
+  fortalezas_economico = null,
+  emprendimiento_verde = true,
+  sello_marca = false,
+  avalado = false,
+  destacado = false,
+  activo = false
+where nombre = 'SAAGAM SAS';
+insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo)
+select '9f6b5608-8095-43db-b997-2c4ae772e319', 'SAAGAM SAS', generar_slug_unico('SAAGAM SAS', '9f6b5608-8095-43db-b997-2c4ae772e319'), (select id from categorias_oficiales where slug = 'pendiente-clasificar'), 'Bucaramanga', null, 'CALLE 7A Nº 1W - 39, BARRIO EL REFUGIO', null, null, null, null, 'EDUCACION AMBIENTAL', '3167373259', '573167373259', 'saagamsasc@gmail.com', 'EIDY JOHANA DIAZ', null, null, null, null, null, 'RETIRADO', 'No aplica', 2022, null, null, null, null, 'No cumplimiento de requisitos', null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, false, false, false, false
+where not exists (select 1 from negocios where nombre = 'SAAGAM SAS');
+delete from negocios_categorias where negocio_id = (select id from negocios where nombre = 'SAAGAM SAS');
+insert into negocios_categorias (negocio_id, categoria_oficial_id) select (select id from negocios where nombre = 'SAAGAM SAS'), (select id from categorias_oficiales where slug = 'pendiente-clasificar');
+delete from negocios_subcategorias where negocio_id = (select id from negocios where nombre = 'SAAGAM SAS');
+delete from negocios_actividades where negocio_id = (select id from negocios where nombre = 'SAAGAM SAS');
 
--- AGUA VIVA SANTANDER S.A.S
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('86246553-e998-470a-aa03-75eed8e0d4dd', 'AGUA VIVA SANTANDER S.A.S', generar_slug_unico('AGUA VIVA SANTANDER S.A.S', '86246553-e998-470a-aa03-75eed8e0d4dd'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Piedecuesta', (select id from veredas where municipio = 'Piedecuesta' and slug = 'sevilla'), 'VEREDA SEVILLA, LA LOMA, PIEDECUESTA', 7.004722222222222, -72.98027777777779, 'Recolección, tratamiento y embotellamiento de agua de nacimiento, el cultivo y comercialización del aguacate hass', 'Recolección, tratamiento y embotellamiento de agua de nacimiento, el cultivo y comercialización del aguacate hass', 'VINO ARTESANAL', '3176231859', '573176231859', 'aguavivacol59@gmail.com', 'DIANA CAROLINA SUÁREZ', '901713177-3', 'Jurídica', 'MERCEDES ANGEL MORENO', 'Cámara de comercio', 'SUJEY DÍAZ', 'ACTIVO', 'Dinamizadoras', 2024, '2.102 msnm', '72°58''49"', '7°0''17"', 'Actualizó', 'Se realizo visita y se aplico ficha de verificacion', null, 'No', 'No', null, 'No', null, 'No', 'No', 'No', null, null, null, 'No', null, null, 'No', null, null, null, null, 'No', 'Mixta', 'No', 'NO', 'Transformacion y comercializacion de mora y naranja en licor artesanal', 'La forma de contratar su personal con un enfoque diferencial', 'negocio rentable', true, false, false, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('86246553-e998-470a-aa03-75eed8e0d4dd', (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select '86246553-e998-470a-aa03-75eed8e0d4dd', id from subcategorias where slug = 'agroindustria-sostenible';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select '86246553-e998-470a-aa03-75eed8e0d4dd', id from actividades_productivas where slug = 'agroindustrial-alimentario';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('86246553-e998-470a-aa03-75eed8e0d4dd', 2024, 43.5) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('86246553-e998-470a-aa03-75eed8e0d4dd', 2025, 58.4) on conflict (negocio_id, anio) do nothing;
-
--- CALIXTO FENIX SAS
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('8eb6622d-8ba2-44f1-8acb-395dbe93229a', 'CALIXTO FENIX SAS', generar_slug_unico('CALIXTO FENIX SAS', '8eb6622d-8ba2-44f1-8acb-395dbe93229a'), (select id from categorias_oficiales where slug = 'pendiente-clasificar'), 'Bucaramanga', null, 'CALLE 6 #17#35 COMUNEROS', null, null, null, null, 'BOLSAS PLASTICAS', '3012709732', '573012709732', 'luzmeryblanco16@gmail.com', 'LUZ ADRIANA CALIXTO', '901437856-2', null, null, null, 'DANIEL BONNET', 'SUSPENDIDO', null, 2024, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, false, false, false, false);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('8eb6622d-8ba2-44f1-8acb-395dbe93229a', (select id from categorias_oficiales where slug = 'pendiente-clasificar'));
-
--- KOKEDAMING
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('415ac43e-07d4-4fea-b6b8-1df51caecf6d', 'KOKEDAMING', generar_slug_unico('KOKEDAMING', '415ac43e-07d4-4fea-b6b8-1df51caecf6d'), (select id from categorias_oficiales where slug = 'ecoproductos-industriales'), 'Bucaramanga', (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'), 'CALLE 61 #1W-01 PISO 3', 7.100555555555555, -73.12833333333333, 'Venta de plantas ornamentales', 'Venta de plantas ornamentales', 'PLANTA EN FIBRA', '3006831085', '573006831085', 'fads2790@gmail.com', 'FRANK ALBERTO DIAZ SILVERA', '1140832256-8', 'Natural', null, 'Cámara de comercio y RUT', 'CRISTAL VILLAREAL', 'ACTIVO', 'Dinamizadoras', 2024, '950 msnm', '73°7''42"', '7°6''2"', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, 'No', 'Acueducto', null, null, null, 'No', 'No', 'No', 'Sí', null, null, null, null, null, null, null, null, null, null, 'No', 'Mixta', null, null, 'Realizan materas con fibra de coco- no contaminantes', 'Realizan charlas ambientales y buenas prácticas con las plantas', 'No tienen costos fijos altos', false, false, true, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('415ac43e-07d4-4fea-b6b8-1df51caecf6d', (select id from categorias_oficiales where slug = 'ecoproductos-industriales'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select '415ac43e-07d4-4fea-b6b8-1df51caecf6d', id from subcategorias where slug = 'empaques-envases-ecologicos';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select '415ac43e-07d4-4fea-b6b8-1df51caecf6d', id from actividades_productivas where slug = 'biopolimeros-fibras-empaques-reciclables';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('415ac43e-07d4-4fea-b6b8-1df51caecf6d', 2024, 63.0) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('415ac43e-07d4-4fea-b6b8-1df51caecf6d', 2025, 63.0) on conflict (negocio_id, anio) do nothing;
-
--- CACERES
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('a476bb97-760d-4613-8d92-f072aa3dd409', 'CACERES', generar_slug_unico('CACERES', 'a476bb97-760d-4613-8d92-f072aa3dd409'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Bucaramanga', (select id from veredas where municipio = 'Bucaramanga' and slug = 'rosa-blanca'), 'KM 5 VÍA MATANZA FINCA VILLEGAS, VEREDA ROSABLANCA, CORREGIMIENTO 2', 7.155555555555556, -73.10888888888888, 'Recuperación de suelos por medio de abonos orgánicos biodegradados por la larva de la mosca soldado negro', 'Recuperación de suelos por medio de abonos orgánicos biodegradados por la larva de la mosca soldado negro', 'ABONOS ORGÁNICOS', '3168719034', '573168719034', 'miggelca2020@gmail.com', 'MIGUEL ANTONIO CACERES ROJAS', '91224661', 'Natural', null, 'Sin verificar', 'HEINER ORTIZ', 'SUSPENDIDO', 'Inicial', 2024, '960 msnm', '73°6''32"', '7°9''20"', 'No actualizó', 'No se realizo visita ni actualizo ficha de verificacion', null, 'No', null, null, null, null, 'No', 'No', 'No', 'No', 'No', null, null, null, null, null, null, null, null, null, 'No', null, null, null, null, null, null, true, false, false, false, false);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('a476bb97-760d-4613-8d92-f072aa3dd409', (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select 'a476bb97-760d-4613-8d92-f072aa3dd409', id from subcategorias where slug = 'biotecnologia';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select 'a476bb97-760d-4613-8d92-f072aa3dd409', id from actividades_productivas where slug = 'productos-biotecnologia';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('a476bb97-760d-4613-8d92-f072aa3dd409', 2024, 46.7) on conflict (negocio_id, anio) do nothing;
-
--- LA VACA YOGHEE
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('f9be3f9d-6d07-483c-be67-432eb7204787', 'LA VACA YOGHEE', generar_slug_unico('LA VACA YOGHEE', 'f9be3f9d-6d07-483c-be67-432eb7204787'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Bucaramanga', (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'), 'CRA 16 #70 -66 BARRIO NUEVA GRANADA', null, null, 'Elaboración de matequilla ghee de vacas de pastoreo y clarificada de manera artesanal', 'Elaboración de matequilla ghee de vacas de pastoreo y clarificada de manera artesanal', 'CALDO DE HUESO Y MANTEQUILLA GHEE', '3003233264', '573003233264', 'angelicapelaez@lavacayoghee.com', 'ANGÉLICA MARIA PELÁES  PALACIOS', '37547927-5', 'Jurídica', null, 'Cámara de comercio y RUT', 'CRISTAL VILLAREAL', 'ACTIVO', null, 2024, '900.8 m', '73°11461383', '7°09623272', 'Actualizó', 'Se realizo visita y se aplico ficha de verificacion', null, 'No', 'Acueducto', null, null, null, 'No', 'No', null, 'Sí', null, null, 'Sí', null, null, null, null, null, null, null, 'No', 'Mixta', null, null, 'No se utilizan materiales peligrosos y/o tóxicos en los procesos
--Promueve alimentación saludable', 'Generación de empleo local a adultas mayores.', 'Cuenta con estados financieros o sistema contable y los utiliza para análisis y toma de decisiones.
-- 3era Feria R de negocios verdes CDMB 2024', true, false, false, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('f9be3f9d-6d07-483c-be67-432eb7204787', (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select 'f9be3f9d-6d07-483c-be67-432eb7204787', id from subcategorias where slug = 'agroindustria-sostenible';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select 'f9be3f9d-6d07-483c-be67-432eb7204787', id from actividades_productivas where slug = 'agroindustrial-alimentario';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('f9be3f9d-6d07-483c-be67-432eb7204787', 2024, 41.9) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('f9be3f9d-6d07-483c-be67-432eb7204787', 2025, 41.9) on conflict (negocio_id, anio) do nothing;
-
--- MIELES DEL JARDINERO
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('0accbe9e-12c7-4b5c-88d5-3ad596d20bd1', 'MIELES DEL JARDINERO', generar_slug_unico('MIELES DEL JARDINERO', '0accbe9e-12c7-4b5c-88d5-3ad596d20bd1'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Piedecuesta', (select id from veredas where municipio = 'Piedecuesta' and slug = 'volador'), 'MANZ C, LOTE 5, SECTOR 2, PARCELACIÓN CIUDAD TEYUNA. VEREDA EL VOLADOR', null, null, 'Se evidencia 7 colmenas en segunda camara de apis mellifera zona de conservacion de 3 hectareas , 3 colmenas en el sector 2 , produccion de miel de abejas…', 'Se evidencia 7 colmenas en segunda camara de apis mellifera zona de conservacion de 3 hectareas , 3 colmenas en el sector 2 , produccion de miel de abejas ,propolio y cera', 'MIEL DE ABEJAS', '3209812927', '573209812927', 'luisantonio13suarez@gmail.com', 'LUIS ANTONIO SUÁREZ', '13505510', null, null, 'RUT', 'ANA RUEDA', 'ACTIVO', 'Intermedio', 2024, '1037,1 msnm', '73°04218571', '6°95218407', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, 'No', 'No', null, null, null, 'No', 'No', 'No', null, null, null, 'No', null, null, null, 'No', 'No', null, null, 'No', 'B2C', 'No', null, 'En conjunto con la junta de acción comunal de Teyuna realizan varias actividades como jornadas de limpieza en la vereda el Volador , reforestación y huertas comunitarias, bosques de galería en la quebrada ,preparación de abonos. Tiene conocimiento empírico del sector apícola lo que permite adaptarse a las condiciones climáticas, periodos de lluvia y sequía, maximizando la producción de miel.  Modelo de economia circular , sus reciduos son utilizados en parafinas en las velas y cosmeticos.', 'Realizan charlas de educación  con la comunidad en cuanto la importancia de mantener las abejas en conservación en su función de polinización para la generación de alimentos y la biodiversidad .   Interactúa con sus clientes, generando confianza y lealtad de marca.', 'Tienen definidos sus costos y gastos.Piensan instalar otras colmenas para tener mayor producción en su producto y asi vender más . Está produciendo otros productos como cera de abejas, propóleo y polen.', true, false, false, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('0accbe9e-12c7-4b5c-88d5-3ad596d20bd1', (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select '0accbe9e-12c7-4b5c-88d5-3ad596d20bd1', id from subcategorias where slug = 'agroindustria-sostenible';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select '0accbe9e-12c7-4b5c-88d5-3ad596d20bd1', id from actividades_productivas where slug = 'agroindustrial-alimentario';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('0accbe9e-12c7-4b5c-88d5-3ad596d20bd1', 2024, 38.5) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('0accbe9e-12c7-4b5c-88d5-3ad596d20bd1', 2025, 49.3) on conflict (negocio_id, anio) do nothing;
-
--- TOLVACAO
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('702fdbf0-4d3c-48a4-b398-7177012c16c2', 'TOLVACAO', generar_slug_unico('TOLVACAO', '702fdbf0-4d3c-48a4-b398-7177012c16c2'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Rionegro', (select id from veredas where municipio = 'Rionegro' and slug = 'la-union'), 'VEREDA LA UNION FINCA LA ALSACIA', null, null, 'En nuestra empresa nos especializamos en la elaboración de productos saludables como gomas saludables, nibs de cacao cubiertos con miel y panela, chocolate…', 'En nuestra empresa nos especializamos en la elaboración de productos saludables como gomas saludables, nibs de cacao cubiertos con miel y panela, chocolate de mesa, vino, mermeladas, los cuales están hechos a base de baba de cacao (mucílago), cacao tostado y fruta. En este sentido, la idea de negocio surge como respuesta a la necesidad de dar un uso significativo al mucílago de cacao, el cual es considerado como residuo.', 'GOMAS DE MUCILAGO', '3133490199', '573133490199', 'reinaalexandra.19@gmail.com', 'JENNIFER ALEXANDRA CORZO REINA', '1098824690-6', 'Natural', null, 'Cámara de comercio', 'HEINER ORTIZ', 'ACTIVO', null, 2024, null, null, null, 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, 'No', 'Acueducto veredal', null, null, null, 'No', 'No', null, 'Sí', null, null, 'No', null, null, 'No', null, null, null, null, 'No', 'Mixta', 'No', 'NO', 'Transformación de subproductos del cacao (mucílago) en productos con valor agregado (vino, gomitas). Modelo de economía circular: reducción de residuos orgánicos. Bajo uso de químicos o aditivos en el proceso productivo.', 'Vinculación con productores locales de cacao de Santander. Vinculación de mujeres campesinas en producción', 'Propuesta de valor diferenciada: productos funcionales, naturales, con origen sostenible. Participación en ferias locales y eventos (visibilidad inicial del emprendimiento). Enfoque hacia nichos de mercado en crecimiento (alimentación saludable, gourmet, vegano). Negocio registrado formalmente en Cámara de Comercio.', true, false, false, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('702fdbf0-4d3c-48a4-b398-7177012c16c2', (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select '702fdbf0-4d3c-48a4-b398-7177012c16c2', id from subcategorias where slug = 'agroindustria-sostenible';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select '702fdbf0-4d3c-48a4-b398-7177012c16c2', id from actividades_productivas where slug = 'agroindustrial-alimentario';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('702fdbf0-4d3c-48a4-b398-7177012c16c2', 2024, 38.7) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('702fdbf0-4d3c-48a4-b398-7177012c16c2', 2025, 40.5) on conflict (negocio_id, anio) do nothing;
-
--- PLASTY ANGELES
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('99cccf59-aaa4-4d24-a9ed-4787a4d54d75', 'PLASTY ANGELES', generar_slug_unico('PLASTY ANGELES', '99cccf59-aaa4-4d24-a9ed-4787a4d54d75'), (select id from categorias_oficiales where slug = 'ecoproductos-industriales'), 'Bucaramanga', (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'), 'CALLE 19 #12-55', 7.128888888888889, -73.13166666666666, 'Fabricación de artículos de plástico NCP (no clasificado previamente)', 'Fabricación de artículos de plástico NCP (no clasificado previamente)', 'BOLSAS PLÁSTICAS', '3152909472', '573152909472', 'esneider1109@hotmail.com', 'ESNEIDER ANGARITA SANTIAGO', '1098640207-0', 'Natural', 'DIANA MARCELA BARRIOS', 'Cámara de comercio', 'CLAUDIA SANCHEZ', 'ACTIVO', 'Satisfactorio', 2024, '959 msnm', '73°7''54"', '7°7''44"', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, null, 'Acueducto', null, null, null, 'No', 'No', null, 'Sí', null, null, null, null, null, null, null, null, null, null, 'Sí', 'B2B', 'No', 'NO', 'Reutilización de materiales recilados', 'Apoyo a reciladores y vinculación con el sector acádemico', 'Buena oferta económica', false, false, true, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('99cccf59-aaa4-4d24-a9ed-4787a4d54d75', (select id from categorias_oficiales where slug = 'ecoproductos-industriales'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select '99cccf59-aaa4-4d24-a9ed-4787a4d54d75', id from subcategorias where slug = 'empaques-envases-ecologicos';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select '99cccf59-aaa4-4d24-a9ed-4787a4d54d75', id from actividades_productivas where slug = 'biopolimeros-fibras-empaques-reciclables';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('99cccf59-aaa4-4d24-a9ed-4787a4d54d75', 2024, 61.1) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('99cccf59-aaa4-4d24-a9ed-4787a4d54d75', 2025, 74.6) on conflict (negocio_id, anio) do nothing;
-
--- RESGUARDO AGROPECUARIO Y ECOTURISTICO SALTO DE LA INDIA LTDA.
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('7636aba3-8eb1-4156-b33e-e770ed0cf71e', 'RESGUARDO AGROPECUARIO Y ECOTURISTICO SALTO DE LA INDIA LTDA.', generar_slug_unico('RESGUARDO AGROPECUARIO Y ECOTURISTICO SALTO DE LA INDIA LTDA.', '7636aba3-8eb1-4156-b33e-e770ed0cf71e'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'El Playón', (select id from veredas where municipio = 'El Playón' and slug = 'san-pedro-de-la-tigra'), 'FINCA VILLA BERTHA, VEREDA SAN PEDRO DE LA TIGRA, PLAYÓN', 7.4622222222222225, -73.26, 'Protección de zonas hidricas y conservación de espacios de la naturaleza donde se promueve las prácticas ecoturisticas y el turismo de naturalezLa actividad…', 'Protección de zonas hidricas y conservación de espacios de la naturaleza donde se promueve las prácticas ecoturisticas y el turismo de naturalezLa actividad está orientada a la protección de zonas hídricas y la conservación de espacios naturales, promoviendo prácticas ecoturísticas y el turismo de naturaleza como herramientas para la educación ambiental y el aprovechamiento responsable del patrimonio ecológico. A través de estas acciones, se busca fomentar la valoración de los ecosistemas, impulsar el desarrollo sostenible de las comunidades locales y fortalecer la conexión entre las personas y la naturaleza.', 'TURISMO DE NATURALEZA', '3138319471', '573138319471', 'wilgar333-3@hotmail.com', 'WILLIAM GARIBALDY GONZALES', '901079634-8', 'Jurídica', null, 'Cámara de comercio', 'KAREN CAMACHO', 'ACTIVO', 'Satisfactorio', 2024, '767.6 msnm', '73°15''36"', '7°27''44"', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', 'Sí', 'No', 'Acueducto veredal', null, null, null, 'No', 'No', 'Sí', null, null, null, null, null, null, null, null, null, null, 'No', 'No', 'B2C', 'No', 'NO', 'Protege fuentes hídricas y ecosistemas naturales.', 'Genera empleo rural y promueve educación ambiental.', 'Diversificación económica rural', true, false, false, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('7636aba3-8eb1-4156-b33e-e770ed0cf71e', (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select '7636aba3-8eb1-4156-b33e-e770ed0cf71e', id from subcategorias where slug = 'turismo-sostenible';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select '7636aba3-8eb1-4156-b33e-e770ed0cf71e', id from actividades_productivas where slug = 'servicios-turismo-naturaleza';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('7636aba3-8eb1-4156-b33e-e770ed0cf71e', 2024, 58.4) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('7636aba3-8eb1-4156-b33e-e770ed0cf71e', 2025, 56.5) on conflict (negocio_id, anio) do nothing;
-
--- NATUCHUCURÌ
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('77cf459e-c9d9-4910-8d5d-45df0a831f3d', 'NATUCHUCURÌ', generar_slug_unico('NATUCHUCURÌ', '77cf459e-c9d9-4910-8d5d-45df0a831f3d'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Bucaramanga', (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'), 'CALLE 44 NO 5 OCC-07 BARRIO CAMPO HERMOSO', null, null, 'Elaboracion y comercializacion de productos de cacao y sus derivados y confiterias', 'Elaboracion y comercializacion de productos de cacao y sus derivados y confiterias', 'CHOCOLATE DE MESA', '3007911847', '573007911847', 'natuchucuri@outlook.com', 'MIGUEL ANGEL VALDES PEÑA', '91515339-3', 'Natural', null, 'Cámara de comercio', 'CARINE GARCIA', 'ACTIVO', 'Inicial', 2025, null, null, null, null, null, null, 'No', 'Acueducto', null, null, null, 'No', 'No', null, 'Sí', null, null, 'Sí', '2034-11-01', null, 'No', null, null, null, null, 'No', 'B2C', 'No', 'NO', 'siembra de caca0 de manera organica sin utilizar quimicos', 'no las realiza', 'tienen invima del producto', true, false, false, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('77cf459e-c9d9-4910-8d5d-45df0a831f3d', (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select '77cf459e-c9d9-4910-8d5d-45df0a831f3d', id from subcategorias where slug = 'agroindustria-sostenible';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select '77cf459e-c9d9-4910-8d5d-45df0a831f3d', id from actividades_productivas where slug = 'agroindustrial-alimentario';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('77cf459e-c9d9-4910-8d5d-45df0a831f3d', 2025, 37.0) on conflict (negocio_id, anio) do nothing;
-
--- MIEL DEL CHICAMOCHA
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('8ec0fb13-7b11-4db2-94e8-0a0b0eedbfa2', 'MIEL DEL CHICAMOCHA', generar_slug_unico('MIEL DEL CHICAMOCHA', '8ec0fb13-7b11-4db2-94e8-0a0b0eedbfa2'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Piedecuesta', (select id from veredas where municipio = 'Piedecuesta' and slug = 'la-urgua'), 'VEREDA LA URGUA FINCA EL TUNO', null, null, 'La apicultura y producción de miel', 'La apicultura y producción de miel', 'PRODUCCIÓN DE MIEL Y POLEN DE ABEJAS', '3216902254', '573216902254', 'jennyguiza1993@gmail.com', 'YENNY CAROLINA GÜIZA', '1102370795', 'Natural', null, 'RUT', 'ANA RUEDA', 'RETIRADO', 'Intermedio', 2024, '962.4', '72° 57´.692" W', '6°52´ 45.734" N', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, 'No', 'No', null, 'No', null, 'No', 'No', 'No', null, 'No', null, null, null, null, 'No', 'No', 'No', null, null, 'No', 'B2C', null, null, 'CONSERVACIÓN DE ZONAS NATURALES ,BUENAS PRÁCTICAS AMBIENTALES  , HACEN PROCESO DE RESCATE DE ABEJAS', 'Generación de empleo local  y servicio de cosecha de miel   experto en manejo de apicultura.', 'Tiene una buena producción de miel para obtener buenos ingresos , cuentan con 43 colmenas', true, false, false, false, false);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('8ec0fb13-7b11-4db2-94e8-0a0b0eedbfa2', (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select '8ec0fb13-7b11-4db2-94e8-0a0b0eedbfa2', id from subcategorias where slug = 'biocomercio';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select '8ec0fb13-7b11-4db2-94e8-0a0b0eedbfa2', id from actividades_productivas where slug = 'productos-fauna-silvestre';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('8ec0fb13-7b11-4db2-94e8-0a0b0eedbfa2', 2025, 45.3) on conflict (negocio_id, anio) do nothing;
-
--- ARCA ARTESANIAS
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('dce30796-c12d-4338-824f-b2dd025f6dad', 'ARCA ARTESANIAS', generar_slug_unico('ARCA ARTESANIAS', 'dce30796-c12d-4338-824f-b2dd025f6dad'), (select id from categorias_oficiales where slug = 'ecoproductos-industriales'), 'Rionegro', (select id from veredas where municipio = 'Rionegro' and slug = 'la-paz'), 'VEREDA LA PAZ  FINCA EL TRIANGULO', null, null, 'ARTESANIAS ELABORADAS A BASE DE LOS SUBPRODUCTOS DEL CULTIVO DEL CACAO Y TEJIDOS', 'ARTESANIAS ELABORADAS A BASE DE LOS SUBPRODUCTOS DEL CULTIVO DEL CACAO Y TEJIDOS', 'ARTESANIAS', '3188203684', '573188203684', 'rojasanne@gmail.com', 'ANA TIOFILDE ROJAS ARDILA', '63287335', 'Natural', null, 'Cámara de comercio y RUT', 'CARINE GARCIA', 'SUSPENDIDO', 'Intermedio', 2024, null, '73°11´3.710" W', '7°19´46.229" N', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, 'No', 'No', null, 'No', null, 'No', 'No', 'No', null, 'No', null, null, null, null, 'No', null, null, null, null, 'No', 'B2C', null, null, 'Se genera impacto positivo en la transformacion de los subproductos del arbol de cacao,generando buenas practicas ambientales, la transformacion de la cacota del cacao evitando la propagacion del vector que produce la leshmaniasis.se reutilizan todos los desechos para abono organico', 'trasnsforacion de los subproductos del cacao , convertir y represtarlos en canastos , arboles, collares , pulceras, imanes , pecebres , porta lapices , tejidos en croche , tejidos en coreas , aretes y casitas en macrame siendo asi atraidos por los comerciantes', 'Participacion en ferias y eventos actitud de ampliar el mercado', true, false, false, false, false);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('dce30796-c12d-4338-824f-b2dd025f6dad', (select id from categorias_oficiales where slug = 'ecoproductos-industriales'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select 'dce30796-c12d-4338-824f-b2dd025f6dad', id from subcategorias where slug = 'moda-sostenible';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('dce30796-c12d-4338-824f-b2dd025f6dad', 2025, 45.0) on conflict (negocio_id, anio) do nothing;
-
--- POTTER SALSAS
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('ac3fabf3-4554-4f84-afa5-0d16065e8427', 'POTTER SALSAS', generar_slug_unico('POTTER SALSAS', 'ac3fabf3-4554-4f84-afa5-0d16065e8427'), (select id from categorias_oficiales where slug = 'pendiente-clasificar'), 'Bucaramanga', null, null, null, null, null, null, null, '3209520826', '573209520826', 'marialecaceresc@gmail.com', 'ALEJANDRA CACERES', null, null, null, null, 'DIANA NAVARRO', 'RETIRADO', 'Inicial', 2025, null, null, null, 'No actualizó', 'No realizo visita ni se actualizo ficha de verificacion', null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, false, false, false, false);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('ac3fabf3-4554-4f84-afa5-0d16065e8427', (select id from categorias_oficiales where slug = 'pendiente-clasificar'));
-
--- SABOR A GLORIA DELICIAS HECHAS EN CASA
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('0988b1e6-1e07-4d50-909e-214aa3169121', 'SABOR A GLORIA DELICIAS HECHAS EN CASA', generar_slug_unico('SABOR A GLORIA DELICIAS HECHAS EN CASA', '0988b1e6-1e07-4d50-909e-214aa3169121'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Bucaramanga', (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'), 'CARRERA 28A # 40 - 65 MEJORAS PUBLICAS', 7.1211111111111105, -73.11416666666666, 'La empresa se dedica a la elaboración de tamales, ayacas y hayacos elaborados con ingredientes provenientes de su propia finca, garantizando la trazabilidad…', 'La empresa se dedica a la elaboración de tamales, ayacas y hayacos elaborados con ingredientes provenientes de su propia finca, garantizando la trazabilidad y calidad desde el origen. Cuenta con certificación en Buenas Prácticas de Manufactura (BPM) y registro INVIMA para cada uno de sus productos, asegurando procesos de producción higiénicos, controlados y sostenibles. Su compromiso se centra en ofrecer alimentos tradicionales con altos estándares de calidad, preservando el sabor auténtico y apoyando el desarrollo rural sostenible.', 'TAMALES, AYACOS Y AYACAS', '3112132427', '573112132427', 'saboragloriadelicias@gmail.com', 'GLORIA AMPARO PINTO PRADA', '28258990-7', 'Natural', null, 'Cámara de comercio', 'XIMENA REYES', 'ACTIVO', 'Avanzado', 2024, '1005.7 msnm', '73°06''51"', '7°7''16"', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, 'No', 'Acueducto', null, null, null, 'No', 'No', null, 'Sí', null, null, 'Sí', '2030-05-05', null, 'No', null, null, null, null, 'No', 'Mixta', 'No', 'NO', 'Producción con ingredientes orgánicos', 'Emprendimiento familiar inclusivo', 'Bajo costo de producción artesanal', false, true, true, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('0988b1e6-1e07-4d50-909e-214aa3169121', (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select '0988b1e6-1e07-4d50-909e-214aa3169121', id from subcategorias where slug = 'agroindustria-sostenible';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select '0988b1e6-1e07-4d50-909e-214aa3169121', id from actividades_productivas where slug = 'agroindustrial-alimentario';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('0988b1e6-1e07-4d50-909e-214aa3169121', 2025, 81.6) on conflict (negocio_id, anio) do nothing;
-
--- CAFÉ ROSA AMELIA
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('bb3ff86d-90b2-4913-82c2-86702133fcb8', 'CAFÉ ROSA AMELIA', generar_slug_unico('CAFÉ ROSA AMELIA', 'bb3ff86d-90b2-4913-82c2-86702133fcb8'), (select id from categorias_oficiales where slug = 'pendiente-clasificar'), 'Piedecuesta', (select id from veredas where municipio = 'Piedecuesta' and slug = 'perimetro-urbano'), 'PENDIENBTE', null, null, null, null, null, '3187747406', '573187747406', 'caferosa.amelia@gmail.com', 'DIANA MARCELA TORRES NIETO', null, null, null, null, 'LILIANA CACERES', 'SUSPENDIDO', null, 2025, null, null, null, 'No actualizó', 'No se pudo realizar visita en 2025', null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, false, false, false, false);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('bb3ff86d-90b2-4913-82c2-86702133fcb8', (select id from categorias_oficiales where slug = 'pendiente-clasificar'));
-
--- CAFÉ VILLA SAN PABLO
-insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo) values ('dc657345-6033-4d35-b429-f57aa3ab7e4e', 'CAFÉ VILLA SAN PABLO', generar_slug_unico('CAFÉ VILLA SAN PABLO', 'dc657345-6033-4d35-b429-f57aa3ab7e4e'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Bucaramanga', (select id from veredas where municipio = 'Bucaramanga' and slug = 'perimetro-urbano'), 'CRA 17 # 67-70 AP 302 LA VICTORIA', null, -72.97916666666667, 'Cultivo y comercialización del café', 'Cultivo y comercialización del café', 'CAFÉ TOSTADO', '3165863602', '573165863602', 'cafevillasanpablo@gmail.com', 'AYDE HERNANDEZ ROJAS', '28105005-0', 'Natural', null, 'Cámara de comercio y RUT', 'CRISTAL VILLAREAL', 'ACTIVO', 'Dinamizadoras', 2024, '1971', '72° 58'' 45"', '7° 16´55"', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, 'No', 'Acueducto', null, null, null, 'No', 'No', 'No', 'Sí', null, null, 'Sí', '2028-12-03', null, 'No', null, null, null, null, 'No', 'Mixta', null, null, 'Café  orgánico libre de químicos', 'Generan empleos indirectos y contribuyen con el desarrollo de la Región', 'No se compran abonos quimicos sino que realizan su propio compostaje', true, false, false, false, true);
-insert into negocios_categorias (negocio_id, categoria_oficial_id) values ('dc657345-6033-4d35-b429-f57aa3ab7e4e', (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'));
-insert into negocios_subcategorias (negocio_id, subcategoria_id) select 'dc657345-6033-4d35-b429-f57aa3ab7e4e', id from subcategorias where slug = 'agroindustria-sostenible';
-insert into negocios_actividades (negocio_id, actividad_productiva_id) select 'dc657345-6033-4d35-b429-f57aa3ab7e4e', id from actividades_productivas where slug = 'agroindustrial-alimentario';
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('dc657345-6033-4d35-b429-f57aa3ab7e4e', 2024, 61.0) on conflict (negocio_id, anio) do nothing;
-insert into negocio_puntajes (negocio_id, anio, puntaje) values ('dc657345-6033-4d35-b429-f57aa3ab7e4e', 2025, 78.8) on conflict (negocio_id, anio) do nothing;
+-- KAKAUA  CACAO
+update negocios set
+  categoria_oficial_id = (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'),
+  municipio = 'Rionegro',
+  vereda_id = (select id from veredas where municipio = 'Rionegro' and slug = 'portachuelo'),
+  direccion = 'FINCA ESTADO MERIDA VEREDA POTACHUELO RIONEGRO SANTANDER',
+  latitud = 7.324333333333333,
+  longitud = -73.16044444444445,
+  descripcion_corta = 'Kakaua cacao nace con el proposito de fortalecer la economia campesina y urbana mediante el valor agregado en el procesamiento de subproductos y productos…',
+  descripcion = 'Kakaua cacao nace con el proposito de fortalecer la economia campesina y urbana mediante el valor agregado en el procesamiento de subproductos y productos del cacao para la diversificación e innovación de productos finales de calidad y saludables. Mediante el aprovechamiento al 100% de las potencialidades del cacao, producen chocolatina en tabletas, chocolate de mesa, truffas,nuevo producto cacao maduro , artesanias y empaques. De esta manera, promueven la generación de empleo, mejoran y fortalecen el ambiente promoviendo la producción agroforestal (BOSQUE). Kakauacacao produce, transforma y comercializa su producto final.',
+  producto = 'BARRAS DE CHOCOLATINA EN TABLETA',
+  telefono = '3223167282',
+  whatsapp = '573223167282',
+  email = 'malibucomasjimenez@gmail.com',
+  representante_legal = 'YASMIN COMAS JIMENEZ',
+  nit = '63462833-1',
+  naturaleza_juridica = 'Natural',
+  delegado = null,
+  rut_camara_comercio = 'Cámara de comercio',
+  responsable_cdmb = 'XIMENA REYES',
+  novedad = 'ACTIVO',
+  tipo_negocio_verde = 'Satisfactorio',
+  anio_registro = 2022,
+  cota_msnm = '899 msnm',
+  este = '73°9''37,6''''',
+  norte = '7°19''27,6''''',
+  aplicacion_ficha_2025 = 'Actualizó',
+  observaciones = 'Se realizo visita y se actualizo ficha de verificacion',
+  registro_nacional_turismo = null,
+  uso_suelo = 'No',
+  concesion_aguas = 'Acueducto veredal',
+  concesion_aguas_vencimiento = null,
+  vertimientos = null,
+  vertimientos_vencimiento = null,
+  pueaa = 'No',
+  pgris = 'No',
+  pozo_septico = 'Sí',
+  alcantarillado = null,
+  ica = null,
+  ica_vencimiento = null,
+  invima = 'Sí',
+  invima_vencimiento = '2029-12-05',
+  certificado_tenencia_animales = null,
+  buenas_practicas_agricolas = 'No',
+  buenas_practicas_apicolas = null,
+  registro_apicola = null,
+  intervencion_cauce = null,
+  capacidad_carga = null,
+  sstt = 'No',
+  canal_venta = 'B2C',
+  exportacion = 'No',
+  huella_carbono = 'NO',
+  fortalezas_ambiental = 'Aprovechamiento de agua lluvia, cultivo de cacao en asocio de frutales y nativos, abonos organicos, empaques 100% biodegradables en caña de azucar',
+  fortalezas_social = 'Contrata personas locales, y capacita a mujeres campesinas cabeza de hogar en la realizacion de artesanias con el residuo del cacao como oportunidad de generar empleo en la zona',
+  fortalezas_economico = 'Se enfoca en desarrollo de nuevos productos con base en investigaciones que aporten a la salud del consumidor conservando las propiedades naturales del cacao,como una estrategia de diferenciacion',
+  emprendimiento_verde = false,
+  sello_marca = false,
+  avalado = true,
+  destacado = false,
+  activo = true
+where nombre = 'KAKAUA  CACAO';
+insert into negocios (id, nombre, slug, categoria_oficial_id, municipio, vereda_id, direccion, latitud, longitud, descripcion_corta, descripcion, producto, telefono, whatsapp, email, representante_legal, nit, naturaleza_juridica, delegado, rut_camara_comercio, responsable_cdmb, novedad, tipo_negocio_verde, anio_registro, cota_msnm, este, norte, aplicacion_ficha_2025, observaciones, registro_nacional_turismo, uso_suelo, concesion_aguas, concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, invima, invima_vencimiento, certificado_tenencia_animales, buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, huella_carbono, fortalezas_ambiental, fortalezas_social, fortalezas_economico, emprendimiento_verde, sello_marca, avalado, destacado, activo)
+select '39d1f70b-e740-4406-8ebd-f86266c7efc7', 'KAKAUA  CACAO', generar_slug_unico('KAKAUA  CACAO', '39d1f70b-e740-4406-8ebd-f86266c7efc7'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles'), 'Rionegro', (select id from veredas where municipio = 'Rionegro' and slug = 'portachuelo'), 'FINCA ESTADO MERIDA VEREDA POTACHUELO RIONEGRO SANTANDER', 7.324333333333333, -73.16044444444445, 'Kakaua cacao nace con el proposito de fortalecer la economia campesina y urbana mediante el valor agregado en el procesamiento de subproductos y productos…', 'Kakaua cacao nace con el proposito de fortalecer la economia campesina y urbana mediante el valor agregado en el procesamiento de subproductos y productos del cacao para la diversificación e innovación de productos finales de calidad y saludables. Mediante el aprovechamiento al 100% de las potencialidades del cacao, producen chocolatina en tabletas, chocolate de mesa, truffas,nuevo producto cacao maduro , artesanias y empaques. De esta manera, promueven la generación de empleo, mejoran y fortalecen el ambiente promoviendo la producción agroforestal (BOSQUE). Kakauacacao produce, transforma y comercializa su producto final.', 'BARRAS DE CHOCOLATINA EN TABLETA', '3223167282', '573223167282', 'malibucomasjimenez@gmail.com', 'YASMIN COMAS JIMENEZ', '63462833-1', 'Natural', null, 'Cámara de comercio', 'XIMENA REYES', 'ACTIVO', 'Satisfactorio', 2022, '899 msnm', '73°9''37,6''''', '7°19''27,6''''', 'Actualizó', 'Se realizo visita y se actualizo ficha de verificacion', null, 'No', 'Acueducto veredal', null, null, null, 'No', 'No', 'Sí', null, null, null, 'Sí', '2029-12-05', null, 'No', null, null, null, null, 'No', 'B2C', 'No', 'NO', 'Aprovechamiento de agua lluvia, cultivo de cacao en asocio de frutales y nativos, abonos organicos, empaques 100% biodegradables en caña de azucar', 'Contrata personas locales, y capacita a mujeres campesinas cabeza de hogar en la realizacion de artesanias con el residuo del cacao como oportunidad de generar empleo en la zona', 'Se enfoca en desarrollo de nuevos productos con base en investigaciones que aporten a la salud del consumidor conservando las propiedades naturales del cacao,como una estrategia de diferenciacion', false, false, true, false, true
+where not exists (select 1 from negocios where nombre = 'KAKAUA  CACAO');
+delete from negocios_categorias where negocio_id = (select id from negocios where nombre = 'KAKAUA  CACAO');
+insert into negocios_categorias (negocio_id, categoria_oficial_id) select (select id from negocios where nombre = 'KAKAUA  CACAO'), (select id from categorias_oficiales where slug = 'bioproductos-servicios-sostenibles');
+delete from negocios_subcategorias where negocio_id = (select id from negocios where nombre = 'KAKAUA  CACAO');
+insert into negocios_subcategorias (negocio_id, subcategoria_id) select (select id from negocios where nombre = 'KAKAUA  CACAO'), id from subcategorias where slug = 'agroindustria-sostenible';
+delete from negocios_actividades where negocio_id = (select id from negocios where nombre = 'KAKAUA  CACAO');
+insert into negocios_actividades (negocio_id, actividad_productiva_id) select (select id from negocios where nombre = 'KAKAUA  CACAO'), id from actividades_productivas where slug = 'agroindustrial-alimentario';
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'KAKAUA  CACAO'), 2023, 59.93 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'KAKAUA  CACAO'), 2024, 74.8 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
+insert into negocio_puntajes (negocio_id, anio, puntaje) select (select id from negocios where nombre = 'KAKAUA  CACAO'), 2025, 54.6 on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;
 
 
 commit;

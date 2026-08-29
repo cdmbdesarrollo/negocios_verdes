@@ -730,29 +730,53 @@ def main():
             'activo': sql_bool(activo),
         }
 
+        # UPSERT por nombre, no INSERT ciego: una corrida parcial anterior
+        # (con una versión vieja de este mismo script, antes de todas las
+        # correcciones de esta sesión) ya dejó los 295 negocios reales
+        # cargados en producción — confirmado por el propio usuario
+        # (`select count(*), novedad, activo from negocios group by
+        # novedad, activo` sumó exactamente 295). Pedido explícito: "agrupen
+        # todo sin eliminar nada" — no se puede volver a INSERT esos mismos
+        # 295 (crearía duplicados) ni tampoco tiene sentido saltarlos sin
+        # más (se quedarían con los datos viejos: sin WhatsApp, sin Este/
+        # Norte, novedad sin unificar, etc.). UPDATE ... WHERE nombre = X
+        # primero; si no afectó ninguna fila (negocio realmente nuevo, no
+        # estaba en la corrida vieja), el INSERT de abajo entra solo por el
+        # WHERE NOT EXISTS. `id`/`slug` nunca se tocan en el UPDATE — solo
+        # importan para un negocio genuinamente nuevo.
+        campos_update = {k: v for k, v in campos.items() if k not in ('id', 'nombre', 'slug')}
+        set_clause = ',\n  '.join(f"{k} = {v}" for k, v in campos_update.items())
         columnas = ', '.join(campos)
         valores = ', '.join(campos.values())
-        lineas = [f"insert into negocios ({columnas}) values ({valores});"]
+        lineas = [
+            f"update negocios set\n  {set_clause}\nwhere nombre = {sql_str(nombre)};",
+            f"insert into negocios ({columnas})\nselect {valores}\n"
+            f"where not exists (select 1 from negocios where nombre = {sql_str(nombre)});",
+        ]
 
+        id_resuelto = f"(select id from negocios where nombre = {sql_str(nombre)})"
+        lineas.append(f"delete from negocios_categorias where negocio_id = {id_resuelto};")
         lineas.append(
             f"insert into negocios_categorias (negocio_id, categoria_oficial_id) "
-            f"values ({sql_str(negocio_id)}, {categoria_sql});")
+            f"select {id_resuelto}, {categoria_sql};")
+        lineas.append(f"delete from negocios_subcategorias where negocio_id = {id_resuelto};")
         if subcategoria_slug:
             lineas.append(
                 f"insert into negocios_subcategorias (negocio_id, subcategoria_id) "
-                f"select {sql_str(negocio_id)}, id from subcategorias where slug = {sql_str(subcategoria_slug)};")
+                f"select {id_resuelto}, id from subcategorias where slug = {sql_str(subcategoria_slug)};")
+        lineas.append(f"delete from negocios_actividades where negocio_id = {id_resuelto};")
         if actividad_slug:
             lineas.append(
                 f"insert into negocios_actividades (negocio_id, actividad_productiva_id) "
-                f"select {sql_str(negocio_id)}, id from actividades_productivas where slug = {sql_str(actividad_slug)};")
+                f"select {id_resuelto}, id from actividades_productivas where slug = {sql_str(actividad_slug)};")
 
         for idx_col, anio in idx_puntajes:
             valor = r[idx_col] if idx_col is not None else None
             if isinstance(valor, (int, float)):
                 lineas.append(
                     f"insert into negocio_puntajes (negocio_id, anio, puntaje) "
-                    f"values ({sql_str(negocio_id)}, {anio}, {float(valor)}) "
-                    f"on conflict (negocio_id, anio) do nothing;")
+                    f"select {id_resuelto}, {anio}, {float(valor)} "
+                    f"on conflict (negocio_id, anio) do update set puntaje = excluded.puntaje;")
 
         bloques_negocio.append(f"-- {nombre}\n" + '\n'.join(lineas))
         reporte['total_importados'] += 1

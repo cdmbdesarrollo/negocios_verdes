@@ -1,4 +1,4 @@
-Generado en 9 archivos: 0026_datos_cdmb_negocios_verdes_01.sql .. 0026_datos_cdmb_negocios_verdes_09.sql
+Generado en 17 archivos: 0026_datos_cdmb_negocios_verdes_01.sql .. 0026_datos_cdmb_negocios_verdes_17.sql
 
 Total importados: 295 / 303
 
