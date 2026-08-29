@@ -27,6 +27,7 @@ import 'pages/estaticas/contacto_page.dart';
 import 'pages/estaticas/no_encontrado_page.dart';
 import 'pages/estaticas/nosotros_page.dart';
 import 'pages/estaticas/plan_nacional_page.dart';
+import 'pages/geovisor/geovisor_page.dart';
 import 'pages/inicio/inicio_page.dart';
 import 'pages/negocio_detalle/negocio_detalle_page.dart';
 import 'theme/nv_theme.dart';
@@ -131,6 +132,10 @@ GoRouter _construirRouter() {
           GoRoute(
             path: '/buscar',
             builder: (context, state) => const BuscarPage(),
+          ),
+          GoRoute(
+            path: '/geovisor',
+            builder: (context, state) => const GeovisorPage(),
           ),
           GoRoute(
             path: '/negocio/:slug',

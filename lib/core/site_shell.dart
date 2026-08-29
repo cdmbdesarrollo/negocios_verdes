@@ -17,6 +17,7 @@ class EnlaceNav {
 const List<EnlaceNav> enlacesNavPublicos = [
   EnlaceNav('Inicio', '/'),
   EnlaceNav('Buscar', '/buscar'),
+  EnlaceNav('Geovisor', '/geovisor'),
   EnlaceNav('¿Qué son los Negocios Verdes?', '/nosotros'),
   EnlaceNav('Plan Nacional', '/plan-nacional'),
   EnlaceNav('Contacto', '/contacto'),
