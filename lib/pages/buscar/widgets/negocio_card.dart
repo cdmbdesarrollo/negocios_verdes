@@ -77,8 +77,14 @@ class NegocioCard extends StatelessWidget {
                         negocio.fotoPortadaUrl!.isNotEmpty
                     ? CachedNetworkImage(
                         imageUrl: negocio.fotoPortadaUrl!, fit: BoxFit.contain)
-                    : const Icon(Icons.storefront,
-                        color: NVColors.verdeVivo, size: 32),
+                    // Sin foto todavía (la foto ya no es obligatoria para
+                    // publicar, ver 0024_foto_portada_opcional.sql) — el
+                    // logo de Negocios Verdes en vez de un ícono genérico
+                    // de "falta imagen".
+                    : Image.asset(
+                        'assets/images/iconografia/logo_negocios_verdes.png',
+                        fit: BoxFit.contain,
+                      ),
               ),
               Expanded(
                   child: Padding(

@@ -126,6 +126,13 @@ en un Supabase nuevo:
     fuera y necesitan completarse a mano, y de los ~89 que quedaron en
     "Pendiente de clasificar" para revisión manual desde
     `/admin/negocios`.
+24. `0024_foto_portada_opcional.sql` — quita el CHECK
+    `negocios_publicado_necesita_foto` (0004): la foto de portada deja de
+    ser obligatoria para publicar. Con los 295 negocios reales recién
+    importados y ninguno con foto todavía, exigirla los habría dejado a
+    todos sin poder activarse. Mientras no tenga foto, la ficha
+    pública/tarjetas muestran el logo de Negocios Verdes en su lugar (ver
+    `assets/images/iconografia/logo_negocios_verdes.png`).
 
 ## Sobre trabajo concurrente de dos sesiones
 

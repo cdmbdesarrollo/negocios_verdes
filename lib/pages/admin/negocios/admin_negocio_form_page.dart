@@ -365,10 +365,9 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
       _avisar('Selecciona un municipio.');
       return;
     }
-    if (_activo && (_fotoPortadaUrl == null || _fotoPortadaUrl!.isEmpty)) {
-      _avisar('Sube una foto de portada antes de activar el negocio.');
-      return;
-    }
+    // La foto de portada ya no es obligatoria para activar un negocio
+    // (ver 0024_foto_portada_opcional.sql) — sin ella se muestra el logo
+    // de Negocios Verdes en la ficha pública y las tarjetas.
 
     setState(() => _guardando = true);
     try {
@@ -838,8 +837,8 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             contentPadding: EdgeInsets.zero,
             title: const Text('Activo'),
             subtitle: const Text(
-                'Visible en el buscador público. Necesita foto de portada. '
-                'Inactivo = solo visible acá en el admin.'),
+                'Visible en el buscador público (sin foto se muestra el '
+                'logo de Negocios Verdes). Inactivo = solo visible acá en el admin.'),
             value: _activo,
             onChanged: (v) => setState(() => _activo = v),
           ),

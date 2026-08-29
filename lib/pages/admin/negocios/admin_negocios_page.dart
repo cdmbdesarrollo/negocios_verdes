@@ -232,10 +232,12 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
               child: n.fotoPortadaUrl != null && n.fotoPortadaUrl!.isNotEmpty
                   ? Image.network(n.fotoPortadaUrl!, fit: BoxFit.cover)
                   : Container(
-                      color: NVColors.primaryLight,
-                      child:
-                          const Icon(Icons.storefront,
-                              color: NVColors.verdeVivo),
+                      color: Colors.white,
+                      padding: const EdgeInsets.all(6),
+                      child: Image.asset(
+                        'assets/images/iconografia/logo_negocios_verdes.png',
+                        fit: BoxFit.contain,
+                      ),
                     ),
             ),
           ),

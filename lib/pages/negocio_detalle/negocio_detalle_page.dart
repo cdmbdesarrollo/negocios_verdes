@@ -307,10 +307,14 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
   /// banner como siempre, el QR es una insignia fija arriba a la derecha,
   /// igual en cualquier ancho de pantalla — sin ramas por tamaño.
   Widget _portada(Negocio negocio) {
+    // Sin foto todavía (la foto ya no es obligatoria para publicar, ver
+    // 0024_foto_portada_opcional.sql) — el logo de Negocios Verdes en vez
+    // de un ícono genérico de "falta imagen".
     final logo = negocio.fotoPortadaUrl != null && negocio.fotoPortadaUrl!.isNotEmpty
         ? CachedNetworkImage(
             imageUrl: negocio.fotoPortadaUrl!, fit: BoxFit.contain)
-        : const Icon(Icons.storefront, size: 64, color: NVColors.verdeVivo);
+        : Image.asset('assets/images/iconografia/logo_negocios_verdes.png',
+            fit: BoxFit.contain);
 
     // Blanco, no verde: casi todos los logos ya traen su propio fondo
     // blanco — un tinte verde detrás se veía como un recuadro desencajado

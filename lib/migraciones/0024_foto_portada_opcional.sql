@@ -1,0 +1,11 @@
+-- 0024_foto_portada_opcional.sql
+--
+-- Pedido explícito: la foto de portada no debe ser obligatoria para
+-- publicar un negocio — con 295 negocios reales recién importados y
+-- ninguno con foto todavía (el Excel de CDMB no trae fotos), exigirla
+-- habría dejado a todos sin poder publicarse hasta subir 295 fotos a
+-- mano. Mientras un negocio no tenga foto, la ficha pública y las
+-- tarjetas muestran el logo de Negocios Verdes en su lugar (ver
+-- negocio_card.dart / negocio_detalle_page.dart / admin_negocios_page.dart
+-- — assets/images/iconografia/logo_negocios_verdes.png), nunca queda "roto".
+alter table negocios drop constraint if exists negocios_publicado_necesita_foto;
