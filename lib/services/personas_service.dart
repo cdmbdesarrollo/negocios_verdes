@@ -10,7 +10,14 @@ import '../models/persona.dart';
 class PersonasService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  static const _columnas = 'id, nombres, apellidos, documento, telefono, correo';
+  static const _comunes =
+      'id, nombres, apellidos, documento, tipo_documento, telefono, correo, direccion';
+
+  /// Columnas a pedir por tipo — responsables/delegados llevan `cargo`,
+  /// representantes llevan `naturaleza_juridica` y `razon_social` (ver 0031).
+  String _columnas(TipoPersona t) => t == TipoPersona.representante
+      ? '$_comunes, naturaleza_juridica, razon_social'
+      : '$_comunes, cargo';
 
   String _rpcGuardar(TipoPersona t) => switch (t) {
         TipoPersona.responsable => 'guardar_responsable',
@@ -65,7 +72,7 @@ class PersonasService {
     try {
       final data = await _supabase
           .from(tipo.tabla)
-          .select(_columnas)
+          .select(_columnas(tipo))
           .order('nombres');
       return (data as List)
           .map((e) => Persona.fromJson(e as Map<String, dynamic>))
@@ -82,7 +89,7 @@ class PersonasService {
     try {
       final data = await _supabase
           .from(_vista(tipo))
-          .select('$_columnas, negocios_total, negocios_vigentes')
+          .select('${_columnas(tipo)}, negocios_total, negocios_vigentes')
           .order('nombres');
       return (data as List)
           .map((e) => Persona.fromJson(e as Map<String, dynamic>))
@@ -102,28 +109,32 @@ class PersonasService {
     }
   }
 
-  /// Crea (id nulo) o edita una persona. Devuelve el id.
-  Future<String> guardarPersona(
-    TipoPersona tipo, {
-    String? id,
-    required String nombres,
-    String? apellidos,
-    String? documento,
-    String? telefono,
-    String? correo,
-  }) async {
+  /// Crea (id nulo) o edita una persona. Devuelve el id. Los campos que no
+  /// aplican al tipo (cargo para representante; razón social / naturaleza
+  /// para responsable-delegado) simplemente se ignoran.
+  Future<String> guardarPersona(TipoPersona tipo, Persona p) async {
     try {
-      final r = await _supabase.rpc(_rpcGuardar(tipo), params: {
-        'p_id': id,
-        'p_nombres': nombres,
-        'p_apellidos': apellidos,
-        'p_documento': documento,
-        'p_telefono': telefono,
-        'p_correo': correo,
-      });
+      final base = <String, dynamic>{
+        'p_id': p.id.isEmpty ? null : p.id,
+        'p_nombres': p.nombres,
+        'p_apellidos': p.apellidos,
+        'p_documento': p.documento,
+        'p_tipo_documento': p.tipoDocumento,
+        'p_telefono': p.telefono,
+        'p_correo': p.correo,
+        'p_direccion': p.direccion,
+      };
+      if (tipo == TipoPersona.representante) {
+        base['p_razon_social'] = p.razonSocial;
+        base['p_naturaleza_juridica'] = p.naturalezaJuridica;
+      } else {
+        base['p_cargo'] = p.cargo;
+      }
+      final r = await _supabase.rpc(_rpcGuardar(tipo), params: base);
       return r.toString();
     } catch (e) {
-      throw Exception('No se pudo guardar la persona: $e');
+      throw Exception(
+          'No se pudo guardar la persona: ${e.toString().replaceFirst('Exception: ', '')}');
     }
   }
 
@@ -209,12 +220,15 @@ class PersonasService {
       TipoPersona tipo, String negocioId) async {
     try {
       final p = _puente(tipo);
-      final extra =
-          tipo == TipoPersona.representante ? ', nit, naturaleza_juridica' : '';
+      final esRepr = tipo == TipoPersona.representante;
+      final extra = esRepr ? ', nit, naturaleza_juridica' : '';
+      final embedCols = esRepr
+          ? 'nombres, apellidos, documento, razon_social'
+          : 'nombres, apellidos, documento';
       final data = await _supabase
           .from(p.tabla)
           .select(
-              'vigente_desde, vigente_hasta, nota$extra, ${p.embed}(nombres, apellidos, documento)')
+              'vigente_desde, vigente_hasta, nota$extra, ${p.embed}($embedCols)')
           .eq('negocio_id', negocioId)
           .order('vigente_desde', ascending: false);
       return (data as List)

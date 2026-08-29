@@ -40,6 +40,20 @@ const List<String> kMunicipios = [
 /// naturaleza jurídica (ver negocio_detalle_page.dart).
 const List<String> kNaturalezasJuridicas = ['Natural', 'Jurídica'];
 
+/// Tipos de documento de identidad para las bases de personas (responsables
+/// CDMB, delegados, representantes legales — ver PersonasService / 0031).
+/// Lista guía para el desplegable; si un dato viejo trae otro valor se
+/// muestra igual, no se pierde.
+const List<String> kTiposDocumento = [
+  'Cédula de ciudadanía',
+  'Cédula de extranjería',
+  'NIT',
+  'Pasaporte',
+  'Tarjeta de identidad',
+  'Permiso por Protección Temporal (PPT)',
+  'Otro',
+];
+
 /// Mensaje precargado al abrir el botón de WhatsApp desde la ficha pública.
 String mensajeWhatsappPredeterminado(String nombreNegocio) =>
     'Hola, te vi en el directorio de Negocios Verdes CDMB ($nombreNegocio) '

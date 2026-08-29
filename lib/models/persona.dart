@@ -26,8 +26,18 @@ class Persona {
   final String nombres;
   final String? apellidos;
   final String? documento;
+  final String? tipoDocumento;
   final String? telefono;
   final String? correo;
+  final String? direccion;
+
+  /// Solo responsables CDMB y delegados.
+  final String? cargo;
+
+  /// Solo representantes: 'Natural' o 'Jurídica'. Cuando es 'Jurídica' el
+  /// nombre que se muestra es [razonSocial], no nombres+apellidos.
+  final String? naturalezaJuridica;
+  final String? razonSocial;
 
   /// Solo vienen poblados al leer desde las vistas `v_*` (ver 0030): a
   /// cuántos negocios está asignada esta persona en total y ahora mismo.
@@ -39,17 +49,49 @@ class Persona {
     required this.nombres,
     this.apellidos,
     this.documento,
+    this.tipoDocumento,
     this.telefono,
     this.correo,
+    this.direccion,
+    this.cargo,
+    this.naturalezaJuridica,
+    this.razonSocial,
     this.negociosTotal,
     this.negociosVigentes,
   });
 
-  /// Nombre + apellidos en una sola línea — es lo que se guarda como copia
-  /// denormalizada en `negocios` y lo que se muestra en el buscador.
+  bool get esJuridica => (naturalezaJuridica ?? '').toLowerCase() == 'jurídica' ||
+      (naturalezaJuridica ?? '').toLowerCase() == 'juridica';
+
+  /// Nombre + apellidos en una sola línea.
   String get nombreCompleto {
     final ap = apellidos?.trim() ?? '';
     return ap.isEmpty ? nombres.trim() : '${nombres.trim()} $ap';
+  }
+
+  /// Lo que se muestra en listas y buscadores y lo que se copia a
+  /// `negocios.representante_legal`: la razón social si es jurídica, si no
+  /// el nombre completo.
+  String get nombreMostrado {
+    final rs = razonSocial?.trim() ?? '';
+    if (rs.isNotEmpty) return rs;
+    final nc = nombreCompleto;
+    return nc.isEmpty ? '(sin nombre)' : nc;
+  }
+
+  /// "CC 12345678" / "NIT 900...-1" — tipo abreviado + número.
+  String? get documentoMostrado {
+    final n = documento?.trim() ?? '';
+    if (n.isEmpty) return null;
+    final abrev = switch ((tipoDocumento ?? '').toLowerCase()) {
+      'cédula de ciudadanía' || 'cedula de ciudadania' => 'CC',
+      'cédula de extranjería' || 'cedula de extranjeria' => 'CE',
+      'nit' => 'NIT',
+      'pasaporte' => 'PA',
+      'tarjeta de identidad' => 'TI',
+      _ => tipoDocumento?.trim().isNotEmpty == true ? tipoDocumento! : 'Doc.',
+    };
+    return '$abrev $n';
   }
 
   factory Persona.fromJson(Map<String, dynamic> json) => Persona(
@@ -57,8 +99,13 @@ class Persona {
         nombres: json['nombres']?.toString() ?? '',
         apellidos: json['apellidos']?.toString(),
         documento: json['documento']?.toString(),
+        tipoDocumento: json['tipo_documento']?.toString(),
         telefono: json['telefono']?.toString(),
         correo: json['correo']?.toString(),
+        direccion: json['direccion']?.toString(),
+        cargo: json['cargo']?.toString(),
+        naturalezaJuridica: json['naturaleza_juridica']?.toString(),
+        razonSocial: json['razon_social']?.toString(),
         negociosTotal: (json['negocios_total'] as num?)?.toInt(),
         negociosVigentes: (json['negocios_vigentes'] as num?)?.toInt(),
       );
@@ -98,9 +145,13 @@ class AsignacionPersona {
             : <String, dynamic>{});
     final nombres = persona['nombres']?.toString() ?? '';
     final apellidos = persona['apellidos']?.toString() ?? '';
+    final razonSocial = persona['razon_social']?.toString() ?? '';
+    final nombreCompleto =
+        (apellidos.isEmpty ? nombres : '$nombres $apellidos').trim();
     return AsignacionPersona(
-      personaNombre:
-          (apellidos.isEmpty ? nombres : '$nombres $apellidos').trim(),
+      personaNombre: razonSocial.isNotEmpty
+          ? razonSocial
+          : (nombreCompleto.isEmpty ? '(sin nombre)' : nombreCompleto),
       documento: persona['documento']?.toString(),
       vigenteDesde: DateTime.tryParse(json['vigente_desde']?.toString() ?? ''),
       vigenteHasta: DateTime.tryParse(json['vigente_hasta']?.toString() ?? ''),

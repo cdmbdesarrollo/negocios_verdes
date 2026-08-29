@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../catalogos.dart';
 import '../../models/persona.dart';
 import '../../services/personas_service.dart';
 import '../../theme/nv_colors.dart';
 
-/// Diálogo para crear o editar una persona (responsable CDMB / delegado /
-/// representante) — nombres, apellidos, documento, teléfono y correo, cada
-/// campo por aparte. Devuelve la [Persona] guardada, o null si se canceló.
-/// Lo usan tanto SelectorPersona (dentro del formulario de un negocio) como
-/// la pantalla /admin/personas.
+/// Diálogo para crear o editar una persona de cualquiera de las 3 bases
+/// (responsable CDMB / delegado / representante legal — ver 0029 / 0031).
+/// Devuelve la [Persona] guardada, o null si se canceló. Lo usan
+/// SelectorPersona (dentro del formulario de un negocio) y /admin/personas.
 class FormPersonaDialog extends StatefulWidget {
   final TipoPersona tipo;
   final PersonasService servicio;
@@ -30,11 +30,19 @@ class FormPersonaDialog extends StatefulWidget {
 class _FormPersonaDialogState extends State<FormPersonaDialog> {
   late final TextEditingController _nombres;
   late final TextEditingController _apellidos;
+  late final TextEditingController _razonSocial;
   late final TextEditingController _documento;
   late final TextEditingController _telefono;
   late final TextEditingController _correo;
+  late final TextEditingController _direccion;
+  late final TextEditingController _cargo;
+  String? _tipoDocumento;
+  String _naturaleza = 'Natural';
   bool _guardando = false;
   String? _error;
+
+  bool get _esRepr => widget.tipo == TipoPersona.representante;
+  bool get _esJuridica => _esRepr && _naturaleza == 'Jurídica';
 
   @override
   void initState() {
@@ -43,23 +51,51 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
     _nombres =
         TextEditingController(text: i?.nombres ?? widget.nombreSugerido ?? '');
     _apellidos = TextEditingController(text: i?.apellidos ?? '');
+    _razonSocial = TextEditingController(
+        text: i?.razonSocial ?? (i == null ? widget.nombreSugerido ?? '' : ''));
     _documento = TextEditingController(text: i?.documento ?? '');
     _telefono = TextEditingController(text: i?.telefono ?? '');
     _correo = TextEditingController(text: i?.correo ?? '');
+    _direccion = TextEditingController(text: i?.direccion ?? '');
+    _cargo = TextEditingController(text: i?.cargo ?? '');
+    _tipoDocumento = i?.tipoDocumento;
+    _naturaleza = i?.naturalezaJuridica != null
+        ? (i!.esJuridica ? 'Jurídica' : 'Natural')
+        : 'Natural';
   }
+
+  /// Lista guía + el valor actual si viniera de un dato viejo fuera de la
+  /// lista (para no perderlo en el desplegable).
+  List<String> get _tiposDoc => [
+        if (_tipoDocumento != null &&
+            _tipoDocumento!.isNotEmpty &&
+            !kTiposDocumento.contains(_tipoDocumento))
+          _tipoDocumento!,
+        ...kTiposDocumento,
+      ];
 
   @override
   void dispose() {
     _nombres.dispose();
     _apellidos.dispose();
+    _razonSocial.dispose();
     _documento.dispose();
     _telefono.dispose();
     _correo.dispose();
+    _direccion.dispose();
+    _cargo.dispose();
     super.dispose();
   }
 
+  String? _nn(TextEditingController c) =>
+      c.text.trim().isEmpty ? null : c.text.trim();
+
   Future<void> _guardar() async {
-    if (_nombres.text.trim().isEmpty) {
+    if (_esJuridica && _razonSocial.text.trim().isEmpty) {
+      setState(() => _error = 'La razón social es obligatoria.');
+      return;
+    }
+    if (!_esJuridica && _nombres.text.trim().isEmpty) {
       setState(() => _error = 'Los nombres son obligatorios.');
       return;
     }
@@ -68,27 +104,35 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
       _error = null;
     });
     try {
-      String? nn(TextEditingController c) =>
-          c.text.trim().isEmpty ? null : c.text.trim();
-      final id = await widget.servicio.guardarPersona(
-        widget.tipo,
-        id: widget.inicial?.id,
+      final propuesta = Persona(
+        id: widget.inicial?.id ?? '',
         nombres: _nombres.text.trim(),
-        apellidos: nn(_apellidos),
-        documento: nn(_documento),
-        telefono: nn(_telefono),
-        correo: nn(_correo),
+        apellidos: _nn(_apellidos),
+        razonSocial: _esRepr ? _nn(_razonSocial) : null,
+        naturalezaJuridica: _esRepr ? _naturaleza : null,
+        documento: _nn(_documento),
+        tipoDocumento: _tipoDocumento,
+        telefono: _nn(_telefono),
+        correo: _nn(_correo),
+        direccion: _nn(_direccion),
+        cargo: _esRepr ? null : _nn(_cargo),
       );
+      final id = await widget.servicio.guardarPersona(widget.tipo, propuesta);
       if (!mounted) return;
       Navigator.pop(
         context,
         Persona(
           id: id,
-          nombres: _nombres.text.trim(),
-          apellidos: nn(_apellidos),
-          documento: nn(_documento),
-          telefono: nn(_telefono),
-          correo: nn(_correo),
+          nombres: propuesta.nombres,
+          apellidos: propuesta.apellidos,
+          razonSocial: propuesta.razonSocial,
+          naturalezaJuridica: propuesta.naturalezaJuridica,
+          documento: propuesta.documento,
+          tipoDocumento: propuesta.tipoDocumento,
+          telefono: propuesta.telefono,
+          correo: propuesta.correo,
+          direccion: propuesta.direccion,
+          cargo: propuesta.cargo,
         ),
       );
     } catch (e) {
@@ -106,20 +150,50 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
     final esNueva = widget.inicial == null;
     return AlertDialog(
       title: Text(esNueva
-          ? 'Nueva persona — ${widget.tipo.etiqueta.toLowerCase()}'
-          : 'Editar ${widget.inicial!.nombreCompleto}'),
+          ? 'Nuevo ${widget.tipo.etiqueta.toLowerCase()}'
+          : 'Editar ${widget.inicial!.nombreMostrado}'),
       content: SizedBox(
-        width: 420,
+        width: 460,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              TextField(
-                controller: _nombres,
-                autofocus: true,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(labelText: 'Nombres *'),
-              ),
+              if (_esRepr) ...[
+                _rotulo('Naturaleza jurídica'),
+                SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(value: 'Natural', label: Text('Persona natural')),
+                    ButtonSegment(value: 'Jurídica', label: Text('Jurídica')),
+                  ],
+                  selected: {_naturaleza},
+                  onSelectionChanged: (s) =>
+                      setState(() => _naturaleza = s.first),
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (_esJuridica) ...[
+                TextField(
+                  controller: _razonSocial,
+                  autofocus: true,
+                  textCapitalization: TextCapitalization.words,
+                  decoration:
+                      const InputDecoration(labelText: 'Razón social *'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _nombres,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                      labelText: 'Nombres del representante (opcional)'),
+                ),
+              ] else
+                TextField(
+                  controller: _nombres,
+                  autofocus: true,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(labelText: 'Nombres *'),
+                ),
               const SizedBox(height: 10),
               TextField(
                 controller: _apellidos,
@@ -127,13 +201,45 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
                 decoration: const InputDecoration(labelText: 'Apellidos'),
               ),
               const SizedBox(height: 10),
-              TextField(
-                controller: _documento,
-                decoration:
-                    const InputDecoration(labelText: 'Documento de identidad'),
-                keyboardType: TextInputType.number,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _tipoDocumento,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                          labelText: 'Tipo de documento'),
+                      items: [
+                        const DropdownMenuItem(value: null, child: Text('—')),
+                        for (final t in _tiposDoc)
+                          DropdownMenuItem(value: t, child: Text(t)),
+                      ],
+                      onChanged: (v) => setState(() => _tipoDocumento = v),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 2,
+                    child: TextField(
+                      controller: _documento,
+                      decoration:
+                          const InputDecoration(labelText: 'Número'),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
+              if (!_esRepr) ...[
+                TextField(
+                  controller: _cargo,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(labelText: 'Cargo'),
+                ),
+                const SizedBox(height: 10),
+              ],
               TextField(
                 controller: _telefono,
                 decoration: const InputDecoration(labelText: 'Teléfono'),
@@ -144,6 +250,12 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
                 controller: _correo,
                 decoration: const InputDecoration(labelText: 'Correo'),
                 keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _direccion,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(labelText: 'Dirección'),
               ),
               if (_error != null) ...[
                 const SizedBox(height: 10),
@@ -171,4 +283,11 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
       ],
     );
   }
+
+  Widget _rotulo(String t) => Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Text(t,
+            style: const TextStyle(
+                fontSize: 12, color: NVColors.textoSecundario)),
+      );
 }

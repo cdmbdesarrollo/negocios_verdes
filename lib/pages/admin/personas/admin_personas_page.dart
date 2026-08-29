@@ -54,9 +54,14 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
     final q = quitarTildes(_busqueda.trim().toLowerCase());
     if (q.isEmpty) return lista;
     return lista.where((p) {
-      final texto = quitarTildes(
-          '${p.nombreCompleto} ${p.documento ?? ''} ${p.telefono ?? ''} ${p.correo ?? ''}'
-              .toLowerCase());
+      final texto = quitarTildes([
+        p.nombreMostrado,
+        p.nombreCompleto,
+        p.documento ?? '',
+        p.telefono ?? '',
+        p.correo ?? '',
+        p.cargo ?? '',
+      ].join(' ').toLowerCase());
       return texto.contains(q);
     }).toList();
   }
@@ -77,7 +82,7 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (dc) => AlertDialog(
-        title: Text('Eliminar a ${persona.nombreCompleto}'),
+        title: Text('Eliminar a ${persona.nombreMostrado}'),
         content: const Text(
             'Se borra la persona de esta base. Solo se puede si nunca estuvo '
             'asignada a un negocio.'),
@@ -184,6 +189,17 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
     );
   }
 
+  Widget _pill(String texto) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        decoration: BoxDecoration(
+          color: NVColors.primaryLight,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(texto,
+            style:
+                const TextStyle(fontSize: 10, color: NVColors.primaryDark)),
+      );
+
   Widget _tarjeta(Persona p) {
     final total = p.negociosTotal ?? 0;
     final vigentes = p.negociosVigentes ?? 0;
@@ -193,28 +209,44 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const CircleAvatar(
+          CircleAvatar(
             radius: 18,
             backgroundColor: NVColors.primaryLight,
-            child: Icon(Icons.person_outline,
-                size: 18, color: NVColors.primaryDark),
+            child: Icon(
+                p.esJuridica ? Icons.business_outlined : Icons.person_outline,
+                size: 18,
+                color: NVColors.primaryDark),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(p.nombreCompleto,
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                if ([p.documento, p.telefono, p.correo]
-                    .any((e) => (e ?? '').isNotEmpty))
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(p.nombreMostrado,
+                          style:
+                              const TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                    if (_tipo == TipoPersona.representante &&
+                        (p.naturalezaJuridica ?? '').isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      _pill(p.esJuridica ? 'Jurídica' : 'Natural'),
+                    ],
+                  ],
+                ),
+                if ([p.documentoMostrado, p.cargo, p.telefono, p.correo,
+                    p.direccion].any((e) => (e ?? '').isNotEmpty))
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
                     child: Text(
                       [
-                        if ((p.documento ?? '').isNotEmpty) 'CC ${p.documento}',
+                        if (p.documentoMostrado != null) p.documentoMostrado!,
+                        if ((p.cargo ?? '').isNotEmpty) p.cargo!,
                         if ((p.telefono ?? '').isNotEmpty) p.telefono!,
                         if ((p.correo ?? '').isNotEmpty) p.correo!,
+                        if ((p.direccion ?? '').isNotEmpty) p.direccion!,
                       ].join('  ·  '),
                       style: const TextStyle(
                           fontSize: 12, color: NVColors.textoSecundario),

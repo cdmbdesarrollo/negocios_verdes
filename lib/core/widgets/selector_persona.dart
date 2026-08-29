@@ -41,6 +41,24 @@ class SelectorPersona extends StatelessWidget {
     return null;
   }
 
+  static String _subtitulo(Persona p) => [
+        if (p.documentoMostrado != null) p.documentoMostrado!,
+        if ((p.cargo ?? '').isNotEmpty) p.cargo!,
+        if ((p.telefono ?? '').isNotEmpty) p.telefono!,
+        if ((p.correo ?? '').isNotEmpty) p.correo!,
+      ].join('  ·  ');
+
+  static Widget _pill(String texto) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        decoration: BoxDecoration(
+          color: NVColors.primaryLight,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(texto,
+            style: const TextStyle(
+                fontSize: 10, color: NVColors.primaryDark)),
+      );
+
   Future<void> _abrirBuscador(BuildContext context) async {
     final resultado = await showDialog<_ResultadoBuscador>(
       context: context,
@@ -97,25 +115,31 @@ class SelectorPersona extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(sel.nombreCompleto,
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
-                      if ((sel.documento ?? '').isNotEmpty ||
-                          (sel.telefono ?? '').isNotEmpty)
-                        Text(
-                          [
-                            if ((sel.documento ?? '').isNotEmpty)
-                              'CC ${sel.documento}',
-                            if ((sel.telefono ?? '').isNotEmpty) sel.telefono!,
-                          ].join(' · '),
-                          style: const TextStyle(
-                              fontSize: 12, color: NVColors.textoSecundario),
-                        ),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(sel.nombreMostrado,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600)),
+                          ),
+                          if (tipo == TipoPersona.representante &&
+                              (sel.naturalezaJuridica ?? '').isNotEmpty) ...[
+                            const SizedBox(width: 6),
+                            _pill(sel.esJuridica ? 'Jurídica' : 'Natural'),
+                          ],
+                        ],
+                      ),
+                      if (_subtitulo(sel).isNotEmpty)
+                        Text(_subtitulo(sel),
+                            style: const TextStyle(
+                                fontSize: 12,
+                                color: NVColors.textoSecundario)),
                     ],
                   ),
           ),
           if (sel != null)
             IconButton(
-              tooltip: 'Editar datos de ${sel.nombreCompleto}',
+              tooltip: 'Editar datos de ${sel.nombreMostrado}',
               icon: const Icon(Icons.edit_outlined, size: 18),
               onPressed: () => _editar(context, sel),
             ),
@@ -175,9 +199,9 @@ class _BuscadorPersonaDialogState extends State<_BuscadorPersonaDialog> {
     _lista = List.of(widget.personas);
   }
 
-  void _ordenar() => _lista.sort((a, b) => a.nombreCompleto
+  void _ordenar() => _lista.sort((a, b) => a.nombreMostrado
       .toLowerCase()
-      .compareTo(b.nombreCompleto.toLowerCase()));
+      .compareTo(b.nombreMostrado.toLowerCase()));
 
   @override
   void dispose() {
@@ -189,9 +213,14 @@ class _BuscadorPersonaDialogState extends State<_BuscadorPersonaDialog> {
     final q = quitarTildes(_busquedaCtrl.text.trim().toLowerCase());
     if (q.isEmpty) return _lista;
     return _lista.where((p) {
-      final texto = quitarTildes(
-          '${p.nombreCompleto} ${p.documento ?? ''} ${p.correo ?? ''}'
-              .toLowerCase());
+      final texto = quitarTildes([
+        p.nombreMostrado,
+        p.nombreCompleto,
+        p.documento ?? '',
+        p.telefono ?? '',
+        p.correo ?? '',
+        p.cargo ?? '',
+      ].join(' ').toLowerCase());
       return texto.contains(q);
     }).toList();
   }
@@ -238,7 +267,7 @@ class _BuscadorPersonaDialogState extends State<_BuscadorPersonaDialog> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (dc) => AlertDialog(
-        title: Text('Eliminar a ${p.nombreCompleto}'),
+        title: Text('Eliminar a ${p.nombreMostrado}'),
         content: const Text(
             'Solo se puede si nunca estuvo asignada a un negocio.'),
         actions: [
@@ -303,16 +332,22 @@ class _BuscadorPersonaDialogState extends State<_BuscadorPersonaDialog> {
                       itemCount: filtradas.length,
                       itemBuilder: (context, i) {
                         final p = filtradas[i];
-                        final subtitulo = [
-                          if ((p.documento ?? '').isNotEmpty)
-                            'CC ${p.documento}',
-                          if ((p.telefono ?? '').isNotEmpty) p.telefono!,
-                          if ((p.correo ?? '').isNotEmpty) p.correo!,
-                        ].join(' · ');
+                        final subtitulo =
+                            SelectorPersona._subtitulo(p);
                         final sePuedeEliminar = (p.negociosTotal ?? 0) == 0;
                         return ListTile(
                           dense: true,
-                          title: Text(p.nombreCompleto),
+                          title: Row(
+                            children: [
+                              Flexible(child: Text(p.nombreMostrado)),
+                              if (widget.tipo == TipoPersona.representante &&
+                                  (p.naturalezaJuridica ?? '').isNotEmpty) ...[
+                                const SizedBox(width: 6),
+                                SelectorPersona._pill(
+                                    p.esJuridica ? 'Jurídica' : 'Natural'),
+                              ],
+                            ],
+                          ),
                           subtitle:
                               subtitulo.isEmpty ? null : Text(subtitulo),
                           trailing: Row(

@@ -249,6 +249,17 @@ en un Supabase nuevo:
     `eliminar_delegado` / `eliminar_representante` que solo borran si la
     persona nunca se asignó (si tiene historial se rechaza con mensaje claro).
     Depende de 0029.
+31. `0031_personas_mas_campos.sql` — más columnas en las 3 bases de personas:
+    todas ganan `tipo_documento` y `direccion`; responsables/delegados ganan
+    `cargo`; representantes ganan `naturaleza_juridica` (Natural/Jurídica) y
+    `razon_social` (el "nombre" que se muestra y se copia a
+    `negocios.representante_legal` es la razón social cuando es jurídica, si
+    no nombres+apellidos — función `_display_representante`). Las 3 RPC
+    `guardar_*` cambian de firma (se borran y recrean, patrón de 0028);
+    `asignar_representante_negocio` se recrea para usar `_display_representante`.
+    Backfill: la naturaleza del representante se copia de sus negocios cuando
+    todos coinciden. Las vistas `v_*` (0030) recogen las columnas nuevas
+    solas. Depende de 0029/0030.
 
 ## Sobre trabajo concurrente de dos sesiones
 

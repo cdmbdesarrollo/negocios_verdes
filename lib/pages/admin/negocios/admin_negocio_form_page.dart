@@ -550,10 +550,11 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
   String? _personaNombre(List<Persona> lista, String? id) {
     if (id == null) return null;
     for (final p in lista) {
-      if (p.id == id) return p.nombreCompleto;
+      if (p.id == id) return p.nombreMostrado;
     }
     return null;
   }
+
 
   /// Si cambió el responsable / delegado / representante (o, para
   /// representante, el NIT o la naturaleza jurídica), llama a la RPC
@@ -953,7 +954,19 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             personas: _representantes,
             seleccionadaId: _representanteId,
             servicio: _personasService,
-            onSeleccion: (p) => setState(() => _representanteId = p?.id),
+            onSeleccion: (p) => setState(() {
+              _representanteId = p?.id;
+              // Al elegir un representante, si la naturaleza jurídica de
+              // este negocio todavía está vacía, se propone la del
+              // representante (se puede cambiar: el NIT y la naturaleza son
+              // POR NEGOCIO).
+              if (p != null &&
+                  (p.naturalezaJuridica ?? '').isNotEmpty &&
+                  (_naturalezaJuridica == null ||
+                      _naturalezaJuridica!.isEmpty)) {
+                _naturalezaJuridica = p.esJuridica ? 'Jurídica' : 'Natural';
+              }
+            }),
             onPersonasCambiaron: (lista) =>
                 setState(() => _representantes = lista),
           ),
@@ -982,6 +995,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: DropdownButtonFormField<String?>(
+                  key: ValueKey('nat-$_naturalezaJuridica'),
                   initialValue: _naturalezaJuridica,
                   decoration:
                       const InputDecoration(labelText: 'Naturaleza jurídica'),
