@@ -143,8 +143,26 @@ en un Supabase nuevo:
     directo para los 166 que CDMB ya marca `NOVEDAD = 'ACTIVO'` (posible
     recién con 0023, que quita la exigencia de foto); `whatsapp` se llena
     con el mismo número de `telefono` (casi todos son celular, no fijo),
-    normalizado a `57` + 10 dígitos cuando el formato lo permite. Cada
-    archivo es ~120 KB, su propia transacción (`begin`/`commit`), y trae
+    normalizado a `57` + 10 dígitos cuando el formato lo permite. `novedad`
+    unifica los 3 valores que en la práctica son el mismo estado
+    ("RETIRADO"/"ACTIVO (RETIRADO)"/"ACTIVO (RETIRADO) P" → `RETIRADO`,
+    pedido explícito — ninguno de los 3 es `ACTIVO` a secas, así que esto
+    no cambia qué se publica). Las 3 categorías de reconocimiento
+    (`emprendimiento_verde`/`sello_marca`/`avalado`) quedan con al menos
+    una en `true` siempre — CDMB confirmó que todo negocio real de su
+    base tiene alguna de las 3, así que los 59 casos sin señal explícita
+    de AVAL/SELLO MARCA/NV-EMP caen por defecto en `emprendimiento_verde`
+    (la categoría base del programa, ningún negocio real llega a Sello
+    Marca o Avalado sin pasar por ahí primero). `colidx()` (el buscador de
+    columnas por nombre) pasó a exigir coincidencia exacta antes que por
+    substring — el Excel tiene dos pares de encabezados donde uno contiene
+    al otro como texto ("ICA (REGISTRO...)" aparecía después de
+    "NATURAL - JURÍDICA" en la búsqueda por substring porque "jurídica"
+    contiene "ica"; "INTERNACIONALIZACIÓN" pisaba a "EXPORTACIÓN -
+    INTERNACIONALIZACIÓN (ACTUALMENTE)") — confirmado que ahora los 73
+    encabezados del Excel se leen completos, ninguno se pierde ni se cruza
+    con otro. Cada archivo es ~120 KB, su propia transacción
+    (`begin`/`commit`), y trae
     el mismo preámbulo idempotente al principio (`where not exists`/`on
     conflict do nothing`) — **correr los 10, en cualquier orden**, y
     repetir uno no duplica nada porque cada `insert into negocios` sin

@@ -142,11 +142,9 @@ Coordenadas con formato no reconocible (33):
 
 Por NOVEDAD original:
   ACTIVO: 166
-  RETIRADO: 55
+  RETIRADO: 71
   ACTIVO (SUSPENDIDO): 22
   SUSPENDIDO: 21
   INACTIVO: 15
-  ACTIVO (RETIRADO): 15
-  ACTIVO (RETIRADO) P: 1
 
-Badges asignados: {'emprendimiento_verde': 152, 'sello_marca': 29, 'avalado': 84, 'ninguno': 59}
+Badges asignados: {'emprendimiento_verde': 211, 'sello_marca': 29, 'avalado': 84, 'sin_senal_explicita_fallback_emprendimiento': 59}

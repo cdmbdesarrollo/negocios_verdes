@@ -132,8 +132,16 @@ ACTIVIDAD_MAP = {
 
 
 def colidx(headers, name):
+    """Exact match primero (evita falsos positivos como 'ICA' encontrando
+    'NATURAL - JURÍDICA' por contener 'ica' como substring), substring como
+    respaldo para los términos deliberadamente parciales (ej. 'TIEMPO DE
+    CONSTITUCIÓN' calzando con el encabezado completo más largo)."""
+    target = name.strip().lower()
     for i, h in enumerate(headers):
-        if h and name.strip().lower() in str(h).strip().lower():
+        if h and str(h).strip().lower() == target:
+            return i
+    for i, h in enumerate(headers):
+        if h and target in str(h).strip().lower():
             return i
     return None
 
@@ -202,6 +210,22 @@ def normalizar_vereda(texto):
     return ' '.join(p if len(p) <= 2 else p.capitalize() for p in partes)
 
 
+def normalizar_novedad(texto):
+    """Unifica los 3 valores de NOVEDAD que en la práctica son lo mismo
+    (pedido explícito): 'RETIRADO', 'ACTIVO (RETIRADO)' y 'ACTIVO
+    (RETIRADO) P' (la "P" suelta es una anotación, no un estado distinto)
+    quedan todos como 'RETIRADO' — ninguno de los 3 es 'ACTIVO' a secas de
+    todas formas, así que esto no cambia qué negocios se publican, solo
+    limpia el texto que ve el admin. SUSPENDIDO/ACTIVO (SUSPENDIDO) no se
+    tocan, no fueron parte del pedido."""
+    if texto is None:
+        return None
+    v = texto.strip()
+    if 'RETIRADO' in v.upper():
+        return 'RETIRADO'
+    return v
+
+
 DMS_RE = re.compile(
     r"^\(?-?\)?\s*(\d{1,3})[°:]\s*(\d{1,2})['’:]\s*([\d.,]+)")
 
@@ -262,7 +286,7 @@ def main():
         'vertimientos': col('VERTIMIENTOS'),
         'pueaa': col('PUEAA'), 'pgris': col('PGRIS'),
         'pozo': col('POZO SÉPTICOS'), 'alcantarillado': col('ALCANTARILLADO'),
-        'ica': col('ICA'), 'invima': col('INVIMA'),
+        'ica': col('ICA (REGISTRO'), 'invima': col('INVIMA'),
         'cert_animales': col('CERTIFICADO DE TENENCIA'),
         'bpa': col('BUENAS PRÁCTICAS AGRICOLAS'),
         'bpa_apicola': col('BUENAS PRÁCTICAS APICOLAS'),
@@ -349,7 +373,10 @@ def main():
     reporte = {
         'sin_municipio': [], 'categoria_pendiente': [], 'sin_coordenadas': [],
         'coordenadas_no_parseables': [], 'total_importados': 0,
-        'por_novedad': {}, 'badges': {'emprendimiento_verde': 0, 'sello_marca': 0, 'avalado': 0, 'ninguno': 0},
+        'por_novedad': {}, 'badges': {
+            'emprendimiento_verde': 0, 'sello_marca': 0, 'avalado': 0,
+            'sin_senal_explicita_fallback_emprendimiento': 0,
+        },
     }
 
     # Un bloque de texto por negocio (su INSERT + sus puentes + sus
@@ -428,14 +455,22 @@ def main():
         emprendimiento_verde = nvemp in ('EMPRENDIMIENTO VERDE', 'EMPRENDIMIENTO')
         sello_marca = sello_raw == 'SI' or nvemp == 'NEGOCIO VERDE - SELLO MARCA'
         avalado = aval_raw == 'SI' or nvemp == 'NEGOCIO VERDE AVALADO'
+        # Pedido explícito de CDMB: TODO negocio real de su base tiene
+        # siempre alguna de las 3 — "Emprendimiento Verde" es la categoría
+        # base/de entrada al programa (nadie llega directo a Sello Marca o
+        # Avalado sin pasar por ahí), así que cuando ninguna de las 3
+        # señales de arriba prendió (67 casos de 'NEGOCIO VERDE' a secas
+        # sin AVAL/SELLO MARCA en 'SI'), el negocio de todas formas ES un
+        # Emprendimiento Verde — no queda sin clasificar.
+        if not (emprendimiento_verde or sello_marca or avalado):
+            emprendimiento_verde = True
+            reporte['badges']['sin_senal_explicita_fallback_emprendimiento'] += 1
         if emprendimiento_verde:
             reporte['badges']['emprendimiento_verde'] += 1
         if sello_marca:
             reporte['badges']['sello_marca'] += 1
         if avalado:
             reporte['badges']['avalado'] += 1
-        if not (emprendimiento_verde or sello_marca or avalado):
-            reporte['badges']['ninguno'] += 1
 
         # --- naturaleza jurídica ---
         nat_raw = (limpio(r[i['naturaleza']]) or '').lower()
@@ -445,7 +480,7 @@ def main():
         elif nat_raw.startswith('jur'):
             naturaleza = 'Jurídica'
 
-        novedad = limpio(r[i['novedad']])
+        novedad = normalizar_novedad(limpio(r[i['novedad']]))
         reporte['por_novedad'][novedad] = reporte['por_novedad'].get(novedad, 0) + 1
         # activo=true directo para todo lo que CDMB ya marca ACTIVO — la
         # foto de portada dejó de ser obligatoria (0023_foto_portada_opcional.sql),
