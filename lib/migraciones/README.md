@@ -111,20 +111,29 @@ en un Supabase nuevo:
     público dejó de usar `*` y pasó a una lista explícita de columnas, para
     que las admin-only ni siquiera viajen en la respuesta a un visitante
     anónimo.
-23. `0023_datos_cdmb_negocios_verdes.sql` — **generado**, no escrito a
-    mano: script en `lib/migraciones/generar_0023.py` que lee el Excel real
-    de CDMB (`BASE_ACTUALIZADA_NV_ka.xlsx`) y produce este archivo. Carga
-    295 de los 304 negocios reales (borra el único negocio de prueba que
-    había en producción), las veredas encontradas, y las
-    categorías/subcategorías/actividades de cada uno. Ningún dato se
-    inventa: lo que el Excel no trae queda `null` (o, solo para categoría
-    oficial —campo obligatorio—, en la categoría-comodín "Pendiente de
-    clasificar" creada en este mismo archivo). **Correr DESPUÉS de
-    0022** (usa columnas que esa migración crea). Ver
-    `reporte_import_negocios.txt` (generado junto con este archivo) para
-    la lista de los 8 negocios sin municipio en el Excel que quedaron
-    fuera y necesitan completarse a mano, y de los ~89 que quedaron en
-    "Pendiente de clasificar" para revisión manual desde
+23. `0023_datos_cdmb_negocios_verdes_01.sql` … `_10.sql` — **generado**, no
+    escrito a mano: script en `lib/migraciones/generar_0023.py` que lee el
+    Excel real de CDMB (`BASE_ACTUALIZADA_NV_ka.xlsx`) y produce estos 10
+    archivos (partido en varios porque el editor SQL del dashboard de
+    Supabase truncó el archivo único de ~1 MB a mitad de una línea —
+    limitación del editor web, no un error de sintaxis). Cargan entre
+    todos 295 de los 304 negocios reales (borra el único negocio de prueba
+    que había en producción), las veredas encontradas, y las
+    categorías/subcategorías/actividades de cada uno. Cada archivo es
+    ~120 KB, su propia transacción (`begin`/`commit`), y trae el mismo
+    preámbulo idempotente al principio (`where not exists`/`on conflict do
+    nothing`) — **correr los 10, en cualquier orden**, y repetir uno no
+    duplica nada porque cada `insert into negocios` sin `ON CONFLICT`
+    queda protegido por el `begin`/`commit` de su propio archivo (si algo
+    falla a mitad, ese archivo entero se revierte solo, sin dejar filas a
+    medias). Ningún dato se inventa: lo que el Excel no trae queda `null`
+    (o, solo para categoría oficial —campo obligatorio—, en la
+    categoría-comodín "Pendiente de clasificar" creada en el primer
+    archivo). **Correr DESPUÉS de 0022** (usan columnas que esa migración
+    crea). Ver `reporte_import_negocios.txt` (generado junto con estos
+    archivos) para la lista de los 8 negocios sin municipio en el Excel
+    que quedaron fuera y necesitan completarse a mano, y de los ~89 que
+    quedaron en "Pendiente de clasificar" para revisión manual desde
     `/admin/negocios`.
 24. `0024_foto_portada_opcional.sql` — quita el CHECK
     `negocios_publicado_necesita_foto` (0004): la foto de portada deja de

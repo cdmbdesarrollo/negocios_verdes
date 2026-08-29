@@ -299,24 +299,25 @@ def main():
     i['conc_aguas_venc'], i['vertimientos_venc'], i['ica_venc'], i['invima_venc'] = (
         venc_idxs + [None, None, None, None])[:4]
 
-    sql = []
-    sql.append('begin;\n')
-    sql.append('-- Generado por lib/migraciones/generar_0023.py desde '
-                'BASE_ACTUALIZADA_NV_ka.xlsx — no editar a mano.\n')
-
-    # Categoría comodín para negocios sin categoría reconocible en el
-    # Excel (columna NOT NULL, no se puede dejar en blanco). activo=false
-    # así no aparece como chip de filtro en el buscador público.
-    sql.append("""
-insert into categorias_oficiales (nombre, slug, descripcion, icono, orden, activo)
-select 'Pendiente de clasificar', 'pendiente-clasificar',
-  'Negocio importado de la base CDMB sin categoría oficial asignada todavía — revisar y corregir desde /admin/negocios.',
-  '⏳', 99, false
-where not exists (select 1 from categorias_oficiales where slug = 'pendiente-clasificar');
-""")
-
+    # Preámbulo: idempotente a propósito (WHERE NOT EXISTS / ON CONFLICT DO
+    # NOTHING en los 3 statements) para poder repetirlo al principio de
+    # CADA archivo partido (ver chunking al final) sin duplicar nada si el
+    # admin corre los archivos en cualquier orden o repite uno.
+    preambulo = []
+    preambulo.append(
+        "-- Categoría comodín para negocios sin categoría reconocible en el\n"
+        "-- Excel (columna NOT NULL, no se puede dejar en blanco). activo=false\n"
+        "-- así no aparece como chip de filtro en el buscador público.\n"
+        "insert into categorias_oficiales (nombre, slug, descripcion, icono, orden, activo)\n"
+        "select 'Pendiente de clasificar', 'pendiente-clasificar',\n"
+        "  'Negocio importado de la base CDMB sin categoría oficial asignada todavía — revisar y corregir desde /admin/negocios.',\n"
+        "  '⏳', 99, false\n"
+        "where not exists (select 1 from categorias_oficiales where slug = 'pendiente-clasificar');"
+    )
     # Único negocio de prueba en producción — confirmado con el usuario.
-    sql.append("delete from negocios where nombre = 'Bucarretes SAS BIC';\n")
+    # DELETE sin WHERE de un id inexistente no es un error, así que también
+    # es seguro repetirlo.
+    preambulo.append("delete from negocios where nombre = 'Bucarretes SAS BIC';")
 
     # --- Veredas ---------------------------------------------------------
     veredas_vistas = {}  # (municipio, slug) -> nombre normalizado
@@ -333,14 +334,16 @@ where not exists (select 1 from categorias_oficiales where slug = 'pendiente-cla
         veredas_vistas.setdefault((municipio, slug), nombre)
 
     if veredas_vistas:
-        sql.append('\n-- Veredas encontradas en la base real (normalizadas de escritura).\n')
-        sql.append('insert into veredas (municipio, nombre, slug) values')
         valores = [
             f"\n  ({sql_str(mun)}, {sql_str(nom)}, {sql_str(slug)})"
             for (mun, slug), nom in sorted(veredas_vistas.items())
         ]
-        sql.append(','.join(valores))
-        sql.append('\non conflict (municipio, slug) do nothing;\n')
+        preambulo.append(
+            '-- Veredas encontradas en la base real (normalizadas de escritura).\n'
+            'insert into veredas (municipio, nombre, slug) values'
+            + ','.join(valores)
+            + '\non conflict (municipio, slug) do nothing;'
+        )
 
     # --- Negocios ----------------------------------------------------------
     reporte = {
@@ -349,9 +352,12 @@ where not exists (select 1 from categorias_oficiales where slug = 'pendiente-cla
         'por_novedad': {}, 'badges': {'emprendimiento_verde': 0, 'sello_marca': 0, 'avalado': 0, 'ninguno': 0},
     }
 
-    negocios_sql = []
-    puentes_sql = []
-    puntajes_sql = []
+    # Un bloque de texto por negocio (su INSERT + sus puentes + sus
+    # puntajes juntos) — así el chunking de más abajo puede cortar entre
+    # negocios sin nunca partir un negocio a la mitad ni depender de que
+    # otro archivo ya haya corrido antes (cada negocio es autocontenido
+    # salvo el preámbulo, que se repite en cada archivo).
+    bloques_negocio = []
 
     anios_puntaje = [
         ('PUNTAJE 2020', 2020), ('PUNTAJE 2021', 2021), ('PUNTAJE 2022', 2022),
@@ -523,44 +529,84 @@ where not exists (select 1 from categorias_oficiales where slug = 'pendiente-cla
 
         columnas = ', '.join(campos)
         valores = ', '.join(campos.values())
-        negocios_sql.append(f"insert into negocios ({columnas}) values ({valores});")
+        lineas = [f"insert into negocios ({columnas}) values ({valores});"]
 
-        puentes_sql.append(
+        lineas.append(
             f"insert into negocios_categorias (negocio_id, categoria_oficial_id) "
             f"values ({sql_str(negocio_id)}, {categoria_sql});")
         if subcategoria_slug:
-            puentes_sql.append(
+            lineas.append(
                 f"insert into negocios_subcategorias (negocio_id, subcategoria_id) "
                 f"select {sql_str(negocio_id)}, id from subcategorias where slug = {sql_str(subcategoria_slug)};")
         if actividad_slug:
-            puentes_sql.append(
+            lineas.append(
                 f"insert into negocios_actividades (negocio_id, actividad_productiva_id) "
                 f"select {sql_str(negocio_id)}, id from actividades_productivas where slug = {sql_str(actividad_slug)};")
 
         for idx_col, anio in idx_puntajes:
             valor = r[idx_col] if idx_col is not None else None
             if isinstance(valor, (int, float)):
-                puntajes_sql.append(
+                lineas.append(
                     f"insert into negocio_puntajes (negocio_id, anio, puntaje) "
                     f"values ({sql_str(negocio_id)}, {anio}, {float(valor)}) "
                     f"on conflict (negocio_id, anio) do nothing;")
 
+        bloques_negocio.append(f"-- {nombre}\n" + '\n'.join(lineas))
         reporte['total_importados'] += 1
 
-    sql.append('\n-- Negocios (uno por INSERT + UPDATE de slug, para poder usar '
-                'generar_slug_unico igual que hace guardar_negocio).\n')
-    sql.extend(negocios_sql)
-    sql.append('\n-- Categoría / subcategoría / actividad de cada negocio.\n')
-    sql.extend(puentes_sql)
-    sql.append('\n-- Puntajes de seguimiento por año (solo los que sí son numéricos).\n')
-    sql.extend(puntajes_sql)
+    # --- Partir en varios archivos chicos -----------------------------
+    # El editor SQL del dashboard de Supabase truncó el archivo único de
+    # ~1 MB a mitad de una línea (reportado por el usuario: "unterminated
+    # quoted string") — es una limitación del editor web, no un error de
+    # sintaxis real. Se parte en archivos de ~120 KB (bien por debajo de
+    # donde truncó el de 1 MB) cortando siempre entre negocios completos,
+    # nunca a la mitad de uno. Cada archivo es una transacción propia
+    # (begin/commit) con el preámbulo repetido (es idempotente) al
+    # principio, así se pueden correr en cualquier orden, o repetir uno
+    # sin duplicar nada, sin depender de que otro archivo ya haya corrido.
+    LIMITE_BYTES = 120_000
+    preambulo_txt = '\n\n'.join(preambulo)
+    encabezado_comun = (
+        "-- Generado por lib/migraciones/generar_0023.py desde "
+        "BASE_ACTUALIZADA_NV_ka.xlsx — no editar a mano.\n"
+        "-- Uno de varios archivos partidos (ver README.md) — correr TODOS, "
+        "en cualquier orden, cada uno es su propia transacción.\n"
+    )
 
-    sql.append('\ncommit;\n')
+    archivos = []
+    bloque_actual = []
+    tamano_actual = len(preambulo_txt.encode('utf-8'))
+    for bloque in bloques_negocio:
+        tamano_bloque = len(bloque.encode('utf-8'))
+        if bloque_actual and tamano_actual + tamano_bloque > LIMITE_BYTES:
+            archivos.append(bloque_actual)
+            bloque_actual = []
+            tamano_actual = len(preambulo_txt.encode('utf-8'))
+        bloque_actual.append(bloque)
+        tamano_actual += tamano_bloque
+    if bloque_actual:
+        archivos.append(bloque_actual)
 
-    with open(SQL_PATH, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(sql))
+    base_path = SQL_PATH[:-4] if SQL_PATH.endswith('.sql') else SQL_PATH
+    total_partes = len(archivos)
+    for idx, bloques in enumerate(archivos, start=1):
+        partes = [
+            'begin;\n',
+            encabezado_comun,
+            f'-- Parte {idx} de {total_partes}.\n',
+            preambulo_txt,
+            '\n\n-- Negocios de esta parte (INSERT + categoría/subcategoría/'
+            'actividad + puntajes de cada uno, juntos).\n',
+            '\n\n'.join(bloques),
+            '\n\ncommit;\n',
+        ]
+        ruta_parte = f'{base_path}_{idx:02d}.sql'
+        with open(ruta_parte, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(partes))
 
     with open(REPORTE_PATH, 'w', encoding='utf-8') as f:
+        f.write(f"Generado en {total_partes} archivos: "
+                f"{base_path}_01.sql .. {base_path}_{total_partes:02d}.sql\n\n")
         f.write(f"Total importados: {reporte['total_importados']} / {len(rows)}\n\n")
         f.write(f"Sin municipio ({len(reporte['sin_municipio'])}) — no se importaron, agregar a mano:\n")
         for n in reporte['sin_municipio']:
