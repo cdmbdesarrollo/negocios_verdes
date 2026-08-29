@@ -307,6 +307,9 @@ en un Supabase nuevo:
     coordenadas. Defensa a futuro en Dart: `Negocio.tieneUbicacion` exige
     que lat/lng caigan en la región CDMB, y el mapa encuadra con
     `CameraFit` sobre los puntos reales en vez de promediarlos.
+38. `0038_indices_fk_personas.sql` — índice en `negocio_delegado.delegado_id`
+    y `negocio_responsable.responsable_id` (el advisor los marcaba;
+    `negocio_representante` ya lo tenía desde 0029).
 
 ## Sobre trabajo concurrente de dos sesiones
 

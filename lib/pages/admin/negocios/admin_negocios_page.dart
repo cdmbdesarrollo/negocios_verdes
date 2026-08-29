@@ -40,6 +40,11 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
   /// SUSPENDIDO / INACTIVO, que igual no salen en el sitio público.
   String? _filtroNovedad;
 
+  /// Solo negocios que no van a aparecer en el mapa: sin coordenadas o con
+  /// coordenadas fuera de la región (errores de carga del Excel). ~40 al
+  /// momento; CDMB las recaptura a mano desde la ficha.
+  bool _soloSinMapa = false;
+
   static const _porPagina = 25;
   int _pagina = 0;
 
@@ -94,6 +99,9 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
     }
     if (_filtroNovedad != null) {
       lista = lista.where((n) => (n.novedad ?? '') == _filtroNovedad).toList();
+    }
+    if (_soloSinMapa) {
+      lista = lista.where((n) => !n.tieneUbicacion).toList();
     }
     if (_busqueda.trim().isNotEmpty) {
       final termino = _busqueda.trim().toLowerCase();
@@ -165,15 +173,6 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
 
     return Column(
       children: [
-        if (visibles.isNotEmpty)
-          BarraPaginacion(
-            desde: desde + 1,
-            hasta: hasta,
-            total: visibles.length,
-            pagina: pagina,
-            totalPaginas: totalPaginas,
-            onCambioPagina: (p) => setState(() => _pagina = p),
-          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
           child: TextField(
@@ -205,6 +204,12 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
                 etiqueta: 'No publicados',
                 seleccionado: _filtroActivo == false,
                 onTap: () => _cambiarFiltro(() => _filtroActivo = false),
+              ),
+              ChipFiltro(
+                etiqueta: 'Sin ubicación en el mapa',
+                seleccionado: _soloSinMapa,
+                onTap: () =>
+                    _cambiarFiltro(() => _soloSinMapa = !_soloSinMapa),
               ),
               DropdownButton<String?>(
                 value: _filtroNovedad,
@@ -253,6 +258,15 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
           ),
         ),
         const SizedBox(height: 8),
+        if (visibles.isNotEmpty)
+          BarraPaginacion(
+            desde: desde + 1,
+            hasta: hasta,
+            total: visibles.length,
+            pagina: pagina,
+            totalPaginas: totalPaginas,
+            onCambioPagina: (p) => setState(() => _pagina = p),
+          ),
         Expanded(
           child: visibles.isEmpty
               ? const Center(child: Text('No hay negocios con estos filtros.'))
