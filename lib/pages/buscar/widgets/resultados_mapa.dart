@@ -8,7 +8,33 @@ import '../../../core/widgets/pin_negocio_mapa.dart';
 import '../../../models/negocio.dart';
 import '../../../theme/nv_colors.dart';
 
-const LatLng _centroCdmb = LatLng(7.15, -73.05);
+const LatLng _centroCdmb = LatLng(7.12, -73.12);
+
+/// Cómo encuadrar el mapa para que se vean todos los negocios con
+/// ubicación (o el área metropolitana de Bucaramanga si no hay ninguno).
+/// Se usa en el arranque (`initialCameraFit`) y cada vez que cambian los
+/// resultados (BuscarPage llama `fitCamera` con esto).
+CameraFit ajusteMapaNegocios(List<Negocio> negocios) {
+  final puntos = [
+    for (final n in negocios)
+      if (n.tieneUbicacion) LatLng(n.latitud!, n.longitud!),
+  ];
+  if (puntos.isEmpty) {
+    // Área metropolitana de Bucaramanga.
+    return CameraFit.bounds(
+      bounds: LatLngBounds(
+        const LatLng(7.00, -73.22),
+        const LatLng(7.25, -73.00),
+      ),
+      padding: const EdgeInsets.all(24),
+    );
+  }
+  return CameraFit.coordinates(
+    coordinates: puntos,
+    padding: const EdgeInsets.all(40),
+    maxZoom: puntos.length == 1 ? 14 : 15,
+  );
+}
 
 /// Mapa con clustering de los negocios filtrados que sí tienen coordenadas.
 /// Recibe el MapController de afuera (no crea el suyo) para que BuscarPage
@@ -34,13 +60,18 @@ class ResultadosMapa extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final negociosConUbicacion = _conUbicacion;
-    final centro = _centroDe(negociosConUbicacion);
 
     return Stack(
       children: [
         FlutterMap(
       mapController: mapController,
-      options: MapOptions(initialCenter: centro, initialZoom: 11),
+      options: MapOptions(
+        initialCenter: _centroCdmb,
+        initialZoom: 11,
+        initialCameraFit: ajusteMapaNegocios(negocios),
+        minZoom: 3,
+        maxZoom: 18,
+      ),
       children: [
         TileLayer(
           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -89,14 +120,6 @@ class ResultadosMapa extends StatelessWidget {
     );
   }
 
-  LatLng _centroDe(List<Negocio> conUbicacion) {
-    if (conUbicacion.isEmpty) return _centroCdmb;
-    final lat = conUbicacion.map((n) => n.latitud!).reduce((a, b) => a + b) /
-        conUbicacion.length;
-    final lng = conUbicacion.map((n) => n.longitud!).reduce((a, b) => a + b) /
-        conUbicacion.length;
-    return LatLng(lat, lng);
-  }
 }
 
 class _PinCluster extends StatelessWidget {

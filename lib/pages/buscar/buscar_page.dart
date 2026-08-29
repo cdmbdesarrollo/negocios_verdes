@@ -151,6 +151,7 @@ class _BuscarPageState extends State<BuscarPage> {
             resultados[4] as List<(String nombre, String slug)>;
         _cargando = false;
       });
+      _reencuadrarMapa(_negocios ?? const []);
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -197,6 +198,20 @@ class _BuscarPageState extends State<BuscarPage> {
     }
   }
 
+  /// Reencuadra el mapa para que se vean todos los negocios del resultado
+  /// (o el área metropolitana si ninguno tiene ubicación). El mapa solo
+  /// existe en el árbol si hay al menos un punto, así que se protege el
+  /// fitCamera y se hace después del frame.
+  void _reencuadrarMapa(List<Negocio> resultados) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        _mapController.fitCamera(ajusteMapaNegocios(resultados));
+      } catch (_) {
+        // El mapa todavía no está montado (0 resultados con ubicación).
+      }
+    });
+  }
+
   Future<void> _buscarConFiltroActual() async {
     setState(() => _cargando = true);
     try {
@@ -208,6 +223,7 @@ class _BuscarPageState extends State<BuscarPage> {
           _cargando = false;
           _error = null;
         });
+        _reencuadrarMapa(resultados);
       }
     } catch (e) {
       if (mounted) {

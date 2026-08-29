@@ -142,7 +142,14 @@ class Negocio {
     this.updatedAt,
   });
 
-  bool get tieneUbicacion => latitud != null && longitud != null;
+  /// Hay coordenadas Y caen dentro de la región de la CDMB (Santander, con
+  /// margen). Filtra errores de carga como lat/lng invertidas o valores
+  /// basura, que si no mandaban el mapa a mitad de camino a Venezuela.
+  bool get tieneUbicacion {
+    final la = latitud, lo = longitud;
+    if (la == null || lo == null) return false;
+    return la >= 6.0 && la <= 8.6 && lo >= -74.6 && lo <= -72.0;
+  }
 
   factory Negocio.fromJson(Map<String, dynamic> json) {
     final categoriaJson = _desenvolverUno(json['categorias_oficiales']);

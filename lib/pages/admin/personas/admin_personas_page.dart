@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../catalogos.dart';
 import '../../../core/admin_guard.dart';
 import '../../../core/texto_utils.dart';
+import '../../../core/widgets/barra_paginacion.dart';
 import '../../../core/widgets/chip_filtro.dart';
 import '../../../core/widgets/dialogo_confirmar_borrado.dart';
 import '../../../core/widgets/form_persona_dialog.dart';
@@ -224,9 +225,19 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
 
     return Column(
       children: [
+        // Paginador ARRIBA de la tabla: siempre visible sin scroll y sin que
+        // el FloatingActionButton (abajo a la derecha) lo tape.
+        BarraPaginacion(
+          desde: desde + 1,
+          hasta: hasta,
+          total: visibles.length,
+          pagina: pagina,
+          totalPaginas: totalPaginas,
+          onCambioPagina: (p) => setState(() => _pagina = p),
+        ),
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
             child: Column(
               children: [
                 _encabezado(),
@@ -234,13 +245,6 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
               ],
             ),
           ),
-        ),
-        _barraPaginacion(
-          desde: desde + 1,
-          hasta: hasta,
-          total: visibles.length,
-          pagina: pagina,
-          totalPaginas: totalPaginas,
         ),
       ],
     );
@@ -399,43 +403,4 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
     );
   }
 
-  Widget _barraPaginacion({
-    required int desde,
-    required int hasta,
-    required int total,
-    required int pagina,
-    required int totalPaginas,
-  }) {
-    return Container(
-      // Padding derecho grande: el FloatingActionButton flota justo encima
-      // de esta esquina y tapaba los botones de página.
-      padding: const EdgeInsets.fromLTRB(20, 8, 96, 12),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: NVColors.borde)),
-      ),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 8,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          Text('$desde–$hasta de $total  ·  página ${pagina + 1} de $totalPaginas',
-              style: const TextStyle(
-                  color: NVColors.textoSecundario, fontSize: 13)),
-          OutlinedButton.icon(
-            icon: const Icon(Icons.chevron_left, size: 18),
-            label: const Text('Anterior'),
-            onPressed:
-                pagina > 0 ? () => setState(() => _pagina = pagina - 1) : null,
-          ),
-          OutlinedButton.icon(
-            icon: const Icon(Icons.chevron_right, size: 18),
-            label: const Text('Siguiente'),
-            onPressed: pagina < totalPaginas - 1
-                ? () => setState(() => _pagina = pagina + 1)
-                : null,
-          ),
-        ],
-      ),
-    );
-  }
 }

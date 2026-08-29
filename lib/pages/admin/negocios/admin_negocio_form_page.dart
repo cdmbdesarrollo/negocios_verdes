@@ -982,10 +982,16 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
                     size: 18, color: NVColors.primaryDark),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    'Razón social: ${_nombreCtrl.text.trim().isEmpty ? '(el nombre del negocio, arriba)' : _nombreCtrl.text.trim()}',
-                    style: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w600),
+                  // Se actualiza en vivo con el nombre sin reconstruir todo
+                  // el formulario (ver comentario en SelectorTaxonomiaNegocio
+                  // sobre por qué eso importa).
+                  child: ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _nombreCtrl,
+                    builder: (context, valor, _) => Text(
+                      'Razón social: ${valor.text.trim().isEmpty ? '(el nombre del negocio, arriba)' : valor.text.trim()}',
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
                   ),
                 ),
               ],
@@ -1020,10 +1026,11 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           const Padding(
             padding: EdgeInsets.only(top: 4, left: 4),
             child: Text(
-              'El nombre se muestra en la ficha pública. Al elegir un '
-              'representante ya registrado se traen su documento y naturaleza; '
-              'el NIT y la naturaleza son de este negocio y se pueden ajustar '
-              '(la misma persona puede representar varios).',
+              'El representante legal es una persona (natural o que firma por '
+              'la entidad); su nombre se muestra en la ficha pública. La razón '
+              'social es el nombre del negocio (arriba). El NIT y la naturaleza '
+              'son de este negocio y se pueden ajustar — la misma persona '
+              'puede representar varios.',
               style: TextStyle(fontSize: 12, color: NVColors.textoSecundario),
             ),
           ),

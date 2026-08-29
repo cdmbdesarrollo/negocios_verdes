@@ -299,6 +299,14 @@ en un Supabase nuevo:
     por `negocios_nombres`. Backfill de `negocios.representante_legal` con el
     nombre de la persona. Además: `search_path` fijo en `generar_slug_unico`,
     `immutable_unaccent` y `set_updated_at` (advisor). Depende de 0035.
+37. `0037_fix_coordenadas_invertidas.sql` — **corrección de datos**: 5
+    negocios tenían lat/lng invertidas o basura (heredado de la carga
+    0026); el promedio de puntos mandaba el mapa del buscador a media
+    hora de Venezuela. Se recalculan 4 desde los campos `este`/`norte`
+    (DMS, que sí quedaron bien) y el 5º (basura irrecuperable) se deja sin
+    coordenadas. Defensa a futuro en Dart: `Negocio.tieneUbicacion` exige
+    que lat/lng caigan en la región CDMB, y el mapa encuadra con
+    `CameraFit` sobre los puntos reales en vez de promediarlos.
 
 ## Sobre trabajo concurrente de dos sesiones
 

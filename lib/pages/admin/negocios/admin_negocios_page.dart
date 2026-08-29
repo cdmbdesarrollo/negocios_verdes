@@ -5,6 +5,7 @@ import '../../../catalogos.dart';
 import '../../../core/admin_guard.dart';
 import '../../../core/descargar_archivo_web.dart';
 import '../../../core/widgets/avalado_badge.dart';
+import '../../../core/widgets/barra_paginacion.dart';
 import '../../../core/widgets/chip_filtro.dart';
 import '../../../core/widgets/confirmar_eliminar_boton.dart';
 import '../../../core/widgets/emprendimiento_verde_badge.dart';
@@ -164,6 +165,15 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
 
     return Column(
       children: [
+        if (visibles.isNotEmpty)
+          BarraPaginacion(
+            desde: desde + 1,
+            hasta: hasta,
+            total: visibles.length,
+            pagina: pagina,
+            totalPaginas: totalPaginas,
+            onCambioPagina: (p) => setState(() => _pagina = p),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
           child: TextField(
@@ -253,53 +263,7 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
                   itemBuilder: (context, i) => _tarjetaNegocio(pagVisibles[i]),
                 ),
         ),
-        if (visibles.isNotEmpty)
-          _barraPaginacion(
-            desde: desde + 1,
-            hasta: hasta,
-            total: visibles.length,
-            pagina: pagina,
-            totalPaginas: totalPaginas,
-          ),
       ],
-    );
-  }
-
-  Widget _barraPaginacion({
-    required int desde,
-    required int hasta,
-    required int total,
-    required int pagina,
-    required int totalPaginas,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: NVColors.borde)),
-      ),
-      child: Row(
-        children: [
-          Text('$desde–$hasta de $total',
-              style: const TextStyle(
-                  color: NVColors.textoSecundario, fontSize: 13)),
-          const Spacer(),
-          IconButton(
-            tooltip: 'Página anterior',
-            icon: const Icon(Icons.chevron_left),
-            onPressed:
-                pagina > 0 ? () => setState(() => _pagina = pagina - 1) : null,
-          ),
-          Text('${pagina + 1} / $totalPaginas',
-              style: const TextStyle(fontSize: 13)),
-          IconButton(
-            tooltip: 'Página siguiente',
-            icon: const Icon(Icons.chevron_right),
-            onPressed: pagina < totalPaginas - 1
-                ? () => setState(() => _pagina = pagina + 1)
-                : null,
-          ),
-        ],
-      ),
     );
   }
 
