@@ -10,25 +10,24 @@ import '../../../services/negocio_service.dart';
 import '../../../theme/nv_colors.dart';
 
 /// Cada "vista" filtra el conjunto de negocios ANTES de calcular KPIs y las
-/// gráficas — pedido explícito: "una vista por cada categoría, activo, etc. y
+/// gráficas — pedido explícito: "una vista por cada categoría, estado, etc. y
 /// otro global. Con KPI por cada caso y global".
-enum _Vista { global, activos, emprendimientoVerde, selloMarca, avalado }
+///
+/// `estado` no es una vista fija sino un selector: el estado CDMB concreto
+/// (ACTIVO / INACTIVO / RETIRADO / SUSPENDIDO) lo elige el usuario en el
+/// dropdown y vive en `_AdminDashboardPageState._estadoSel`.
+enum _Vista { global, estado, emprendimientoVerde, selloMarca, avalado }
+
+/// Estados CDMB (columna `negocios.novedad`, CHECK `negocios_novedad_valida`).
+const _kEstados = ['ACTIVO', 'INACTIVO', 'RETIRADO', 'SUSPENDIDO'];
 
 extension on _Vista {
   String get etiqueta => switch (this) {
         _Vista.global => 'Global',
-        _Vista.activos => 'Publicados',
+        _Vista.estado => 'Estado CDMB',
         _Vista.emprendimientoVerde => 'Emprendimiento Verde',
         _Vista.selloMarca => 'Sello Marca',
         _Vista.avalado => 'Avalado',
-      };
-
-  bool aplica(Negocio n) => switch (this) {
-        _Vista.global => true,
-        _Vista.activos => n.activo,
-        _Vista.emprendimientoVerde => n.emprendimientoVerde,
-        _Vista.selloMarca => n.selloMarca,
-        _Vista.avalado => n.avalado,
       };
 }
 
@@ -60,6 +59,20 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Map<int, double> _promedioPorAnio = {};
   String? _error;
   _Vista _vista = _Vista.global;
+  String _estadoSel = 'ACTIVO';
+
+  /// Etiqueta legible de la vista actual (para el título).
+  String get _etiquetaVista => _vista == _Vista.estado
+      ? '${_estadoSel[0]}${_estadoSel.substring(1).toLowerCase()}'
+      : _vista.etiqueta;
+
+  bool _aplicaVista(Negocio n) => switch (_vista) {
+        _Vista.global => true,
+        _Vista.estado => (n.novedad ?? '').toUpperCase() == _estadoSel,
+        _Vista.emprendimientoVerde => n.emprendimientoVerde,
+        _Vista.selloMarca => n.selloMarca,
+        _Vista.avalado => n.avalado,
+      };
 
   @override
   void initState() {
@@ -97,7 +110,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final negocios = todos.where(_vista.aplica).toList();
+    final negocios = todos.where(_aplicaVista).toList();
 
     final activos = negocios.where((n) => n.activo).length;
     final pendientesDePublicar =
@@ -112,8 +125,19 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final porMunicipio = _conteo(negocios, (n) => n.municipio);
     final porCategoria = _conteo(
         negocios, (n) => n.categoriaOficial?.nombre ?? 'Sin categoría');
-    final porEstado =
-        _conteo(negocios, (n) => (n.novedad ?? 'Sin estado'));
+    // Vista normal: torta por estado CDMB. Vista = un estado concreto: esa
+    // torta sería un solo color, así que se muestra publicado vs. sin
+    // publicar dentro de ese estado.
+    final segundaTorta = _vista == _Vista.estado
+        ? (
+            titulo: 'Publicación en el sitio',
+            datos: _conteo(negocios,
+                (n) => n.activo ? 'Publicado' : 'Sin publicar'),
+          )
+        : (
+            titulo: 'Por estado CDMB',
+            datos: _conteo(negocios, (n) => (n.novedad ?? 'Sin estado')),
+          );
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -149,17 +173,28 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 for (final v in _Vista.values)
-                  ChipFiltro(
-                    etiqueta: v.etiqueta,
-                    seleccionado: _vista == v,
-                    onTap: () => setState(() => _vista = v),
-                  ),
+                  if (v == _Vista.estado)
+                    _SelectorEstado(
+                      seleccionado: _vista == _Vista.estado,
+                      estado: _estadoSel,
+                      onEstado: (e) => setState(() {
+                        _vista = _Vista.estado;
+                        _estadoSel = e;
+                      }),
+                    )
+                  else
+                    ChipFiltro(
+                      etiqueta: v.etiqueta,
+                      seleccionado: _vista == v,
+                      onTap: () => setState(() => _vista = v),
+                    ),
               ],
             ),
             const SizedBox(height: 16),
-            Text('Vista: ${_vista.etiqueta} · ${negocios.length} negocios',
+            Text('Vista: $_etiquetaVista · ${negocios.length} negocios',
                 style: const TextStyle(
                     fontWeight: FontWeight.w600, color: NVColors.primaryDark)),
             const SizedBox(height: 12),
@@ -167,8 +202,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               spacing: 12,
               runSpacing: 12,
               children: [
-                _kpi('Publicados', activos, Icons.check_circle_outline,
-                    NVColors.exito),
+                _kpi('Publicados en el sitio', activos,
+                    Icons.check_circle_outline, NVColors.exito),
                 _kpi('CDMB los marca ACTIVO, faltan publicar',
                     pendientesDePublicar, Icons.hourglass_top,
                     NVColors.advertencia),
@@ -217,13 +252,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _tituloGrafica('Por estado CDMB'),
+                      _tituloGrafica(segundaTorta.titulo),
                       NVCard(
                         child: SizedBox(
                           height: 240,
-                          child: porEstado.isEmpty
+                          child: segundaTorta.datos.isEmpty
                               ? const _SinDatos()
-                              : _Torta(datos: porEstado),
+                              : _Torta(datos: segundaTorta.datos),
                         ),
                       ),
                     ],
@@ -413,6 +448,66 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 style: const TextStyle(
                     fontWeight: FontWeight.bold, color: NVColors.verdeVivo)),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Chip con dropdown para elegir el estado CDMB (ACTIVO / INACTIVO /
+/// RETIRADO / SUSPENDIDO) como "vista" del panel. Se ve igual que un
+/// ChipFiltro pero con una flechita.
+class _SelectorEstado extends StatelessWidget {
+  final bool seleccionado;
+  final String estado;
+  final ValueChanged<String> onEstado;
+
+  const _SelectorEstado({
+    required this.seleccionado,
+    required this.estado,
+    required this.onEstado,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final etiqueta = seleccionado
+        ? '${estado[0]}${estado.substring(1).toLowerCase()}'
+        : 'Estado CDMB';
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 40),
+      child: PopupMenuButton<String>(
+        initialValue: estado,
+        onSelected: onEstado,
+        itemBuilder: (_) => [
+          for (final e in _kEstados)
+            PopupMenuItem(
+              value: e,
+              child: Text('${e[0]}${e.substring(1).toLowerCase()}'),
+            ),
+        ],
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            color:
+                seleccionado ? NVColors.verdeMenu : NVColors.primaryLight,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (seleccionado)
+                const Padding(
+                  padding: EdgeInsets.only(right: 4),
+                  child: Icon(Icons.check, size: 16),
+                ),
+              Text(etiqueta,
+                  style: TextStyle(
+                      color: NVColors.textoPrincipal,
+                      fontWeight:
+                          seleccionado ? FontWeight.w600 : FontWeight.normal)),
+              const Icon(Icons.arrow_drop_down, size: 20),
+            ],
+          ),
         ),
       ),
     );
