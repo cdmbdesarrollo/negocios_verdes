@@ -43,7 +43,11 @@ class _BuscarPageState extends State<BuscarPage> {
   final _mapController = MapController();
   final Map<String, GlobalKey> _clavesPorNegocio = {};
   final _claveGrilla = GlobalKey();
+  final _claveMapa = GlobalKey();
 
+  /// Cambia de página y sube el scroll hasta el inicio de la grilla — si no,
+  /// tras tocar "Siguiente" te quedas mirando el mapa y parece que no pasó
+  /// nada.
   void _irAPagina(int nueva) {
     setState(() => _pagina = nueva);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -54,7 +58,6 @@ class _BuscarPageState extends State<BuscarPage> {
       }
     });
   }
-  final _claveMapa = GlobalKey();
 
   /// Los resultados se muestran en grilla horizontal; si son muchos se
   /// paginan (pedido explícito: "cuando da muchos negocios se pierden").
