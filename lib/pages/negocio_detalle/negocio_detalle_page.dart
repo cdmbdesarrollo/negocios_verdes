@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../catalogos.dart';
 import '../../core/seo_tags.dart';
 import '../../core/widgets/avalado_badge.dart';
+import '../../core/widgets/botones_zoom_mapa.dart';
 import '../../core/widgets/boton_whatsapp.dart';
 import '../../core/widgets/pie_pagina.dart';
 import '../../core/widgets/emprendimiento_verde_badge.dart';
@@ -33,6 +34,7 @@ class NegocioDetallePage extends StatefulWidget {
 
 class _NegocioDetallePageState extends State<NegocioDetallePage> {
   final _service = NegocioService();
+  final _mapController = MapController();
   Negocio? _negocio;
   bool _cargando = true;
   bool _noEncontrado = false;
@@ -427,29 +429,39 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: SizedBox(
-        height: 220,
-        child: FlutterMap(
-          options: MapOptions(
-            initialCenter: LatLng(negocio.latitud!, negocio.longitud!),
-            initialZoom: 15,
-          ),
+        height: 240,
+        child: Stack(
           children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'co.gov.cdmb.negocios_verdes_cdmb',
-            ),
-            MarkerLayer(markers: [
-              Marker(
-                point: LatLng(negocio.latitud!, negocio.longitud!),
-                width: 46,
-                height: 46,
-                child: PinNegocioMapa(
-                  fotoPortadaUrl: negocio.fotoPortadaUrl,
-                  destacado: true,
-                  tamano: 44,
-                ),
+            FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: LatLng(negocio.latitud!, negocio.longitud!),
+                initialZoom: 15,
               ),
-            ]),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'co.gov.cdmb.negocios_verdes_cdmb',
+                ),
+                MarkerLayer(markers: [
+                  Marker(
+                    point: LatLng(negocio.latitud!, negocio.longitud!),
+                    width: 46,
+                    height: 46,
+                    child: PinNegocioMapa(
+                      fotoPortadaUrl: negocio.fotoPortadaUrl,
+                      destacado: true,
+                      tamano: 44,
+                    ),
+                  ),
+                ]),
+              ],
+            ),
+            Positioned(
+              right: 10,
+              bottom: 10,
+              child: BotonesZoomMapa(controlador: _mapController),
+            ),
           ],
         ),
       ),

@@ -17,6 +17,11 @@ class SelectorConCatalogo extends StatelessWidget {
   final ValueChanged<String?> onCambio;
   final Future<void> Function(BuildContext context) onAgregarOpcion;
 
+  /// Ícono a la izquierda del campo — para que la ficha se lea "de un
+  /// vistazo por el dato" (pedido explícito: que se sienta un sistema de
+  /// información real, no una lista de desplegables iguales).
+  final IconData? icono;
+
   const SelectorConCatalogo({
     super.key,
     required this.etiqueta,
@@ -24,6 +29,7 @@ class SelectorConCatalogo extends StatelessWidget {
     required this.opciones,
     required this.onCambio,
     required this.onAgregarOpcion,
+    this.icono,
   });
 
   static const _agregarNueva = '__agregar_nueva__';
@@ -42,7 +48,12 @@ class SelectorConCatalogo extends StatelessWidget {
     return DropdownButtonFormField<String>(
       initialValue: valor != null && items.contains(valor) ? valor : null,
       isExpanded: true,
-      decoration: InputDecoration(labelText: etiqueta),
+      decoration: InputDecoration(
+        labelText: etiqueta,
+        prefixIcon: icono == null
+            ? null
+            : Icon(icono, size: 20, color: NVColors.primary),
+      ),
       items: [
         for (final o in items) DropdownMenuItem(value: o, child: Text(o)),
         const DropdownMenuItem(

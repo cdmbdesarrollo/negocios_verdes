@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../core/widgets/botones_zoom_mapa.dart';
 import '../../../core/widgets/pin_negocio_mapa.dart';
 import '../../../models/negocio.dart';
 import '../../../theme/nv_colors.dart';
@@ -35,7 +36,9 @@ class ResultadosMapa extends StatelessWidget {
     final negociosConUbicacion = _conUbicacion;
     final centro = _centroDe(negociosConUbicacion);
 
-    return FlutterMap(
+    return Stack(
+      children: [
+        FlutterMap(
       mapController: mapController,
       options: MapOptions(initialCenter: centro, initialZoom: 11),
       children: [
@@ -74,6 +77,13 @@ class ResultadosMapa extends StatelessWidget {
               }
             },
           ),
+        ),
+          ],
+        ),
+        Positioned(
+          right: 10,
+          bottom: 10,
+          child: BotonesZoomMapa(controlador: mapController),
         ),
       ],
     );

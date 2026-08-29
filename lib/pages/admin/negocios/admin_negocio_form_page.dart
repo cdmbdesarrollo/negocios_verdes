@@ -35,32 +35,39 @@ import 'widgets/selector_ubicacion_mapa.dart';
 class _CampoSelector {
   final String campo;
   final String etiqueta;
-  const _CampoSelector(this.campo, this.etiqueta);
+  final IconData icono;
+  const _CampoSelector(this.campo, this.etiqueta, this.icono);
 }
 
 const _kGruposSelector = <String, List<_CampoSelector>>{
   'Permisos y trámites ambientales': [
-    _CampoSelector('registro_nacional_turismo', 'Registro Nacional de Turismo'),
-    _CampoSelector('uso_suelo', 'Uso del suelo'),
-    _CampoSelector('concesion_aguas', 'Concesión de aguas'),
-    _CampoSelector('vertimientos', 'Vertimientos'),
-    _CampoSelector('pueaa', 'PUEAA'),
-    _CampoSelector('pgris', 'PGRIS'),
-    _CampoSelector('pozo_septico', 'Pozo séptico'),
-    _CampoSelector('alcantarillado', 'Alcantarillado'),
-    _CampoSelector('ica', 'ICA (registro producción/comercialización abono)'),
-    _CampoSelector('invima', 'INVIMA'),
-    _CampoSelector('certificado_tenencia_animales', 'Certificado tenencia de animales'),
-    _CampoSelector('buenas_practicas_agricolas', 'Buenas prácticas agrícolas'),
-    _CampoSelector('buenas_practicas_apicolas', 'Buenas prácticas apícolas'),
-    _CampoSelector('registro_apicola', 'Registro apícola'),
-    _CampoSelector('intervencion_cauce', 'Intervención de cauce'),
-    _CampoSelector('capacidad_carga', 'Capacidad de carga'),
-    _CampoSelector('sstt', 'SSTT'),
+    _CampoSelector('registro_nacional_turismo', 'Registro Nacional de Turismo',
+        Icons.tour_outlined),
+    _CampoSelector('uso_suelo', 'Uso del suelo', Icons.terrain_outlined),
+    _CampoSelector('concesion_aguas', 'Concesión de aguas', Icons.water_drop_outlined),
+    _CampoSelector('vertimientos', 'Vertimientos', Icons.opacity_outlined),
+    _CampoSelector('pueaa', 'PUEAA', Icons.savings_outlined),
+    _CampoSelector('pgris', 'PGRIS', Icons.recycling_outlined),
+    _CampoSelector('pozo_septico', 'Pozo séptico', Icons.plumbing_outlined),
+    _CampoSelector('alcantarillado', 'Alcantarillado', Icons.waves_outlined),
+    _CampoSelector('ica', 'ICA (registro producción/comercialización abono)',
+        Icons.agriculture_outlined),
+    _CampoSelector('invima', 'INVIMA', Icons.medical_information_outlined),
+    _CampoSelector('certificado_tenencia_animales',
+        'Certificado tenencia de animales', Icons.pets_outlined),
+    _CampoSelector('buenas_practicas_agricolas', 'Buenas prácticas agrícolas',
+        Icons.grass_outlined),
+    _CampoSelector('buenas_practicas_apicolas', 'Buenas prácticas apícolas',
+        Icons.hive_outlined),
+    _CampoSelector('registro_apicola', 'Registro apícola', Icons.emoji_nature_outlined),
+    _CampoSelector('intervencion_cauce', 'Intervención de cauce', Icons.tsunami_outlined),
+    _CampoSelector('capacidad_carga', 'Capacidad de carga', Icons.reduce_capacity_outlined),
+    _CampoSelector('sstt', 'SSTT', Icons.health_and_safety_outlined),
   ],
   'Mercado': [
-    _CampoSelector('canal_venta', 'Canal de venta'),
-    _CampoSelector('exportacion', 'Exportación / internacionalización actual'),
+    _CampoSelector('canal_venta', 'Canal de venta', Icons.point_of_sale_outlined),
+    _CampoSelector('exportacion', 'Exportación / internacionalización actual',
+        Icons.flight_takeoff_outlined),
   ],
 };
 
@@ -920,7 +927,11 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           _seccion('Datos básicos'),
           TextFormField(
             controller: _nombreCtrl,
-            decoration: const InputDecoration(labelText: 'Nombre del negocio'),
+            decoration: const InputDecoration(
+              labelText: 'Nombre del negocio',
+              prefixIcon: Icon(Icons.storefront_outlined,
+                  size: 20, color: NVColors.primary),
+            ),
             validator: (v) =>
                 (v == null || v.trim().isEmpty) ? 'Requerido' : null,
           ),
@@ -930,13 +941,19 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             decoration: const InputDecoration(
               labelText: 'Descripción corta',
               helperText: 'Para la tarjeta de resultados, máximo ~160 caracteres.',
+              prefixIcon: Icon(Icons.short_text,
+                  size: 20, color: NVColors.primary),
             ),
             maxLength: 160,
             maxLines: 2,
           ),
           TextFormField(
             controller: _descripcionCtrl,
-            decoration: const InputDecoration(labelText: 'Descripción completa'),
+            decoration: const InputDecoration(
+              labelText: 'Descripción completa',
+              prefixIcon: Icon(Icons.subject_outlined,
+                  size: 20, color: NVColors.primary),
+            ),
             maxLines: 5,
           ),
           const SizedBox(height: 12),
@@ -945,6 +962,8 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             decoration: const InputDecoration(
               labelText: 'Producto (opcional)',
               helperText: 'Qué vende/ofrece en concreto, ej. "Agua natural 300 cc".',
+              prefixIcon: Icon(Icons.shopping_bag_outlined,
+                  size: 20, color: NVColors.primary),
             ),
           ),
           const SizedBox(height: 20),
@@ -956,15 +975,20 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             servicio: _personasService,
             onSeleccion: (p) => setState(() {
               _representanteId = p?.id;
-              // Al elegir un representante, si la naturaleza jurídica de
-              // este negocio todavía está vacía, se propone la del
-              // representante (se puede cambiar: el NIT y la naturaleza son
-              // POR NEGOCIO).
-              if (p != null &&
-                  (p.naturalezaJuridica ?? '').isNotEmpty &&
-                  (_naturalezaJuridica == null ||
-                      _naturalezaJuridica!.isEmpty)) {
-                _naturalezaJuridica = p.esJuridica ? 'Jurídica' : 'Natural';
+              // Al elegir un representante ya parametrizado se traen sus
+              // datos a los campos POR NEGOCIO que todavía estén vacíos
+              // (se pueden cambiar: el NIT y la naturaleza son de este
+              // negocio, no de la persona).
+              if (p != null) {
+                if ((p.naturalezaJuridica ?? '').isNotEmpty &&
+                    (_naturalezaJuridica == null ||
+                        _naturalezaJuridica!.isEmpty)) {
+                  _naturalezaJuridica = p.esJuridica ? 'Jurídica' : 'Natural';
+                }
+                if ((p.documento ?? '').trim().isNotEmpty &&
+                    _nitCtrl.text.trim().isEmpty) {
+                  _nitCtrl.text = p.documento!.trim();
+                }
               }
             }),
             onPersonasCambiaron: (lista) =>
@@ -973,9 +997,10 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           const Padding(
             padding: EdgeInsets.only(top: 4, left: 4),
             child: Text(
-              'El nombre se muestra en la ficha pública. El NIT y la '
-              'naturaleza jurídica son de este negocio (la misma persona '
-              'puede representar varios, cada uno con su NIT).',
+              'El nombre se muestra en la ficha pública. Al elegir un '
+              'representante ya registrado se traen su documento y naturaleza; '
+              'el NIT y la naturaleza son de este negocio y se pueden ajustar '
+              '(la misma persona puede representar varios).',
               style: TextStyle(fontSize: 12, color: NVColors.textoSecundario),
             ),
           ),
@@ -989,6 +1014,8 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
                   decoration: const InputDecoration(
                     labelText: 'NIT / CC (opcional)',
                     helperText: 'Nunca se muestra en la ficha pública.',
+                    prefixIcon: Icon(Icons.pin_outlined,
+                        size: 20, color: NVColors.primary),
                   ),
                 ),
               ),
@@ -997,8 +1024,11 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
                 child: DropdownButtonFormField<String?>(
                   key: ValueKey('nat-$_naturalezaJuridica'),
                   initialValue: _naturalezaJuridica,
-                  decoration:
-                      const InputDecoration(labelText: 'Naturaleza jurídica'),
+                  decoration: const InputDecoration(
+                    labelText: 'Naturaleza jurídica',
+                    prefixIcon: Icon(Icons.account_balance_outlined,
+                        size: 20, color: NVColors.primary),
+                  ),
                   items: [
                     const DropdownMenuItem(value: null, child: Text('—')),
                     for (final n in kNaturalezasJuridicas)
@@ -1014,7 +1044,11 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           DropdownButtonFormField<String>(
             initialValue: _municipio,
             isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Municipio'),
+            decoration: const InputDecoration(
+              labelText: 'Municipio',
+              prefixIcon: Icon(Icons.location_city_outlined,
+                  size: 20, color: NVColors.primary),
+            ),
             items: [
               for (final m in kMunicipios) DropdownMenuItem(value: m, child: Text(m)),
             ],
@@ -1040,6 +1074,8 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
                     decoration: const InputDecoration(
                       labelText: 'Vereda (opcional)',
                       helperText: 'Público en la ficha.',
+                      prefixIcon: Icon(Icons.holiday_village_outlined,
+                          size: 20, color: NVColors.primary),
                     ),
                     items: [
                       const DropdownMenuItem(value: null, child: Text('—')),
@@ -1080,7 +1116,11 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           _seccion('Ubicación'),
           TextFormField(
             controller: _direccionCtrl,
-            decoration: const InputDecoration(labelText: 'Dirección (opcional)'),
+            decoration: const InputDecoration(
+              labelText: 'Dirección (opcional)',
+              prefixIcon: Icon(Icons.home_outlined,
+                  size: 20, color: NVColors.primary),
+            ),
           ),
           const SizedBox(height: 16),
           // Este/Norte/Cota son la fuente primaria de ubicación (pedido
@@ -1096,8 +1136,16 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Este / Norte / Cota',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                const Row(
+                  children: [
+                    Icon(Icons.explore_outlined,
+                        size: 18, color: NVColors.primaryDark),
+                    SizedBox(width: 6),
+                    Text('Este / Norte / Cota',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 14)),
+                  ],
+                ),
                 const SizedBox(height: 4),
                 const Text(
                   'Tal cual vienen de la base de CDMB — el mapa de abajo se '
@@ -1207,6 +1255,8 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
               labelText: 'WhatsApp / celular (opcional)',
               helperText: 'Al guardar: un celular (10 dígitos, empieza por 3) '
                   'se guarda como 57… para que el botón de WhatsApp funcione.',
+              prefixIcon: Icon(Icons.chat_outlined,
+                  size: 20, color: NVColors.primary),
             ),
             keyboardType: TextInputType.phone,
           ),
@@ -1217,36 +1267,57 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
               labelText: 'Teléfono fijo (opcional)',
               helperText: 'Números que no son celular. Si hay más de uno, el '
                   'resto pasa a "Teléfono secundario" al guardar.',
+              prefixIcon: Icon(Icons.call_outlined,
+                  size: 20, color: NVColors.primary),
             ),
             keyboardType: TextInputType.phone,
           ),
           const SizedBox(height: 12),
           TextFormField(
             controller: _telefonoSecundarioCtrl,
-            decoration:
-                const InputDecoration(labelText: 'Teléfono secundario (opcional)'),
+            decoration: const InputDecoration(
+              labelText: 'Teléfono secundario (opcional)',
+              prefixIcon: Icon(Icons.call_outlined,
+                  size: 20, color: NVColors.primary),
+            ),
             keyboardType: TextInputType.phone,
           ),
           const SizedBox(height: 12),
           TextFormField(
             controller: _emailCtrl,
-            decoration: const InputDecoration(labelText: 'Correo (opcional)'),
+            decoration: const InputDecoration(
+              labelText: 'Correo (opcional)',
+              prefixIcon: Icon(Icons.email_outlined,
+                  size: 20, color: NVColors.primary),
+            ),
             keyboardType: TextInputType.emailAddress,
           ),
           const SizedBox(height: 12),
           TextFormField(
             controller: _sitioWebCtrl,
-            decoration: const InputDecoration(labelText: 'Sitio web (opcional)'),
+            decoration: const InputDecoration(
+              labelText: 'Sitio web (opcional)',
+              prefixIcon: Icon(Icons.language_outlined,
+                  size: 20, color: NVColors.primary),
+            ),
           ),
           const SizedBox(height: 12),
           TextFormField(
             controller: _facebookCtrl,
-            decoration: const InputDecoration(labelText: 'Facebook (opcional)'),
+            decoration: const InputDecoration(
+              labelText: 'Facebook (opcional)',
+              prefixIcon: Icon(Icons.facebook_outlined,
+                  size: 20, color: NVColors.primary),
+            ),
           ),
           const SizedBox(height: 12),
           TextFormField(
             controller: _instagramCtrl,
-            decoration: const InputDecoration(labelText: 'Instagram (opcional)'),
+            decoration: const InputDecoration(
+              labelText: 'Instagram (opcional)',
+              prefixIcon: Icon(Icons.camera_alt_outlined,
+                  size: 20, color: NVColors.primary),
+            ),
           ),
           const SizedBox(height: 20),
           _seccion('Fotos'),
@@ -1401,7 +1472,11 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             DropdownButtonFormField<String?>(
               initialValue: _novedad,
               isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Estado (novedad CDMB)'),
+              decoration: const InputDecoration(
+                labelText: 'Estado (novedad CDMB)',
+                prefixIcon: Icon(Icons.flag_outlined,
+                    size: 20, color: NVColors.primary),
+              ),
               items: [
                 const DropdownMenuItem(value: null, child: Text('—')),
                 for (final o in _kNovedadOpciones)
@@ -1412,6 +1487,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             const SizedBox(height: 12),
             SelectorConCatalogo(
               etiqueta: 'Tipo / madurez de negocio verde',
+              icono: Icons.trending_up,
               valor: _valoresSelector['tipo_negocio_verde'],
               opciones: _valoresDe('tipo_negocio_verde'),
               onCambio: (v) =>
@@ -1425,6 +1501,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             // así 2026, 2027… no obligan a tocar nada.
             SelectorConCatalogo(
               etiqueta: 'Aplicación de ficha (vigencia actual)',
+              icono: Icons.fact_check_outlined,
               valor: _valoresSelector['aplicacion_ficha_2025'],
               opciones: _valoresDe('aplicacion_ficha_2025'),
               onCambio: (v) =>
@@ -1434,6 +1511,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             const SizedBox(height: 12),
             SelectorConCatalogo(
               etiqueta: 'RUT / Cámara de comercio',
+              icono: Icons.description_outlined,
               valor: _valoresSelector['rut_camara_comercio'],
               opciones: _valoresDe('rut_camara_comercio'),
               onCambio: (v) =>
@@ -1466,13 +1544,19 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
               decoration: InputDecoration(
                 labelText: 'Año de registro',
                 helperText: _anioTrayectoria(),
+                prefixIcon: const Icon(Icons.event_outlined,
+                    size: 20, color: NVColors.primary),
               ),
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _observacionesCtrl,
-              decoration: const InputDecoration(labelText: 'Observaciones'),
+              decoration: const InputDecoration(
+                labelText: 'Observaciones',
+                prefixIcon: Icon(Icons.notes_outlined,
+                    size: 20, color: NVColors.primary),
+              ),
               maxLines: 3,
             ),
           ],
@@ -1490,6 +1574,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
                 for (final campo in entrada.value) ...[
                   SelectorConCatalogo(
                     etiqueta: campo.etiqueta,
+                    icono: campo.icono,
                     valor: _valoresSelector[campo.campo],
                     opciones: _valoresDe(campo.campo),
                     onCambio: (v) =>
@@ -1504,7 +1589,11 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
                 if (entrada.key == 'Mercado')
                   TextFormField(
                     controller: _huellaCarbonoCtrl,
-                    decoration: const InputDecoration(labelText: 'Huella de carbono'),
+                    decoration: const InputDecoration(
+                      labelText: 'Huella de carbono',
+                      prefixIcon: Icon(Icons.cloud_outlined,
+                          size: 20, color: NVColors.primary),
+                    ),
                   ),
               ],
             ),
@@ -1515,19 +1604,31 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           hijos: [
             TextFormField(
               controller: _fortalezasAmbientalCtrl,
-              decoration: const InputDecoration(labelText: 'Ambiental'),
+              decoration: const InputDecoration(
+                labelText: 'Ambiental',
+                prefixIcon: Icon(Icons.eco_outlined,
+                    size: 20, color: NVColors.primary),
+              ),
               maxLines: 2,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _fortalezasSocialCtrl,
-              decoration: const InputDecoration(labelText: 'Social'),
+              decoration: const InputDecoration(
+                labelText: 'Social',
+                prefixIcon: Icon(Icons.groups_outlined,
+                    size: 20, color: NVColors.primary),
+              ),
               maxLines: 2,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _fortalezasEconomicoCtrl,
-              decoration: const InputDecoration(labelText: 'Económico'),
+              decoration: const InputDecoration(
+                labelText: 'Económico',
+                prefixIcon: Icon(Icons.payments_outlined,
+                    size: 20, color: NVColors.primary),
+              ),
               maxLines: 2,
             ),
           ],
@@ -1757,16 +1858,41 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
     );
   }
 
+  static const _iconosSeccion = <String, IconData>{
+    'Datos básicos': Icons.storefront_outlined,
+    'Identificación': Icons.badge_outlined,
+    'Municipio y categorización': Icons.category_outlined,
+    'Ubicación': Icons.place_outlined,
+    'Contacto y redes sociales': Icons.contact_page_outlined,
+    'Fotos': Icons.photo_library_outlined,
+    'Reconocimientos': Icons.verified_outlined,
+    'Publicación': Icons.public_outlined,
+  };
+
   Widget _seccion(String titulo) {
+    final icono = _iconosSeccion[titulo] ?? Icons.chevron_right;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Text(
-        titulo,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 16,
-          color: NVColors.primaryDark,
-        ),
+      padding: const EdgeInsets.only(bottom: 12, top: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: const BoxDecoration(
+                color: NVColors.primaryLight, shape: BoxShape.circle),
+            alignment: Alignment.center,
+            child: Icon(icono, size: 16, color: NVColors.primaryDark),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            titulo,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: NVColors.primaryDark,
+            ),
+          ),
+        ],
       ),
     );
   }

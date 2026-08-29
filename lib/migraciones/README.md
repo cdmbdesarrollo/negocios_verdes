@@ -258,12 +258,20 @@ en un Supabase nuevo:
     `guardar_*` cambian de firma (se borran y recrean, patrón de 0028);
     `asignar_representante_negocio` se recrea para usar `_display_representante`.
     Backfill: la naturaleza del representante se copia de sus negocios cuando
-    todos coinciden. Las vistas `v_*` (0030) recogen las columnas nuevas
-    solas. Depende de 0029/0030.
+    todos coinciden. Depende de 0029/0030.
+    **OJO:** las vistas `v_*` NO recogen las columnas nuevas solas (Postgres
+    congela `select *`) — hay que recrearlas, ver 0033.
 32. `0032_personas_municipio.sql` — columna `municipio` en las 3 bases de
     personas y `p_municipio` al final de las 3 RPC `guardar_*` (se borran y
     recrean otra vez, patrón de 0028/0031). Para la lista tipo trámites CDMB
     de `/admin/personas` (tabla con filtro por municipio). Depende de 0031.
+    Mismo tema de las vistas que 0031 → ver 0033.
+33. `0033_refrescar_vistas_personas.sql` — **hotfix**: recrea las 3 vistas
+    `v_*` para que incluyan las columnas que 0031 y 0032 agregaron a las
+    tablas base (`select *` no se re-expande solo). Sin esto, `/admin/personas`
+    y el formulario de edición de negocios fallan con
+    `column v_responsables_cdmb.tipo_documento does not exist`. Correr después
+    de 0032.
 
 ## Sobre trabajo concurrente de dos sesiones
 

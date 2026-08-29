@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
+import '../../../../core/widgets/botones_zoom_mapa.dart';
 import '../../../../theme/nv_colors.dart';
 
 /// Centroides aproximados de cada municipio, solo para centrar el mapa al
@@ -317,30 +318,41 @@ class _SelectorUbicacionMapaState extends State<SelectorUbicacionMapa> {
           borderRadius: BorderRadius.circular(12),
           child: SizedBox(
             height: 260,
-            child: FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                initialCenter: _punto ?? _centroDe(widget.municipio),
-                initialZoom: 13,
-                onTap: _alTocar,
-              ),
+            child: Stack(
               children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'co.gov.cdmb.negocios_verdes_cdmb',
-                ),
-                if (_punto != null)
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: _punto!,
-                        width: 40,
-                        height: 40,
-                        child: const Icon(Icons.location_pin,
-                            color: NVColors.accent, size: 40),
-                      ),
-                    ],
+                FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: _punto ?? _centroDe(widget.municipio),
+                    initialZoom: 13,
+                    onTap: _alTocar,
                   ),
+                  children: [
+                    TileLayer(
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName:
+                          'co.gov.cdmb.negocios_verdes_cdmb',
+                    ),
+                    if (_punto != null)
+                      MarkerLayer(
+                        markers: [
+                          Marker(
+                            point: _punto!,
+                            width: 40,
+                            height: 40,
+                            child: const Icon(Icons.location_pin,
+                                color: NVColors.accent, size: 40),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+                Positioned(
+                  right: 10,
+                  bottom: 10,
+                  child: BotonesZoomMapa(controlador: _mapController),
+                ),
               ],
             ),
           ),
