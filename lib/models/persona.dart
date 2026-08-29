@@ -30,6 +30,7 @@ class Persona {
   final String? telefono;
   final String? correo;
   final String? direccion;
+  final String? municipio;
 
   /// Solo responsables CDMB y delegados.
   final String? cargo;
@@ -53,6 +54,7 @@ class Persona {
     this.telefono,
     this.correo,
     this.direccion,
+    this.municipio,
     this.cargo,
     this.naturalezaJuridica,
     this.razonSocial,
@@ -103,6 +105,7 @@ class Persona {
         telefono: json['telefono']?.toString(),
         correo: json['correo']?.toString(),
         direccion: json['direccion']?.toString(),
+        municipio: json['municipio']?.toString(),
         cargo: json['cargo']?.toString(),
         naturalezaJuridica: json['naturaleza_juridica']?.toString(),
         razonSocial: json['razon_social']?.toString(),

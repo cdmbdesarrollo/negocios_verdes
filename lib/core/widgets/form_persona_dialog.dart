@@ -37,6 +37,7 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
   late final TextEditingController _direccion;
   late final TextEditingController _cargo;
   String? _tipoDocumento;
+  String? _municipio;
   String _naturaleza = 'Natural';
   bool _guardando = false;
   String? _error;
@@ -59,6 +60,7 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
     _direccion = TextEditingController(text: i?.direccion ?? '');
     _cargo = TextEditingController(text: i?.cargo ?? '');
     _tipoDocumento = i?.tipoDocumento;
+    _municipio = i?.municipio;
     _naturaleza = i?.naturalezaJuridica != null
         ? (i!.esJuridica ? 'Jurídica' : 'Natural')
         : 'Natural';
@@ -115,6 +117,7 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
         telefono: _nn(_telefono),
         correo: _nn(_correo),
         direccion: _nn(_direccion),
+        municipio: _municipio,
         cargo: _esRepr ? null : _nn(_cargo),
       );
       final id = await widget.servicio.guardarPersona(widget.tipo, propuesta);
@@ -132,6 +135,7 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
           telefono: propuesta.telefono,
           correo: propuesta.correo,
           direccion: propuesta.direccion,
+          municipio: propuesta.municipio,
           cargo: propuesta.cargo,
         ),
       );
@@ -252,10 +256,32 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 10),
-              TextField(
-                controller: _direccion,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(labelText: 'Dirección'),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _direccion,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration:
+                          const InputDecoration(labelText: 'Dirección'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _municipio,
+                      isExpanded: true,
+                      decoration:
+                          const InputDecoration(labelText: 'Municipio'),
+                      items: [
+                        const DropdownMenuItem(value: null, child: Text('—')),
+                        for (final m in kMunicipios)
+                          DropdownMenuItem(value: m, child: Text(m)),
+                      ],
+                      onChanged: (v) => setState(() => _municipio = v),
+                    ),
+                  ),
+                ],
               ),
               if (_error != null) ...[
                 const SizedBox(height: 10),

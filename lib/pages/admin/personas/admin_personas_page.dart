@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 
+import '../../../catalogos.dart';
 import '../../../core/admin_guard.dart';
 import '../../../core/texto_utils.dart';
 import '../../../core/widgets/chip_filtro.dart';
 import '../../../core/widgets/form_persona_dialog.dart';
-import '../../../core/widgets/nv_card.dart';
 import '../../../models/persona.dart';
 import '../../../services/personas_service.dart';
 import '../../../theme/nv_colors.dart';
 
-/// Gestión de las tres bases de personas (ver 0029 / 0030) sin tener que
-/// abrir un negocio: responsables CDMB, delegados y representantes legales.
-/// Crear / modificar / eliminar — lo mismo que se puede hacer desde el
-/// formulario de un negocio con SelectorPersona, pero en un solo lugar.
+/// Gestión de las tres bases de personas (ver 0029–0032) sin abrir un
+/// negocio: responsables CDMB, delegados y representantes legales. La lista
+/// se muestra como tabla (identificación, nombre / razón social, municipio,
+/// negocios) al estilo de la lista de solicitantes de trámites CDMB.
 class AdminPersonasPage extends StatefulWidget {
   const AdminPersonasPage({super.key});
 
@@ -26,6 +26,10 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
   List<Persona>? _personas;
   String? _error;
   String _busqueda = '';
+  String? _municipio;
+
+  static const _porPagina = 20;
+  int _pagina = 0;
 
   @override
   void initState() {
@@ -50,20 +54,25 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
   }
 
   List<Persona> get _visibles {
-    final lista = _personas ?? [];
+    var lista = _personas ?? [];
+    if (_municipio != null) {
+      lista = lista.where((p) => p.municipio == _municipio).toList();
+    }
     final q = quitarTildes(_busqueda.trim().toLowerCase());
-    if (q.isEmpty) return lista;
-    return lista.where((p) {
-      final texto = quitarTildes([
-        p.nombreMostrado,
-        p.nombreCompleto,
-        p.documento ?? '',
-        p.telefono ?? '',
-        p.correo ?? '',
-        p.cargo ?? '',
-      ].join(' ').toLowerCase());
-      return texto.contains(q);
-    }).toList();
+    if (q.isNotEmpty) {
+      lista = lista.where((p) {
+        final texto = quitarTildes([
+          p.nombreMostrado,
+          p.nombreCompleto,
+          p.documento ?? '',
+          p.telefono ?? '',
+          p.correo ?? '',
+          p.cargo ?? '',
+        ].join(' ').toLowerCase());
+        return texto.contains(q);
+      }).toList();
+    }
+    return lista;
   }
 
   Future<void> _crearOEditar({Persona? persona}) async {
@@ -108,6 +117,11 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
     }
   }
 
+  void _cambiarFiltro(VoidCallback cambio) => setState(() {
+        cambio();
+        _pagina = 0;
+      });
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -137,7 +151,10 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
                       seleccionado: _tipo == t,
                       onTap: () {
                         if (_tipo == t) return;
-                        setState(() => _tipo = t);
+                        setState(() {
+                          _tipo = t;
+                          _pagina = 0;
+                        });
                         _cargar();
                       },
                     ),
@@ -147,12 +164,35 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: TextField(
-                decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.search),
-                  hintText: 'Buscar por nombre, documento, teléfono o correo…',
-                ),
-                onChanged: (v) => setState(() => _busqueda = v),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.search),
+                        hintText: 'NIT, cédula, nombre, cargo o correo…',
+                        isDense: true,
+                      ),
+                      onChanged: (v) => _cambiarFiltro(() => _busqueda = v),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  SizedBox(
+                    width: 200,
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _municipio,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                          labelText: 'Municipio', isDense: true),
+                      items: [
+                        const DropdownMenuItem(value: null, child: Text('Todos')),
+                        for (final m in kMunicipios)
+                          DropdownMenuItem(value: m, child: Text(m)),
+                      ],
+                      onChanged: (v) => _cambiarFiltro(() => _municipio = v),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 12),
@@ -164,9 +204,7 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
   }
 
   Widget _cuerpo() {
-    if (_error != null) {
-      return Center(child: Text(_error!));
-    }
+    if (_error != null) return Center(child: Text(_error!));
     if (_personas == null) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -181,101 +219,196 @@ class _AdminPersonasPageState extends State<AdminPersonasPage> {
         ),
       );
     }
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 90),
-      itemCount: visibles.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (context, i) => _tarjeta(visibles[i]),
+
+    final totalPaginas = ((visibles.length - 1) ~/ _porPagina) + 1;
+    final pagina = _pagina.clamp(0, totalPaginas - 1);
+    final desde = pagina * _porPagina;
+    final hasta = (desde + _porPagina).clamp(0, visibles.length);
+    final filas = visibles.sublist(desde, hasta);
+
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: Column(
+              children: [
+                _encabezado(),
+                for (final p in filas) _fila(p),
+              ],
+            ),
+          ),
+        ),
+        _barraPaginacion(
+          desde: desde + 1,
+          hasta: hasta,
+          total: visibles.length,
+          pagina: pagina,
+          totalPaginas: totalPaginas,
+        ),
+      ],
     );
   }
 
-  Widget _pill(String texto) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-        decoration: BoxDecoration(
-          color: NVColors.primaryLight,
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Text(texto,
-            style:
-                const TextStyle(fontSize: 10, color: NVColors.primaryDark)),
-      );
+  static const _wIdent = 3;
+  static const _wNombre = 4;
+  static const _wMunicipio = 2;
+  static const _wNegocios = 2;
+  static const _wAcciones = 2;
 
-  Widget _tarjeta(Persona p) {
+  Widget _encabezado() {
+    Widget h(String t, int flex) => Expanded(
+          flex: flex,
+          child: Text(t.toUpperCase(),
+              style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
+                  color: NVColors.textoSecundario)),
+        );
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: NVColors.borde)),
+      ),
+      child: Row(
+        children: [
+          h('Identificación', _wIdent),
+          h('Nombre / razón social', _wNombre),
+          h('Municipio', _wMunicipio),
+          h('Negocios', _wNegocios),
+          h('', _wAcciones),
+        ],
+      ),
+    );
+  }
+
+  Widget _fila(Persona p) {
     final total = p.negociosTotal ?? 0;
     final vigentes = p.negociosVigentes ?? 0;
     final sePuedeEliminar = total == 0;
-    return NVCard(
-      key: ValueKey(p.id),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: NVColors.borde)),
+      ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: NVColors.primaryLight,
-            child: Icon(
-                p.esJuridica ? Icons.business_outlined : Icons.person_outline,
-                size: 18,
-                color: NVColors.primaryDark),
-          ),
-          const SizedBox(width: 12),
           Expanded(
+            flex: _wIdent,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(p.nombreMostrado,
-                          style:
-                              const TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                    if (_tipo == TipoPersona.representante &&
-                        (p.naturalezaJuridica ?? '').isNotEmpty) ...[
-                      const SizedBox(width: 6),
-                      _pill(p.esJuridica ? 'Jurídica' : 'Natural'),
-                    ],
-                  ],
-                ),
-                if ([p.documentoMostrado, p.cargo, p.telefono, p.correo,
-                    p.direccion].any((e) => (e ?? '').isNotEmpty))
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      [
-                        if (p.documentoMostrado != null) p.documentoMostrado!,
-                        if ((p.cargo ?? '').isNotEmpty) p.cargo!,
-                        if ((p.telefono ?? '').isNotEmpty) p.telefono!,
-                        if ((p.correo ?? '').isNotEmpty) p.correo!,
-                        if ((p.direccion ?? '').isNotEmpty) p.direccion!,
-                      ].join('  ·  '),
-                      style: const TextStyle(
-                          fontSize: 12, color: NVColors.textoSecundario),
-                    ),
-                  ),
-                const SizedBox(height: 4),
+                Text(p.documento?.trim().isNotEmpty == true
+                    ? p.documento!.trim()
+                    : '—'),
                 Text(
-                  total == 0
-                      ? 'Sin negocios asignados'
-                      : 'En $vigentes negocio(s) ahora'
-                          '${total > vigentes ? ' · $total en el historial' : ''}',
+                  _tipo == TipoPersona.representante
+                      ? (p.naturalezaJuridica ?? '—')
+                      : (p.tipoDocumento ?? ''),
                   style: const TextStyle(
                       fontSize: 11, color: NVColors.textoSecundario),
                 ),
               ],
             ),
           ),
-          IconButton(
-            tooltip: 'Editar',
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () => _crearOEditar(persona: p),
+          Expanded(
+            flex: _wNombre,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(p.nombreMostrado,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                if ([p.cargo, p.telefono, p.correo]
+                    .any((e) => (e ?? '').isNotEmpty))
+                  Text(
+                    [
+                      if ((p.cargo ?? '').isNotEmpty) p.cargo!,
+                      if ((p.telefono ?? '').isNotEmpty) p.telefono!,
+                      if ((p.correo ?? '').isNotEmpty) p.correo!,
+                    ].join(' · '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 11, color: NVColors.textoSecundario),
+                  ),
+              ],
+            ),
           ),
+          Expanded(
+              flex: _wMunicipio,
+              child: Text(p.municipio ?? '—',
+                  style: const TextStyle(fontSize: 13))),
+          Expanded(
+            flex: _wNegocios,
+            child: Text(
+              total == 0
+                  ? '—'
+                  : '$vigentes${total > vigentes ? ' ($total hist.)' : ''}',
+              style: const TextStyle(fontSize: 13),
+            ),
+          ),
+          Expanded(
+            flex: _wAcciones,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  tooltip: 'Editar',
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  onPressed: () => _crearOEditar(persona: p),
+                ),
+                IconButton(
+                  tooltip: sePuedeEliminar
+                      ? 'Eliminar'
+                      : 'Tiene negocios en el historial',
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  color: sePuedeEliminar
+                      ? NVColors.error
+                      : NVColors.textoSecundario,
+                  onPressed: sePuedeEliminar ? () => _eliminar(p) : null,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _barraPaginacion({
+    required int desde,
+    required int hasta,
+    required int total,
+    required int pagina,
+    required int totalPaginas,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: NVColors.borde)),
+      ),
+      child: Row(
+        children: [
+          Text('$desde–$hasta de $total',
+              style: const TextStyle(
+                  color: NVColors.textoSecundario, fontSize: 13)),
+          const Spacer(),
           IconButton(
-            tooltip: sePuedeEliminar
-                ? 'Eliminar'
-                : 'No se puede eliminar: tiene negocios en el historial',
-            icon: const Icon(Icons.delete_outline),
-            color: sePuedeEliminar ? NVColors.error : NVColors.textoSecundario,
-            onPressed: sePuedeEliminar ? () => _eliminar(p) : null,
+            icon: const Icon(Icons.chevron_left),
+            onPressed:
+                pagina > 0 ? () => setState(() => _pagina = pagina - 1) : null,
+          ),
+          Text('${pagina + 1} / $totalPaginas',
+              style: const TextStyle(fontSize: 13)),
+          IconButton(
+            icon: const Icon(Icons.chevron_right),
+            onPressed: pagina < totalPaginas - 1
+                ? () => setState(() => _pagina = pagina + 1)
+                : null,
           ),
         ],
       ),

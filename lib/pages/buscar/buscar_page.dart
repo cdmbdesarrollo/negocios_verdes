@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../../core/responsive.dart';
 import '../../core/seo_tags.dart';
+import '../../core/widgets/hover_lift.dart';
 import '../../core/widgets/pie_pagina.dart';
 import '../../models/actividad_productiva.dart';
 import '../../models/categoria_oficial.dart';
@@ -19,7 +20,7 @@ import '../../services/negocio_service.dart';
 import '../../services/subcategoria_service.dart';
 import '../../theme/nv_colors.dart';
 import 'widgets/filtros_bar.dart';
-import 'widgets/resultados_lista.dart';
+import 'widgets/negocio_card.dart';
 import 'widgets/resultados_mapa.dart';
 
 /// El "megabuscador": una sola página con texto + municipio + categoría +
@@ -41,6 +42,12 @@ class _BuscarPageState extends State<BuscarPage> {
   final _actividadService = ActividadProductivaService();
   final _mapController = MapController();
   final Map<String, GlobalKey> _clavesPorNegocio = {};
+  final _claveMapa = GlobalKey();
+
+  /// Los resultados se muestran en grilla horizontal; si son muchos se
+  /// paginan (pedido explícito: "cuando da muchos negocios se pierden").
+  static const _porPagina = 24;
+  int _pagina = 0;
 
   FiltroBusqueda _filtro = const FiltroBusqueda();
   List<Negocio>? _negocios;
@@ -147,13 +154,22 @@ class _BuscarPageState extends State<BuscarPage> {
         nuevo.municipio != _filtro.municipio ||
         nuevo.categoriaSlug != _filtro.categoriaSlug ||
         nuevo.subcategoriaSlug != _filtro.subcategoriaSlug ||
-        nuevo.actividadSlug != _filtro.actividadSlug;
+        nuevo.actividadSlug != _filtro.actividadSlug ||
+        // BUG que devolvía "siempre lo mismo" al tocar los chips de
+        // reconocimiento: no estaban en esta comparación, así que
+        // cambioDatos daba false y la búsqueda no se volvía a correr.
+        nuevo.emprendimientoVerde != _filtro.emprendimientoVerde ||
+        nuevo.selloMarca != _filtro.selloMarca ||
+        nuevo.avalado != _filtro.avalado;
     final soloCambioTexto = cambioDatos &&
         nuevo.query != _filtro.query &&
         nuevo.municipio == _filtro.municipio &&
         nuevo.categoriaSlug == _filtro.categoriaSlug &&
         nuevo.subcategoriaSlug == _filtro.subcategoriaSlug &&
-        nuevo.actividadSlug == _filtro.actividadSlug;
+        nuevo.actividadSlug == _filtro.actividadSlug &&
+        nuevo.emprendimientoVerde == _filtro.emprendimientoVerde &&
+        nuevo.selloMarca == _filtro.selloMarca &&
+        nuevo.avalado == _filtro.avalado;
 
     setState(() => _filtro = nuevo);
     _actualizarUrl();
@@ -176,6 +192,7 @@ class _BuscarPageState extends State<BuscarPage> {
       if (mounted) {
         setState(() {
           _negocios = resultados;
+          _pagina = 0;
           _cargando = false;
           _error = null;
         });
@@ -200,28 +217,32 @@ class _BuscarPageState extends State<BuscarPage> {
 
   void _verEnMapa(Negocio negocio) {
     if (!negocio.tieneUbicacion) return;
-    final ancha = esPantallaAncha(context);
     setState(() => _negocioSeleccionadoId = negocio.id);
-    if (!ancha && _filtro.vista != VistaResultados.mapa) {
-      _alCambiarFiltro(_filtro.copyWith(vista: VistaResultados.mapa));
-    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _claveMapa.currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(ctx,
+            duration: const Duration(milliseconds: 350), alignment: 0.05);
+      }
       _mapController.move(LatLng(negocio.latitud!, negocio.longitud!), 15);
     });
   }
 
   void _alTocarMarcador(Negocio negocio) {
-    setState(() => _negocioSeleccionadoId = negocio.id);
+    final lista = _negocios ?? [];
+    final idx = lista.indexWhere((n) => n.id == negocio.id);
+    setState(() {
+      _negocioSeleccionadoId = negocio.id;
+      if (idx >= 0) _pagina = idx ~/ _porPagina;
+    });
     if (esPantallaAncha(context)) {
-      final clave = _clavesPorNegocio[negocio.id];
-      final ctx = clave?.currentContext;
-      if (ctx != null) {
-        Scrollable.ensureVisible(
-          ctx,
-          duration: const Duration(milliseconds: 300),
-          alignment: 0.1,
-        );
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final ctx = _clavesPorNegocio[negocio.id]?.currentContext;
+        if (ctx != null) {
+          Scrollable.ensureVisible(ctx,
+              duration: const Duration(milliseconds: 300), alignment: 0.1);
+        }
+      });
     } else {
       showModalBottomSheet(
         context: context,
@@ -246,112 +267,166 @@ class _BuscarPageState extends State<BuscarPage> {
 
     final negocios = _negocios ?? [];
     final conUbicacion = negocios.where((n) => n.tieneUbicacion).length;
-    final ancha = esPantallaAncha(context);
 
-    // Antes esta página no tenía scroll propio (filtros + contador fijos
-    // arriba, lista/mapa en un Expanded ocupando justo lo que quedaba de
-    // viewport) — era la ÚNICA página del sitio sin pie de página, y sin
-    // ese cierre el mapa se sentía "cortado" en vez de completo. Ahora es
-    // una página normal como el resto (scroll + PiePagina al final);
-    // lista/mapa pasan de Expanded a una altura fija generosa en vez de
-    // "lo que sobre", así se ven completos sin importar cuánto midan los
-    // filtros arriba.
+    // Layout pedido explícitamente: los resultados en grilla horizontal
+    // (varias filas), paginados si son muchos, y DEBAJO de todos el mapa a
+    // lo ancho con todos los puntos.
+    final totalPaginas =
+        negocios.isEmpty ? 1 : ((negocios.length - 1) ~/ _porPagina) + 1;
+    final pagina = _pagina.clamp(0, totalPaginas - 1);
+    final desde = pagina * _porPagina;
+    final hasta = (desde + _porPagina).clamp(0, negocios.length);
+    final pagVisibles =
+        negocios.isEmpty ? <Negocio>[] : negocios.sublist(desde, hasta);
+
     return SingleChildScrollView(
       child: Column(
         children: [
-        // Antes tenía un ConstrainedBox(maxHeight: 36% de pantalla) +
-        // scroll propio — de cuando los resultados de abajo eran un
-        // Expanded y competían por alto con FiltrosBar. Ya no: los
-        // resultados miden 600 fijo (ver más abajo) sin importar cuánto
-        // crezca este bloque, así que ese límite quedó sin ningún
-        // propósito real y solo cortaba la fila de Subcategoría/Actividad
-        // cuando la categoría elegida tenía muchas — la página entera ya
-        // tiene su propio scroll (el SingleChildScrollView de más arriba),
-        // no hace falta anidar un segundo scroll adentro.
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-          child: FiltrosBar(
-            categorias: _categorias,
-            subcategorias: _subcategorias,
-            actividades: _actividades,
-            negocios: _nombresNegocios,
-            filtro: _filtro,
-            onCambio: _alCambiarFiltro,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: FiltrosBar(
+              categorias: _categorias,
+              subcategorias: _subcategorias,
+              actividades: _actividades,
+              negocios: _nombresNegocios,
+              filtro: _filtro,
+              onCambio: _alCambiarFiltro,
+            ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-          child: Row(
-            children: [
-              Expanded(
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '${negocios.length} ${negocios.length == 1 ? 'negocio encontrado' : 'negocios encontrados'}'
+                '${totalPaginas > 1 ? ' · página ${pagina + 1} de $totalPaginas' : ''}',
+                style: const TextStyle(
+                    color: NVColors.textoSecundario, fontSize: 12),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (_cargando)
+            const Padding(
+              padding: EdgeInsets.all(40),
+              child: CircularProgressIndicator(),
+            )
+          else if (negocios.isEmpty)
+            _vacio()
+          else
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: LayoutBuilder(
+                builder: (context, c) {
+                  const objetivo = 380.0;
+                  final cols = (c.maxWidth / objetivo).floor().clamp(1, 4);
+                  final ancho = (c.maxWidth - (cols - 1) * 12) / cols;
+                  return Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      for (final n in pagVisibles)
+                        SizedBox(
+                          width: ancho,
+                          child: KeyedSubtree(
+                            key: _clavesPorNegocio.putIfAbsent(
+                                n.id, () => GlobalKey()),
+                            child: HoverLift(
+                              child: NegocioCard(
+                                negocio: n,
+                                seleccionado: n.id == _negocioSeleccionadoId,
+                                onVerEnMapa: n.tieneUbicacion
+                                    ? () => _verEnMapa(n)
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          if (totalPaginas > 1) _pager(negocios.length, pagina, totalPaginas),
+          if (conUbicacion > 0) ...[
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
                 child: Text(
-                  '${negocios.length} ${negocios.length == 1 ? 'negocio encontrado' : 'negocios encontrados'}'
-                  '${conUbicacion != negocios.length && negocios.isNotEmpty ? ' · Mostrando $conUbicacion de ${negocios.length} en el mapa' : ''}',
+                  'Ubicación de los $conUbicacion negocios con dirección',
                   style: const TextStyle(
-                      color: NVColors.textoSecundario, fontSize: 12),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: NVColors.primaryDark),
                 ),
               ),
-              if (!ancha)
-                SegmentedButton<VistaResultados>(
-                  segments: const [
-                    ButtonSegment(
-                        value: VistaResultados.lista,
-                        icon: Icon(Icons.list),
-                        label: Text('Lista')),
-                    ButtonSegment(
-                        value: VistaResultados.mapa,
-                        icon: Icon(Icons.map_outlined),
-                        label: Text('Mapa')),
-                  ],
-                  selected: {_filtro.vista},
-                  onSelectionChanged: (nuevo) =>
-                      _alCambiarFiltro(_filtro.copyWith(vista: nuevo.first)),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Container(
+                key: _claveMapa,
+                height: 480,
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: NVColors.borde),
                 ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 600,
-          child: ancha
-              ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      flex: 4,
-                      child: ResultadosLista(
-                        negocios: negocios,
-                        clavesPorNegocio: _clavesPorNegocio,
-                        negocioSeleccionadoId: _negocioSeleccionadoId,
-                        onVerEnMapa: _verEnMapa,
-                      ),
-                    ),
-                    Expanded(
-                      flex: 6,
-                      child: ResultadosMapa(
-                        negocios: negocios,
-                        mapController: _mapController,
-                        negocioSeleccionadoId: _negocioSeleccionadoId,
-                        onMarcadorTocado: _alTocarMarcador,
-                      ),
-                    ),
-                  ],
-                )
-              : (_filtro.vista == VistaResultados.lista
-                  ? ResultadosLista(
-                      negocios: negocios,
-                      clavesPorNegocio: _clavesPorNegocio,
-                      negocioSeleccionadoId: _negocioSeleccionadoId,
-                      onVerEnMapa: _verEnMapa,
-                    )
-                  : ResultadosMapa(
-                      negocios: negocios,
-                      mapController: _mapController,
-                      negocioSeleccionadoId: _negocioSeleccionadoId,
-                      onMarcadorTocado: _alTocarMarcador,
-                    )),
-        ),
+                child: ResultadosMapa(
+                  negocios: negocios,
+                  mapController: _mapController,
+                  negocioSeleccionadoId: _negocioSeleccionadoId,
+                  onMarcadorTocado: _alTocarMarcador,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 24),
           const PiePagina(),
+        ],
+      ),
+    );
+  }
+
+  Widget _pager(int total, int pagina, int totalPaginas) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left),
+            onPressed: pagina > 0
+                ? () => setState(() => _pagina = pagina - 1)
+                : null,
+          ),
+          Text('${pagina + 1} / $totalPaginas',
+              style: const TextStyle(fontWeight: FontWeight.w600)),
+          IconButton(
+            icon: const Icon(Icons.chevron_right),
+            onPressed: pagina < totalPaginas - 1
+                ? () => setState(() => _pagina = pagina + 1)
+                : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _vacio() {
+    return Padding(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        children: [
+          Image.asset('assets/images/iconografia/oso_anteojos_2.png',
+              width: 56, height: 56),
+          const SizedBox(height: 14),
+          const Text('No encontramos negocios con estos filtros',
+              style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          const Text('Prueba con otra búsqueda o quita algún filtro.',
+              style: TextStyle(color: NVColors.textoSecundario, fontSize: 13)),
         ],
       ),
     );

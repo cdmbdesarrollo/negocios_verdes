@@ -11,7 +11,8 @@ class PersonasService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
   static const _comunes =
-      'id, nombres, apellidos, documento, tipo_documento, telefono, correo, direccion';
+      'id, nombres, apellidos, documento, tipo_documento, telefono, correo, '
+      'direccion, municipio';
 
   /// Columnas a pedir por tipo — responsables/delegados llevan `cargo`,
   /// representantes llevan `naturaleza_juridica` y `razon_social` (ver 0031).
@@ -123,6 +124,7 @@ class PersonasService {
         'p_telefono': p.telefono,
         'p_correo': p.correo,
         'p_direccion': p.direccion,
+        'p_municipio': p.municipio,
       };
       if (tipo == TipoPersona.representante) {
         base['p_razon_social'] = p.razonSocial;

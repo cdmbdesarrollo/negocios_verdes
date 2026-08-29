@@ -260,6 +260,10 @@ en un Supabase nuevo:
     Backfill: la naturaleza del representante se copia de sus negocios cuando
     todos coinciden. Las vistas `v_*` (0030) recogen las columnas nuevas
     solas. Depende de 0029/0030.
+32. `0032_personas_municipio.sql` — columna `municipio` en las 3 bases de
+    personas y `p_municipio` al final de las 3 RPC `guardar_*` (se borran y
+    recrean otra vez, patrón de 0028/0031). Para la lista tipo trámites CDMB
+    de `/admin/personas` (tabla con filtro por municipio). Depende de 0031.
 
 ## Sobre trabajo concurrente de dos sesiones
 
