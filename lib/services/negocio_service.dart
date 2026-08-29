@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/texto_utils.dart';
+import '../models/ficha_tecnica_negocio.dart';
 import '../models/filtro_busqueda.dart';
 import '../models/negocio.dart';
 
@@ -11,12 +12,32 @@ import '../models/negocio.dart';
 // hint explícito responde 300 "more than one relationship was found" en
 // CUALQUIER consulta de negocios — se cae el sitio público entero, no solo
 // el admin. Este hint fija cuál de los dos es el embed "plano" de arriba.
-const String _selectConEmbeds =
-    '*, categorias_oficiales!negocios_categoria_oficial_id_fkey(*), '
+const String _embeds =
+    'categorias_oficiales!negocios_categoria_oficial_id_fkey(*), veredas(*), '
     'negocio_fotos(*), '
     'negocios_subcategorias(subcategorias(*)), '
     'negocios_categorias(categorias_oficiales(*)), '
     'negocios_actividades(actividades_productivas(*))';
+
+/// Solo admin: "*" trae también las ~40 columnas de seguimiento interno
+/// (ver 0022_ficha_ampliada_negocios.sql) — correcto para /admin/negocios,
+/// ese panel ya requiere sesión de admin autenticada.
+const String _selectConEmbeds = '*, $_embeds';
+
+/// Público: lista explícita de columnas, a propósito SIN "*". No es solo
+/// una cuestión de UI — RLS en Postgres controla filas, no columnas, así
+/// que un SELECT "*" desde el buscador público haría viajar el NIT y el
+/// resto de la ficha técnica en la respuesta JSON a cualquier visitante
+/// anónimo, aunque la interfaz nunca los muestre (visible igual abriendo
+/// las herramientas de red del navegador). Decisión explícita de CDMB:
+/// nit/naturaleza_juridica nunca públicos (ver Negocio.nit).
+const String _selectPublico =
+    'id, nombre, slug, categoria_oficial_id, municipio, vereda_id, '
+    'direccion, latitud, longitud, descripcion_corta, descripcion, producto, '
+    'telefono, whatsapp, email, sitio_web, facebook_url, instagram_url, '
+    'foto_portada_url, foto_portada_path, representante_legal, '
+    'emprendimiento_verde, sello_marca, avalado, destacado, activo, '
+    'created_at, updated_at, $_embeds';
 
 class NegocioService {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -33,7 +54,7 @@ class NegocioService {
   Future<List<Negocio>> buscar(FiltroBusqueda filtro) async {
     try {
       var query =
-          _supabase.from('negocios').select(_selectConEmbeds).eq('activo', true);
+          _supabase.from('negocios').select(_selectPublico).eq('activo', true);
 
       if (filtro.municipio != null) {
         query = query.eq('municipio', filtro.municipio!);
@@ -69,14 +90,14 @@ class NegocioService {
         query = query.inFilter('id', negocioIds);
       }
 
-      if (filtro.nivelDesarrollo != null) {
-        query = query.eq('nivel_desarrollo', filtro.nivelDesarrollo!);
+      if (filtro.emprendimientoVerde == true) {
+        query = query.eq('emprendimiento_verde', true);
       }
       if (filtro.selloMarca == true) {
         query = query.eq('sello_marca', true);
       }
-      if (filtro.avalConfianza == true) {
-        query = query.eq('aval_confianza', true);
+      if (filtro.avalado == true) {
+        query = query.eq('avalado', true);
       }
 
       if (filtro.query.trim().isNotEmpty) {
@@ -137,7 +158,7 @@ class NegocioService {
     try {
       final data = await _supabase
           .from('negocios')
-          .select(_selectConEmbeds)
+          .select(_selectPublico)
           .eq('slug', slug)
           .eq('activo', true)
           .maybeSingle();
@@ -194,26 +215,31 @@ class NegocioService {
     required String nombre,
     required List<String> categoriaOficialIds,
     required String municipio,
+    String? veredaId,
     String? direccion,
     double? latitud,
     double? longitud,
-    required String descripcionCorta,
-    required String descripcion,
+    String? descripcionCorta,
+    String? descripcion,
     String? telefono,
-    required String whatsapp,
+    String? whatsapp,
     String? email,
     String? sitioWeb,
     String? facebookUrl,
     String? instagramUrl,
     String? fotoPortadaUrl,
     String? fotoPortadaPath,
-    required String nivelDesarrollo,
+    String? representanteLegal,
+    String? producto,
+    String? nit,
+    String? naturalezaJuridica,
+    required bool emprendimientoVerde,
+    required bool selloMarca,
+    required bool avalado,
     required bool destacado,
     required bool activo,
     required List<String> subcategoriaIds,
     required List<String> actividadIds,
-    required bool selloMarca,
-    required bool avalConfianza,
   }) async {
     try {
       final resultado = await _supabase.rpc('guardar_negocio', params: {
@@ -221,6 +247,7 @@ class NegocioService {
         'p_nombre': nombre,
         'p_categoria_oficial_ids': categoriaOficialIds,
         'p_municipio': municipio,
+        'p_vereda_id': veredaId,
         'p_direccion': direccion,
         'p_latitud': latitud,
         'p_longitud': longitud,
@@ -234,17 +261,177 @@ class NegocioService {
         'p_instagram_url': instagramUrl,
         'p_foto_portada_url': fotoPortadaUrl,
         'p_foto_portada_path': fotoPortadaPath,
-        'p_nivel_desarrollo': nivelDesarrollo,
+        'p_representante_legal': representanteLegal,
+        'p_producto': producto,
+        'p_nit': nit,
+        'p_naturaleza_juridica': naturalezaJuridica,
+        'p_emprendimiento_verde': emprendimientoVerde,
+        'p_sello_marca': selloMarca,
+        'p_avalado': avalado,
         'p_destacado': destacado,
         'p_activo': activo,
         'p_subcategoria_ids': subcategoriaIds,
         'p_actividad_ids': actividadIds,
-        'p_sello_marca': selloMarca,
-        'p_aval_confianza': avalConfianza,
       });
       return resultado.toString();
     } catch (e) {
       throw Exception('No se pudo guardar el negocio: $e');
+    }
+  }
+
+  /// Los ~40 campos de seguimiento interno CDMB (ver FichaTecnicaNegocio) —
+  /// select explícito porque son las mismas columnas admin-only que
+  /// _selectPublico excluye a propósito, no tiene sentido traer también
+  /// todo lo público/embeds acá.
+  Future<FichaTecnicaNegocio> obtenerFichaTecnica(String negocioId) async {
+    try {
+      final data = await _supabase
+          .from('negocios')
+          .select(
+              'id, tiempo_constitucion, rut_camara_comercio, responsable_cdmb, '
+              'delegado, registro_nacional_turismo, uso_suelo, concesion_aguas, '
+              'concesion_aguas_vencimiento, vertimientos, vertimientos_vencimiento, '
+              'pueaa, pgris, pozo_septico, alcantarillado, ica, ica_vencimiento, '
+              'invima, invima_vencimiento, certificado_tenencia_animales, '
+              'buenas_practicas_agricolas, buenas_practicas_apicolas, registro_apicola, '
+              'intervencion_cauce, capacidad_carga, sstt, canal_venta, exportacion, '
+              'huella_carbono, fortalecimiento_tecnico, fortalecimiento_academico, '
+              'fortalecimiento_financiero, internacionalizacion, certificaciones, '
+              'posicionamiento_marca, beneficios_ventanilla, fortalezas_ambiental, '
+              'fortalezas_social, fortalezas_economico, debilidades_ambiental, '
+              'debilidades_social, debilidades_financiera, novedad, tipo_negocio_verde, '
+              'codigo_marca, anio_registro, cota_msnm, aplicacion_ficha_2025, observaciones')
+          .eq('id', negocioId)
+          .single();
+      final puntajes = await _supabase
+          .from('negocio_puntajes')
+          .select('anio, puntaje')
+          .eq('negocio_id', negocioId);
+      return FichaTecnicaNegocio.fromJson(
+          data, (puntajes as List).cast<Map<String, dynamic>>());
+    } catch (e) {
+      throw Exception('No se pudo cargar la ficha técnica: $e');
+    }
+  }
+
+  Future<void> guardarFichaTecnica({
+    required String id,
+    String? novedad,
+    String? tipoNegocioVerde,
+    String? codigoMarca,
+    int? anioRegistro,
+    String? cotaMsnm,
+    String? aplicacionFicha2025,
+    String? observaciones,
+    String? delegado,
+    String? tiempoConstitucion,
+    String? rutCamaraComercio,
+    String? responsableCdmb,
+    String? registroNacionalTurismo,
+    String? usoSuelo,
+    String? concesionAguas,
+    DateTime? concesionAguasVencimiento,
+    String? vertimientos,
+    DateTime? vertimientosVencimiento,
+    String? pueaa,
+    String? pgris,
+    String? pozoSeptico,
+    String? alcantarillado,
+    String? ica,
+    DateTime? icaVencimiento,
+    String? invima,
+    DateTime? invimaVencimiento,
+    String? certificadoTenenciaAnimales,
+    String? buenasPracticasAgricolas,
+    String? buenasPracticasApicolas,
+    String? registroApicola,
+    String? intervencionCauce,
+    String? capacidadCarga,
+    String? sstt,
+    String? canalVenta,
+    String? exportacion,
+    String? huellaCarbono,
+    String? fortalecimientoTecnico,
+    String? fortalecimientoAcademico,
+    String? fortalecimientoFinanciero,
+    String? internacionalizacion,
+    String? certificaciones,
+    String? posicionamientoMarca,
+    String? beneficiosVentanilla,
+    String? fortalezasAmbiental,
+    String? fortalezasSocial,
+    String? fortalezasEconomico,
+    String? debilidadesAmbiental,
+    String? debilidadesSocial,
+    String? debilidadesFinanciera,
+  }) async {
+    String? fecha(DateTime? d) => d?.toIso8601String().split('T').first;
+    try {
+      await _supabase.rpc('guardar_ficha_tecnica_negocio', params: {
+        'p_id': id,
+        'p_novedad': novedad,
+        'p_tipo_negocio_verde': tipoNegocioVerde,
+        'p_codigo_marca': codigoMarca,
+        'p_anio_registro': anioRegistro,
+        'p_cota_msnm': cotaMsnm,
+        'p_aplicacion_ficha_2025': aplicacionFicha2025,
+        'p_observaciones': observaciones,
+        'p_delegado': delegado,
+        'p_tiempo_constitucion': tiempoConstitucion,
+        'p_rut_camara_comercio': rutCamaraComercio,
+        'p_responsable_cdmb': responsableCdmb,
+        'p_registro_nacional_turismo': registroNacionalTurismo,
+        'p_uso_suelo': usoSuelo,
+        'p_concesion_aguas': concesionAguas,
+        'p_concesion_aguas_vencimiento': fecha(concesionAguasVencimiento),
+        'p_vertimientos': vertimientos,
+        'p_vertimientos_vencimiento': fecha(vertimientosVencimiento),
+        'p_pueaa': pueaa,
+        'p_pgris': pgris,
+        'p_pozo_septico': pozoSeptico,
+        'p_alcantarillado': alcantarillado,
+        'p_ica': ica,
+        'p_ica_vencimiento': fecha(icaVencimiento),
+        'p_invima': invima,
+        'p_invima_vencimiento': fecha(invimaVencimiento),
+        'p_certificado_tenencia_animales': certificadoTenenciaAnimales,
+        'p_buenas_practicas_agricolas': buenasPracticasAgricolas,
+        'p_buenas_practicas_apicolas': buenasPracticasApicolas,
+        'p_registro_apicola': registroApicola,
+        'p_intervencion_cauce': intervencionCauce,
+        'p_capacidad_carga': capacidadCarga,
+        'p_sstt': sstt,
+        'p_canal_venta': canalVenta,
+        'p_exportacion': exportacion,
+        'p_huella_carbono': huellaCarbono,
+        'p_fortalecimiento_tecnico': fortalecimientoTecnico,
+        'p_fortalecimiento_academico': fortalecimientoAcademico,
+        'p_fortalecimiento_financiero': fortalecimientoFinanciero,
+        'p_internacionalizacion': internacionalizacion,
+        'p_certificaciones': certificaciones,
+        'p_posicionamiento_marca': posicionamientoMarca,
+        'p_beneficios_ventanilla': beneficiosVentanilla,
+        'p_fortalezas_ambiental': fortalezasAmbiental,
+        'p_fortalezas_social': fortalezasSocial,
+        'p_fortalezas_economico': fortalezasEconomico,
+        'p_debilidades_ambiental': debilidadesAmbiental,
+        'p_debilidades_social': debilidadesSocial,
+        'p_debilidades_financiera': debilidadesFinanciera,
+      });
+    } catch (e) {
+      throw Exception('No se pudo guardar la ficha técnica: $e');
+    }
+  }
+
+  Future<void> guardarPuntaje(String negocioId, int anio, double puntaje) async {
+    try {
+      await _supabase.rpc('guardar_puntaje_negocio', params: {
+        'p_negocio_id': negocioId,
+        'p_anio': anio,
+        'p_puntaje': puntaje,
+      });
+    } catch (e) {
+      throw Exception('No se pudo guardar el puntaje: $e');
     }
   }
 

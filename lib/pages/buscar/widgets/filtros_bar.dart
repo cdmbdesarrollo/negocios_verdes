@@ -365,28 +365,17 @@ class _FiltrosBarState extends State<FiltrosBar> {
             spacing: 6,
             runSpacing: 6,
             children: [
+              // Las 3 categorías de CDMB son independientes entre sí (un
+              // negocio puede tener 1, 2 o las 3) — cada chip alterna su
+              // propio booleano, no son un grupo "elegí uno".
               ChipFiltro(
-                etiqueta: 'Todos',
-                seleccionado: widget.filtro.nivelDesarrollo == null,
+                etiqueta: 'Emprendimiento Verde',
+                seleccionado: widget.filtro.emprendimientoVerde == true,
                 onTap: () => widget.onCambio(
-                    widget.filtro.copyWith(limpiarNivelDesarrollo: true)),
+                    widget.filtro.emprendimientoVerde == true
+                        ? widget.filtro.copyWith(limpiarEmprendimientoVerde: true)
+                        : widget.filtro.copyWith(emprendimientoVerde: true)),
               ),
-              ChipFiltro(
-                etiqueta: 'Verificado',
-                seleccionado: widget.filtro.nivelDesarrollo == 'verificado',
-                onTap: () => widget.onCambio(
-                    widget.filtro.copyWith(nivelDesarrollo: 'verificado')),
-              ),
-              ChipFiltro(
-                etiqueta: 'Negocio ancla',
-                seleccionado: widget.filtro.nivelDesarrollo == 'negocio_ancla',
-                onTap: () => widget.onCambio(
-                    widget.filtro.copyWith(nivelDesarrollo: 'negocio_ancla')),
-              ),
-              // Sello Marca y Aval de Confianza son independientes entre sí
-              // y de nivelDesarrollo (mismo criterio de siempre) — por eso
-              // cada chip alterna su propio booleano en vez de ser parte
-              // del mismo grupo "elegí uno" que los chips de arriba.
               ChipFiltro(
                 etiqueta: '🎖️ Sello Marca',
                 seleccionado: widget.filtro.selloMarca == true,
@@ -395,11 +384,11 @@ class _FiltrosBarState extends State<FiltrosBar> {
                     : widget.filtro.copyWith(selloMarca: true)),
               ),
               ChipFiltro(
-                etiqueta: '🛡️ Aval de Confianza',
-                seleccionado: widget.filtro.avalConfianza == true,
-                onTap: () => widget.onCambio(widget.filtro.avalConfianza == true
-                    ? widget.filtro.copyWith(limpiarAvalConfianza: true)
-                    : widget.filtro.copyWith(avalConfianza: true)),
+                etiqueta: '✅ Negocio Verde Avalado',
+                seleccionado: widget.filtro.avalado == true,
+                onTap: () => widget.onCambio(widget.filtro.avalado == true
+                    ? widget.filtro.copyWith(limpiarAvalado: true)
+                    : widget.filtro.copyWith(avalado: true)),
               ),
             ],
           ),

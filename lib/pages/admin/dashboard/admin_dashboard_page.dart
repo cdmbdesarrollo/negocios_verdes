@@ -46,11 +46,20 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     }
 
     final activos = negocios.where((n) => n.activo).length;
-    final enVerificacion =
-        negocios.where((n) => n.nivelDesarrollo == 'en_verificacion').length;
+    // CDMB marca "ACTIVO" en su base (novedad) pero acá sigue inactivo casi
+    // siempre por falta de foto de portada (constraint de la base) — cifra
+    // priorizable para el admin, más útil que un genérico "en verificación"
+    // que ya no existe como concepto (ver 0022_ficha_ampliada_negocios.sql).
+    final pendientesDePublicar = negocios
+        .where((n) => !n.activo && n.novedad == 'ACTIVO')
+        .length;
     final sinFoto = negocios
         .where((n) => n.fotoPortadaUrl == null || n.fotoPortadaUrl!.isEmpty)
         .length;
+    final sinClasificar = negocios
+        .where((n) => n.categoriaOficial?.slug == 'pendiente-clasificar')
+        .length;
+    final totalParaBarras = negocios.isEmpty ? 1 : negocios.length;
     final porMunicipio = <String, int>{};
     for (final n in negocios) {
       porMunicipio[n.municipio] = (porMunicipio[n.municipio] ?? 0) + 1;
@@ -101,23 +110,30 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               children: [
                 _tarjetaEstadistica(
                   context,
-                  etiqueta: 'Publicados',
+                  etiqueta: 'Activos (publicados)',
                   valor: activos,
                   icono: Icons.check_circle_outline,
                   color: NVColors.exito,
                 ),
                 _tarjetaEstadistica(
                   context,
-                  etiqueta: 'En verificación',
-                  valor: enVerificacion,
+                  etiqueta: 'CDMB los marca ACTIVO, faltan por publicar',
+                  valor: pendientesDePublicar,
                   icono: Icons.hourglass_top,
-                  color: NVColors.nivelEnVerificacion,
+                  color: NVColors.advertencia,
                 ),
                 _tarjetaEstadistica(
                   context,
                   etiqueta: 'Sin foto de portada',
                   valor: sinFoto,
                   icono: Icons.image_not_supported_outlined,
+                  color: NVColors.error,
+                ),
+                _tarjetaEstadistica(
+                  context,
+                  etiqueta: 'Sin categoría clasificada',
+                  valor: sinClasificar,
+                  icono: Icons.category_outlined,
                   color: NVColors.error,
                 ),
                 _tarjetaEstadistica(
@@ -142,6 +158,31 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           _filaMunicipio(entrada.key, entrada.value, maxMunicipio),
                       ],
                     ),
+            ),
+            const SizedBox(height: 28),
+            Text('Por reconocimiento',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+            NVCard(
+              child: Column(
+                children: [
+                  _filaMunicipio(
+                    'Emprendimiento Verde',
+                    negocios.where((n) => n.emprendimientoVerde).length,
+                    totalParaBarras,
+                  ),
+                  _filaMunicipio(
+                    'Sello Marca',
+                    negocios.where((n) => n.selloMarca).length,
+                    totalParaBarras,
+                  ),
+                  _filaMunicipio(
+                    'Avalado',
+                    negocios.where((n) => n.avalado).length,
+                    totalParaBarras,
+                  ),
+                ],
+              ),
             ),
           ],
         ),

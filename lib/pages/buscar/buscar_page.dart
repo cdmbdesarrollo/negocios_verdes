@@ -373,7 +373,9 @@ class _TarjetaNegocioResumen extends StatelessWidget {
             style:
                 const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 4),
-        Text(negocio.descripcionCorta),
+        if (negocio.descripcionCorta != null &&
+            negocio.descripcionCorta!.isNotEmpty)
+          Text(negocio.descripcionCorta!),
         const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,

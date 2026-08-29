@@ -3,14 +3,16 @@ import 'package:go_router/go_router.dart';
 
 import '../../../catalogos.dart';
 import '../../../core/admin_guard.dart';
-import '../../../core/widgets/badge_nivel.dart';
+import '../../../core/widgets/avalado_badge.dart';
 import '../../../core/widgets/chip_filtro.dart';
 import '../../../core/widgets/confirmar_eliminar_boton.dart';
+import '../../../core/widgets/emprendimiento_verde_badge.dart';
 import '../../../core/widgets/error_dialog.dart';
-import '../../../core/widgets/aval_confianza_badge.dart';
 import '../../../core/widgets/nv_card.dart';
 import '../../../core/widgets/sello_marca_badge.dart';
+import '../../../models/categoria_oficial.dart';
 import '../../../models/negocio.dart';
+import '../../../services/categoria_service.dart';
 import '../../../services/negocio_service.dart';
 import '../../../theme/nv_colors.dart';
 
@@ -23,10 +25,13 @@ class AdminNegociosPage extends StatefulWidget {
 
 class _AdminNegociosPageState extends State<AdminNegociosPage> {
   final _service = NegocioService();
+  final _categoriaService = CategoriaService();
   List<Negocio>? _negocios;
+  List<CategoriaOficial> _categorias = [];
   String? _error;
   String _busqueda = '';
   String? _filtroMunicipio;
+  String? _filtroCategoriaId;
   bool? _filtroActivo;
 
   @override
@@ -39,7 +44,13 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
   Future<void> _cargar() async {
     try {
       final negocios = await _service.listarTodosAdmin();
-      if (mounted) setState(() => _negocios = negocios);
+      final categorias = await _categoriaService.listarTodas();
+      if (mounted) {
+        setState(() {
+          _negocios = negocios;
+          _categorias = categorias;
+        });
+      }
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
     }
@@ -49,6 +60,13 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
     var lista = _negocios ?? [];
     if (_filtroMunicipio != null) {
       lista = lista.where((n) => n.municipio == _filtroMunicipio).toList();
+    }
+    if (_filtroCategoriaId != null) {
+      lista = lista
+          .where((n) =>
+              n.categoriasOficiales.any((c) => c.id == _filtroCategoriaId) ||
+              n.categoriaOficialId == _filtroCategoriaId)
+          .toList();
     }
     if (_filtroActivo != null) {
       lista = lista.where((n) => n.activo == _filtroActivo).toList();
@@ -140,12 +158,12 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
                 onTap: () => setState(() => _filtroActivo = null),
               ),
               ChipFiltro(
-                etiqueta: 'Publicados',
+                etiqueta: 'Activos',
                 seleccionado: _filtroActivo == true,
                 onTap: () => setState(() => _filtroActivo = true),
               ),
               ChipFiltro(
-                etiqueta: 'Ocultos',
+                etiqueta: 'Inactivos',
                 seleccionado: _filtroActivo == false,
                 onTap: () => setState(() => _filtroActivo = false),
               ),
@@ -159,6 +177,17 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
                     DropdownMenuItem(value: m, child: Text(m)),
                 ],
                 onChanged: (v) => setState(() => _filtroMunicipio = v),
+              ),
+              DropdownButton<String?>(
+                value: _filtroCategoriaId,
+                hint: const Text('Categoría'),
+                items: [
+                  const DropdownMenuItem(
+                      value: null, child: Text('Todas las categorías')),
+                  for (final c in _categorias)
+                    DropdownMenuItem(value: c.id, child: Text(c.nombre)),
+                ],
+                onChanged: (v) => setState(() => _filtroCategoriaId = v),
               ),
             ],
           ),
@@ -221,15 +250,27 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
                   style: const TextStyle(
                       color: NVColors.textoSecundario, fontSize: 12),
                 ),
+                // Aviso puntual: la base de CDMB puede marcar un negocio
+                // como "ACTIVO" (novedad) sin que todavía esté publicado
+                // acá (necesita foto de portada primero) — este texto es
+                // lo que le permite al admin encontrarlos.
+                if (!n.activo && n.novedad == 'ACTIVO')
+                  const Padding(
+                    padding: EdgeInsets.only(top: 2),
+                    child: Text(
+                      'CDMB lo marca ACTIVO — falta foto de portada para publicar',
+                      style: TextStyle(color: NVColors.advertencia, fontSize: 11),
+                    ),
+                  ),
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
                   children: [
-                    BadgeNivel(nivel: n.nivelDesarrollo, tamanoFuente: 11),
+                    if (n.emprendimientoVerde)
+                      const EmprendimientoVerdeBadge(tamanoFuente: 10),
                     if (n.selloMarca) const SelloMarcaBadge(tamanoFuente: 10),
-                    if (n.avalConfianza)
-                      const AvalConfianzaBadge(tamanoFuente: 10),
+                    if (n.avalado) const AvaladoBadge(tamanoFuente: 10),
                     if (n.destacado)
                       const Icon(Icons.star, color: NVColors.accent, size: 18),
                   ],
@@ -242,8 +283,8 @@ class _AdminNegociosPageState extends State<AdminNegociosPage> {
             children: [
               Tooltip(
                 message: n.activo
-                    ? 'Publicado — tocar para ocultar'
-                    : 'Oculto — tocar para publicar',
+                    ? 'Activo — tocar para desactivar'
+                    : 'Inactivo — tocar para activar',
                 child:
                     Switch(value: n.activo, onChanged: (_) => _alternarActivo(n)),
               ),

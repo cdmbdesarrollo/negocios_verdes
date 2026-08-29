@@ -72,3 +72,70 @@ en un Supabase nuevo:
     resulta redundante que deshacer un cambio al enum central. Agrega
     `p_aval_confianza` a `guardar_negocio` — **correr ANTES de
     desplegar**, mismo motivo que 0015/0016/0018.
+20. `0020_avalado_y_emprendimiento_verde.sql` — de otra sesión de Claude
+    Code (corrida en producción el 25 de agosto): reemplaza
+    `nivel_desarrollo` por `avalado`/`emprendimiento_verde` booleanos, con
+    `emprendimiento_verde` admin-only (nunca público). **Corregido por
+    0022** (ver abajo): CDMB confirmó directamente que las 3 categorías
+    (Emprendimiento Verde / Sello Marca / Avalado) son públicas por igual y
+    que `aval_confianza` no debía existir — no es un error de esta
+    migración, es una decisión posterior de CDMB.
+21. `0021_veredas.sql` — catálogo editable de veredas (`veredas`, con
+    `negocios.vereda_id` opcional), a diferencia de los 13 municipios que
+    siguen fijos en `lib/catalogos.dart`. Mismo patrón RLS que
+    categorías/subcategorías/actividades (select público sin restricción,
+    admin CRUD completo).
+22. `0022_ficha_ampliada_negocios.sql` — CDMB entregó su base de datos real
+    (304 negocios, 73 columnas) y Negocios Verdes pasa de vitrina liviana a
+    sistema de información. Corrige 0020 según lo que CDMB confirmó
+    directamente (captura del filtro real de su base: "EMPRENDIMIENTO
+    VERDE / NEGOCIO VERDE - SELLO MARCA / NEGOCIO VERDE AVALADO", sin
+    "Aval de Confianza"): `emprendimiento_verde` pasa a público y
+    filtrable igual que los otros 2, y se borra `aval_confianza` (0019) —
+    no es una categoría real. Las 3 quedan como booleanos independientes
+    (`emprendimiento_verde`/`sello_marca`/`avalado`, los datos reales
+    muestran negocios con más de uno a la vez, ej. Aval Y Sello Marca
+    juntos). Agrega ~45 columnas de seguimiento interno CDMB (permisos,
+    DOFA, puntajes por año en tabla aparte `negocio_puntajes`, etc.) —
+    **admin-only**, salvo `vereda_id`, `representante_legal` y `producto`,
+    las únicas 3 que se suman a lo público (`nit`/`naturaleza_juridica`
+    quedan admin-only a propósito: el NIT de una persona Natural suele ser
+    su cédula, un dato personal sensible). Relaja
+    `whatsapp`/`descripcion_corta`/`descripcion` a NOT NULL opcional (se
+    completan después). Reemplaza la firma de `guardar_negocio` que dejó
+    0020 (el `drop function` usa esa firma exacta, verificada por lectura
+    directa contra la base real, no adivinada) y agrega dos RPCs nuevas
+    (`guardar_ficha_tecnica_negocio`, `guardar_puntaje_negocio`) — **correr
+    ANTES de desplegar**, mismo motivo que 0015/0016/0018/0019/0020. Ver
+    también `lib/services/negocio_service.dart`: el SELECT del buscador
+    público dejó de usar `*` y pasó a una lista explícita de columnas, para
+    que las admin-only ni siquiera viajen en la respuesta a un visitante
+    anónimo.
+23. `0023_datos_cdmb_negocios_verdes.sql` — **generado**, no escrito a
+    mano: script en `lib/migraciones/generar_0023.py` que lee el Excel real
+    de CDMB (`BASE_ACTUALIZADA_NV_ka.xlsx`) y produce este archivo. Carga
+    295 de los 304 negocios reales (borra el único negocio de prueba que
+    había en producción), las veredas encontradas, y las
+    categorías/subcategorías/actividades de cada uno. Ningún dato se
+    inventa: lo que el Excel no trae queda `null` (o, solo para categoría
+    oficial —campo obligatorio—, en la categoría-comodín "Pendiente de
+    clasificar" creada en este mismo archivo). **Correr DESPUÉS de
+    0022** (usa columnas que esa migración crea). Ver
+    `reporte_import_negocios.txt` (generado junto con este archivo) para
+    la lista de los 8 negocios sin municipio en el Excel que quedaron
+    fuera y necesitan completarse a mano, y de los ~89 que quedaron en
+    "Pendiente de clasificar" para revisión manual desde
+    `/admin/negocios`.
+
+## Sobre trabajo concurrente de dos sesiones
+
+Esta sesión y la que produjo 0020 trabajaron sobre el mismo problema
+(reemplazar `nivel_desarrollo`) sin verse entre sí — la de 0020 ya estaba
+en producción cuando esta empezó, sobre una copia local desactualizada. Se
+detectó al intentar hacer push (permiso denegado + historial divergente) y
+se resolvió leyendo el estado real de la base de datos en vivo (con la
+`anon key`, de solo lectura) para que 0022 reemplace la función/columnas
+que 0020 ya había dejado en producción, en vez de asumir el estado previo
+a 0020. Antes de tocar el esquema de `negocios` en una sesión nueva,
+conviene `git fetch`/mirar `origin/master` primero — no asumir que el
+`HEAD` local sigue siendo lo último en producción.

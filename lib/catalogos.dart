@@ -22,21 +22,23 @@ const List<String> kMunicipios = [
   'Lebrija',
 ];
 
-/// Valores que puede tomar negocios.nivel_desarrollo (mismo CHECK en SQL) y
-/// su etiqueta visible para el público.
-const Map<String, String> kNivelesDesarrolloEtiqueta = {
-  'en_verificacion': 'En verificación',
-  'verificado': 'Verificado',
-  'negocio_ancla': 'Negocio Ancla',
-};
+/// Las 3 categorías de reconocimiento de negocios (ver
+/// 0022_ficha_ampliada_negocios.sql: emprendimiento_verde/sello_marca/
+/// avalado) son 3 booleanos independientes, no un enum — reemplazan al
+/// viejo nivel_desarrollo (en_verificacion/verificado/negocio_ancla) que
+/// forzaba una sola opción excluyente y no reflejaba los datos reales de
+/// CDMB (un negocio puede tener más de una a la vez). Sin catálogo fijo
+/// que mantener acá: cada insignia es su propio widget (ver
+/// core/widgets/emprendimiento_verde_badge.dart, sello_marca_badge.dart,
+/// avalado_badge.dart) con su etiqueta ya fija en el propio widget.
 
-/// Texto de apoyo para el admin al elegir el nivel en el formulario.
-const Map<String, String> kNivelesDesarrolloAyuda = {
-  'en_verificacion':
-      'Emprendimiento en proceso de verificación por parte de CDMB.',
-  'verificado': 'Cumple los criterios del programa y ya fue verificado.',
-  'negocio_ancla': 'Negocio verde consolidado, referente en su categoría.',
-};
+/// Naturaleza jurídica del titular del negocio — determina si el NIT/CC se
+/// puede mostrar públicamente (ver negocios.naturaleza_juridica): para una
+/// persona NATURAL el NIT suele ser literalmente su número de cédula, un
+/// dato personal sensible (habeas data, Ley 1581/2012 en Colombia) — por
+/// eso el NIT nunca se muestra en la ficha pública, sin importar la
+/// naturaleza jurídica (ver negocio_detalle_page.dart).
+const List<String> kNaturalezasJuridicas = ['Natural', 'Jurídica'];
 
 /// Mensaje precargado al abrir el botón de WhatsApp desde la ficha pública.
 String mensajeWhatsappPredeterminado(String nombreNegocio) =>

@@ -9,10 +9,10 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../catalogos.dart';
 import '../../core/seo_tags.dart';
-import '../../core/widgets/badge_nivel.dart';
+import '../../core/widgets/avalado_badge.dart';
 import '../../core/widgets/boton_whatsapp.dart';
 import '../../core/widgets/pie_pagina.dart';
-import '../../core/widgets/aval_confianza_badge.dart';
+import '../../core/widgets/emprendimiento_verde_badge.dart';
 import '../../core/widgets/pin_negocio_mapa.dart';
 import '../../core/widgets/sello_marca_badge.dart';
 import '../../models/categoria_oficial.dart';
@@ -70,7 +70,9 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
       }
       establecerSeo(
         titulo: '${negocio.nombre} — Negocios Verdes CDMB',
-        descripcion: negocio.descripcionCorta,
+        descripcion: negocio.descripcionCorta?.isNotEmpty == true
+            ? negocio.descripcionCorta!
+            : 'Negocio verde en ${negocio.municipio}, jurisdicción CDMB.',
         imagenUrl: negocio.fotoPortadaUrl,
       );
       setState(() {
@@ -116,20 +118,21 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
                       runSpacing: 8,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        _tocable(
-                          onTap: () =>
-                              _irABuscar({'nivel': negocio.nivelDesarrollo}),
-                          child: BadgeNivel(nivel: negocio.nivelDesarrollo),
-                        ),
+                        if (negocio.emprendimientoVerde)
+                          _tocable(
+                            onTap: () =>
+                                _irABuscar(const {'emprendimiento': '1'}),
+                            child: const EmprendimientoVerdeBadge(),
+                          ),
                         if (negocio.selloMarca)
                           _tocable(
                             onTap: () => _irABuscar(const {'sello': '1'}),
                             child: const SelloMarcaBadge(),
                           ),
-                        if (negocio.avalConfianza)
+                        if (negocio.avalado)
                           _tocable(
-                            onTap: () => _irABuscar(const {'aval': '1'}),
-                            child: const AvalConfianzaBadge(),
+                            onTap: () => _irABuscar(const {'avalado': '1'}),
+                            child: const AvaladoBadge(),
                           ),
                         if (negocio.categoriasOficiales.isNotEmpty)
                           for (final cat in negocio.categoriasOficiales)
@@ -176,10 +179,14 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            negocio.direccion != null &&
-                                    negocio.direccion!.isNotEmpty
-                                ? '${negocio.direccion} · ${negocio.municipio}'
-                                : negocio.municipio,
+                            [
+                              if (negocio.direccion != null &&
+                                  negocio.direccion!.isNotEmpty)
+                                negocio.direccion!,
+                              if (negocio.vereda != null)
+                                'Vereda ${negocio.vereda!.nombre}',
+                              negocio.municipio,
+                            ].join(' · '),
                             style:
                                 const TextStyle(color: NVColors.textoSecundario),
                           ),
@@ -191,11 +198,13 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
                       spacing: 12,
                       runSpacing: 12,
                       children: [
-                        BotonWhatsapp(
-                          numeroWhatsapp: negocio.whatsapp,
-                          mensaje:
-                              mensajeWhatsappPredeterminado(negocio.nombre),
-                        ),
+                        if (negocio.whatsapp != null &&
+                            negocio.whatsapp!.isNotEmpty)
+                          BotonWhatsapp(
+                            numeroWhatsapp: negocio.whatsapp!,
+                            mensaje:
+                                mensajeWhatsappPredeterminado(negocio.nombre),
+                          ),
                         OutlinedButton.icon(
                           onPressed: () => _mostrarCompartir(context, negocio),
                           icon: const Icon(Icons.share_outlined),
@@ -233,8 +242,21 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
                     ),
                     const SizedBox(height: 24),
                     _infoContacto(negocio),
-                    const SizedBox(height: 24),
-                    _descripcion(negocio.descripcion),
+                    if (negocio.descripcion != null &&
+                        negocio.descripcion!.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      _descripcion(negocio.descripcion!),
+                    ],
+                    if (negocio.producto != null &&
+                        negocio.producto!.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      const Text('Producto',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16)),
+                      const SizedBox(height: 6),
+                      Text(negocio.producto!,
+                          style: const TextStyle(fontSize: 15, height: 1.4)),
+                    ],
                     if (negocio.fotos.isNotEmpty) ...[
                       const SizedBox(height: 24),
                       const Text('Galería',
@@ -427,11 +449,15 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
     final filas = [
       if (negocio.direccion != null && negocio.direccion!.isNotEmpty)
         (Icons.place_outlined, '${negocio.direccion}, ${negocio.municipio}'),
-      (Icons.chat_bubble_outline, '+${negocio.whatsapp} (WhatsApp)'),
+      if (negocio.whatsapp != null && negocio.whatsapp!.isNotEmpty)
+        (Icons.chat_bubble_outline, '+${negocio.whatsapp} (WhatsApp)'),
       if (negocio.telefono != null && negocio.telefono!.isNotEmpty)
         (Icons.call_outlined, negocio.telefono!),
       if (negocio.email != null && negocio.email!.isNotEmpty)
         (Icons.email_outlined, negocio.email!),
+      if (negocio.representanteLegal != null &&
+          negocio.representanteLegal!.isNotEmpty)
+        (Icons.badge_outlined, 'Representante legal: ${negocio.representanteLegal}'),
     ];
     return Container(
       width: double.infinity,

@@ -39,21 +39,22 @@ void main() {
       expect(filtro.toQueryParameters().containsKey('vista'), isFalse);
     });
 
-    test('nivel/sello/aval — nivel es texto plano, sello/aval son "1" solo si son true', () {
+    test('emprendimiento/sello/avalado son "1" solo si son true', () {
       const filtro = FiltroBusqueda(
-        nivelDesarrollo: 'verificado',
+        emprendimientoVerde: true,
         selloMarca: true,
-        avalConfianza: true,
+        avalado: true,
       );
       expect(filtro.toQueryParameters(), {
-        'nivel': 'verificado',
+        'emprendimiento': '1',
         'sello': '1',
-        'aval': '1',
+        'avalado': '1',
       });
-      // false no es "lo contrario de true" para estos dos — es lo mismo
-      // que no filtrar, así que no debe aparecer en la URL en absoluto
-      // (nadie comparte un link pidiendo "sin Sello Marca").
-      const filtroFalse = FiltroBusqueda(selloMarca: false, avalConfianza: false);
+      // false no es "lo contrario de true" para estos 3 — es lo mismo que
+      // no filtrar, así que no debe aparecer en la URL en absoluto (nadie
+      // comparte un link pidiendo "sin Sello Marca").
+      const filtroFalse = FiltroBusqueda(
+        emprendimientoVerde: false, selloMarca: false, avalado: false);
       expect(filtroFalse.toQueryParameters(), isEmpty);
     });
   });
@@ -80,15 +81,15 @@ void main() {
       );
     });
 
-    test('"sello=1"/"aval=1" activan el filtro, cualquier otro valor (incluido ausente) no', () {
-      final filtro =
-          FiltroBusqueda.fromQueryParameters(const {'sello': '1', 'aval': '1'});
+    test('"sello=1"/"avalado=1" activan el filtro, cualquier otro valor (incluido ausente) no', () {
+      final filtro = FiltroBusqueda.fromQueryParameters(
+          const {'sello': '1', 'avalado': '1'});
       expect(filtro.selloMarca, isTrue);
-      expect(filtro.avalConfianza, isTrue);
+      expect(filtro.avalado, isTrue);
 
       final sinInsignias = FiltroBusqueda.fromQueryParameters(const {});
       expect(sinInsignias.selloMarca, isNull);
-      expect(sinInsignias.avalConfianza, isNull);
+      expect(sinInsignias.avalado, isNull);
     });
   });
 

@@ -2,8 +2,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/widgets/aval_confianza_badge.dart';
-import '../../../core/widgets/badge_nivel.dart';
+import '../../../core/widgets/avalado_badge.dart';
+import '../../../core/widgets/emprendimiento_verde_badge.dart';
 import '../../../core/widgets/sello_marca_badge.dart';
 import '../../../models/categoria_oficial.dart';
 import '../../../models/negocio.dart';
@@ -124,36 +124,39 @@ class NegocioCard extends StatelessWidget {
                                   color: NVColors.textoSecundario, fontSize: 12),
                             ),
                           ),
-                        const SizedBox(height: 6),
-                        Text(
-                          negocio.descripcionCorta,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 13),
-                        ),
+                        if (negocio.descripcionCorta != null &&
+                            negocio.descripcionCorta!.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            negocio.descripcionCorta!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                        ],
                         const SizedBox(height: 6),
                         Wrap(
                           spacing: 6,
                           runSpacing: 4,
                           children: [
-                            _tocable(
-                              onTap: () => _irABuscar(context,
-                                  {'nivel': negocio.nivelDesarrollo}),
-                              child: BadgeNivel(
-                                  nivel: negocio.nivelDesarrollo,
-                                  tamanoFuente: 10),
-                            ),
+                            if (negocio.emprendimientoVerde)
+                              _tocable(
+                                onTap: () => _irABuscar(
+                                    context, const {'emprendimiento': '1'}),
+                                child: const EmprendimientoVerdeBadge(
+                                    tamanoFuente: 10),
+                              ),
                             if (negocio.selloMarca)
                               _tocable(
                                 onTap: () => _irABuscar(
                                     context, const {'sello': '1'}),
                                 child: const SelloMarcaBadge(tamanoFuente: 10),
                               ),
-                            if (negocio.avalConfianza)
+                            if (negocio.avalado)
                               _tocable(
-                                onTap: () =>
-                                    _irABuscar(context, const {'aval': '1'}),
-                                child: const AvalConfianzaBadge(tamanoFuente: 10),
+                                onTap: () => _irABuscar(
+                                    context, const {'avalado': '1'}),
+                                child: const AvaladoBadge(tamanoFuente: 10),
                               ),
                             // Municipio y subcategoría como tags aparte del
                             // nombre de categoría de arriba — de un vistazo,

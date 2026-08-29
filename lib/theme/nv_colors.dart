@@ -69,21 +69,22 @@ abstract final class NVColors {
   /// botón de contacto por WhatsApp, no se usa como acento del sitio.
   static const Color whatsapp = Color(0xFF25D366);
 
-  static const Color nivelEnVerificacion = Color(0xFF8C8C7A);
-  static const Color nivelVerificado = primary;
-  static const Color nivelAncla = Color(0xFFB8860B);
+  /// Las 3 categorías de reconocimiento CDMB (ver 0022_ficha_ampliada_negocios.sql)
+  /// son independientes entre sí — un negocio puede tener 1, 2 o las 3 —
+  /// así que cada una necesita su propio color, ninguno reusado de otra.
+  static const Color emprendimientoVerdeGris = Color(0xFF8C8C7A);
 
   /// Reservado únicamente para el Sello Marca de Negocios Verdes (ver
-  /// SelloMarcaBadge) — un reconocimiento aparte de nivel_desarrollo, por
-  /// eso necesita su propio color y no reusa nivelAncla ni accent (ese
+  /// SelloMarcaBadge) — reconocimiento independiente de emprendimientoVerde
+  /// y avalado, por eso necesita su propio color y no reusa accent (ese
   /// sigue solo para CTAs de conversión).
   static const Color selloMarcaDorado = Color(0xFFC9A227);
 
-  /// Reservado únicamente para el Aval de Confianza (ver
-  /// AvalConfianzaBadge) — mismo criterio que selloMarcaDorado: un
-  /// reconocimiento aparte, necesita su propio color. Deliberadamente
-  /// distinto de govCoAzul (esa es la franja institucional obligatoria,
-  /// nunca se reusa) y de selloMarcaDorado (para no verse como "el mismo
-  /// tipo de insignia" cuando son dos reconocimientos independientes).
-  static const Color avalConfianzaAzul = Color(0xFF2A6F97);
+  /// Reservado únicamente para Negocio Verde Avalado (ver AvaladoBadge) —
+  /// mismo criterio que selloMarcaDorado: un reconocimiento aparte,
+  /// necesita su propio color. Deliberadamente distinto de govCoAzul (esa
+  /// es la franja institucional obligatoria, nunca se reusa) y de
+  /// selloMarcaDorado (para no verse como "el mismo tipo de insignia"
+  /// cuando son reconocimientos independientes).
+  static const Color avaladoAzul = Color(0xFF2A6F97);
 }

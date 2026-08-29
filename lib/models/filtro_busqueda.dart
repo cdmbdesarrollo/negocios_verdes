@@ -1,13 +1,13 @@
 enum VistaResultados { lista, mapa }
 
 /// Estado de filtros de BuscarPage, reflejado en la URL
-/// (?q=&municipio=&categoria=&subcategoria=&actividad=&nivel=&sello=&aval=&vista=)
+/// (?q=&municipio=&categoria=&subcategoria=&actividad=&emprendimiento=&sello=&avalado=&vista=)
 /// para que los resultados sean compartibles y el back/forward del
 /// navegador funcione. Se usan slugs para categoría/subcategoría/actividad
 /// (no ids) porque son los que se ven bien en una URL — el service resuelve
-/// slug→id contra las listas ya cargadas. nivel/sello/aval no necesitan esa
-/// resolución (nivel ya es un string plano en la base, sello/aval son
-/// booleanos) — se aplican directo.
+/// slug→id contra las listas ya cargadas. Los 3 reconocimientos no
+/// necesitan esa resolución (son booleanos directos en la base) — se
+/// aplican directo.
 class FiltroBusqueda {
   final String query;
   final String? municipio;
@@ -15,15 +15,13 @@ class FiltroBusqueda {
   final String? subcategoriaSlug;
   final String? actividadSlug;
 
-  /// 'en_verificacion' | 'verificado' | 'negocio_ancla' — mismo valor
-  /// crudo que negocios.nivel_desarrollo, sin traducir.
-  final String? nivelDesarrollo;
-
   /// true = solo negocios con ese reconocimiento. null = sin filtrar por
   /// esto — no tiene sentido un "false" acá (nadie hace clic en una
-  /// insignia para pedir justo lo contrario).
+  /// insignia para pedir justo lo contrario). Los 3 son independientes
+  /// entre sí (ver 0022_ficha_ampliada_negocios.sql).
+  final bool? emprendimientoVerde;
   final bool? selloMarca;
-  final bool? avalConfianza;
+  final bool? avalado;
   final VistaResultados vista;
 
   const FiltroBusqueda({
@@ -32,9 +30,9 @@ class FiltroBusqueda {
     this.categoriaSlug,
     this.subcategoriaSlug,
     this.actividadSlug,
-    this.nivelDesarrollo,
+    this.emprendimientoVerde,
     this.selloMarca,
-    this.avalConfianza,
+    this.avalado,
     this.vista = VistaResultados.lista,
   });
 
@@ -44,9 +42,9 @@ class FiltroBusqueda {
       categoriaSlug != null ||
       subcategoriaSlug != null ||
       actividadSlug != null ||
-      nivelDesarrollo != null ||
+      emprendimientoVerde != null ||
       selloMarca != null ||
-      avalConfianza != null;
+      avalado != null;
 
   FiltroBusqueda copyWith({
     String? query,
@@ -58,12 +56,12 @@ class FiltroBusqueda {
     bool limpiarSubcategoria = false,
     String? actividadSlug,
     bool limpiarActividad = false,
-    String? nivelDesarrollo,
-    bool limpiarNivelDesarrollo = false,
+    bool? emprendimientoVerde,
+    bool limpiarEmprendimientoVerde = false,
     bool? selloMarca,
     bool limpiarSelloMarca = false,
-    bool? avalConfianza,
-    bool limpiarAvalConfianza = false,
+    bool? avalado,
+    bool limpiarAvalado = false,
     VistaResultados? vista,
   }) {
     return FiltroBusqueda(
@@ -76,12 +74,11 @@ class FiltroBusqueda {
           : (subcategoriaSlug ?? this.subcategoriaSlug),
       actividadSlug:
           limpiarActividad ? null : (actividadSlug ?? this.actividadSlug),
-      nivelDesarrollo: limpiarNivelDesarrollo
+      emprendimientoVerde: limpiarEmprendimientoVerde
           ? null
-          : (nivelDesarrollo ?? this.nivelDesarrollo),
+          : (emprendimientoVerde ?? this.emprendimientoVerde),
       selloMarca: limpiarSelloMarca ? null : (selloMarca ?? this.selloMarca),
-      avalConfianza:
-          limpiarAvalConfianza ? null : (avalConfianza ?? this.avalConfianza),
+      avalado: limpiarAvalado ? null : (avalado ?? this.avalado),
       vista: vista ?? this.vista,
     );
   }
@@ -93,9 +90,9 @@ class FiltroBusqueda {
       if (categoriaSlug != null) 'categoria': categoriaSlug!,
       if (subcategoriaSlug != null) 'subcategoria': subcategoriaSlug!,
       if (actividadSlug != null) 'actividad': actividadSlug!,
-      if (nivelDesarrollo != null) 'nivel': nivelDesarrollo!,
+      if (emprendimientoVerde == true) 'emprendimiento': '1',
       if (selloMarca == true) 'sello': '1',
-      if (avalConfianza == true) 'aval': '1',
+      if (avalado == true) 'avalado': '1',
       if (vista == VistaResultados.mapa) 'vista': 'mapa',
     };
   }
@@ -107,9 +104,9 @@ class FiltroBusqueda {
       categoriaSlug: params['categoria'],
       subcategoriaSlug: params['subcategoria'],
       actividadSlug: params['actividad'],
-      nivelDesarrollo: params['nivel'],
+      emprendimientoVerde: params['emprendimiento'] == '1' ? true : null,
       selloMarca: params['sello'] == '1' ? true : null,
-      avalConfianza: params['aval'] == '1' ? true : null,
+      avalado: params['avalado'] == '1' ? true : null,
       vista: params['vista'] == 'mapa'
           ? VistaResultados.mapa
           : VistaResultados.lista,
