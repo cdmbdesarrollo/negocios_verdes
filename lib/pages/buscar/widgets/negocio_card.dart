@@ -117,7 +117,11 @@ class NegocioCard extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 2),
-                        if (negocio.categoriaOficial != null)
+                        // "pendiente-clasificar" no se muestra en el sitio
+                        // público (es de gestión interna).
+                        if (negocio.categoriaOficial != null &&
+                            negocio.categoriaOficial!.slug !=
+                                'pendiente-clasificar')
                           _tocable(
                             onTap: () => _irABuscar(
                                 context, {'categoria': negocio.categoriaOficial!.slug}),

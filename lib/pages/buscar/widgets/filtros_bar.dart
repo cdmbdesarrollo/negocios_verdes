@@ -281,18 +281,22 @@ class _FiltrosBarState extends State<FiltrosBar> {
                 )),
                 anchoMinimo: 190,
               ),
+              // La comodín "pendiente-clasificar" es de gestión interna:
+              // no se ofrece como filtro público (solo en el admin). Los
+              // negocios que la tienen igual salen en los resultados.
               for (final c in widget.categorias)
-                ChipFiltro(
-                  etiqueta: c.nombre,
-                  icono: c.icono,
-                  seleccionado: widget.filtro.categoriaSlug == c.slug,
-                  onTap: () => widget.onCambio(widget.filtro.copyWith(
-                    categoriaSlug: c.slug,
-                    limpiarSubcategoria: true,
-                    limpiarActividad: true,
-                  )),
-                  anchoMinimo: 190,
-                ),
+                if (c.slug != 'pendiente-clasificar')
+                  ChipFiltro(
+                    etiqueta: c.nombre,
+                    icono: c.icono,
+                    seleccionado: widget.filtro.categoriaSlug == c.slug,
+                    onTap: () => widget.onCambio(widget.filtro.copyWith(
+                      categoriaSlug: c.slug,
+                      limpiarSubcategoria: true,
+                      limpiarActividad: true,
+                    )),
+                    anchoMinimo: 190,
+                  ),
             ],
           ),
           if (subcategoriasDisponibles.isNotEmpty) ...[

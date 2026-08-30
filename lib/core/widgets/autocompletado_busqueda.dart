@@ -40,7 +40,9 @@ List<SugerenciaBusqueda> construirSugerenciasBusqueda({
     }
   }
   for (final c in categorias) {
-    if (contiene(c.nombre)) {
+    // "pendiente-clasificar" es de gestión interna, no se sugiere en la
+    // búsqueda pública.
+    if (c.slug != 'pendiente-clasificar' && contiene(c.nombre)) {
       resultados.add(SugerenciaBusqueda(
           tipo: TipoSugerencia.categoria,
           etiqueta: c.nombre,

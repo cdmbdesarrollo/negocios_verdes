@@ -49,6 +49,7 @@ class _GeovisorPageState extends State<GeovisorPage> {
   final _mapController = MapController();
   final LayerHitNotifier<String> _hitMunicipios = ValueNotifier(null);
   final _busquedaCtrl = TextEditingController();
+  final _panelScroll = ScrollController();
 
   List<MunicipioGeo>? _municipios;
   List<Negocio>? _negocios;
@@ -88,8 +89,14 @@ class _GeovisorPageState extends State<GeovisorPage> {
   void dispose() {
     _busquedaCtrl.dispose();
     _hitMunicipios.dispose();
+    _panelScroll.dispose();
     super.dispose();
   }
+
+  /// Categorías reales — la comodín "pendiente-clasificar" es de gestión
+  /// interna, no se muestra ni se filtra en las vistas públicas.
+  List<CategoriaOficial> get _categoriasPublicas =>
+      _categorias.where((c) => c.slug != 'pendiente-clasificar').toList();
 
   Future<void> _cargar() async {
     try {
@@ -448,8 +455,11 @@ class _GeovisorPageState extends State<GeovisorPage> {
       elevation: 2,
       color: NVColors.superficie,
       child: Scrollbar(
+        controller: _panelScroll,
         thumbVisibility: true,
         child: ListView(
+        controller: _panelScroll,
+        primary: false,
         padding: const EdgeInsets.fromLTRB(14, 14, 18, 40),
         children: [
           Row(
@@ -517,7 +527,7 @@ class _GeovisorPageState extends State<GeovisorPage> {
           if (_capaNegocios) ...[
             const SizedBox(height: 4),
             const _Rotulo('Por categoría'),
-            for (final c in _categorias)
+            for (final c in _categoriasPublicas)
               _check(
                 '${c.iconoOTexto} ${c.nombre}',
                 !_categoriasOcultas.contains(c.slug),
@@ -781,7 +791,6 @@ class _TarjetaNegocio extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               [
-                negocio.categoriaOficial?.nombre,
                 negocio.vereda?.nombre,
                 negocio.municipio,
               ].whereType<String>().join(' · '),
@@ -801,7 +810,7 @@ class _TarjetaNegocio extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: () => context.go('/negocio/${negocio.slug}'),
                 icon: const Icon(Icons.open_in_new, size: 16),
-                label: const Text('Ver ficha'),
+                label: const Text('Ver'),
               ),
             ),
           ],

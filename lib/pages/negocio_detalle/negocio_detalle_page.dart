@@ -136,14 +136,18 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
                             onTap: () => _irABuscar(const {'avalado': '1'}),
                             child: const AvaladoBadge(),
                           ),
-                        if (negocio.categoriasOficiales.isNotEmpty)
-                          for (final cat in negocio.categoriasOficiales)
+                        // "pendiente-clasificar" es comodín de gestión
+                        // interna: nunca se muestra como categoría pública.
+                        if (_categoriasPublicas(negocio).isNotEmpty)
+                          for (final cat in _categoriasPublicas(negocio))
                             _chip(
                               '${cat.iconoOTexto} ${cat.nombre}',
                               onTap: () =>
                                   _irABuscar({'categoria': cat.slug}),
                             )
-                        else if (negocio.categoriaOficial != null)
+                        else if (negocio.categoriaOficial != null &&
+                            negocio.categoriaOficial!.slug !=
+                                'pendiente-clasificar')
                           _chip(
                             '${negocio.categoriaOficial!.iconoOTexto} '
                             '${negocio.categoriaOficial!.nombre}',
@@ -626,6 +630,12 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
     final uri = Uri(path: '/buscar', queryParameters: parametros);
     context.go(uri.toString());
   }
+
+  /// Categorías del negocio sin la comodín interna "pendiente-clasificar".
+  List<CategoriaOficial> _categoriasPublicas(Negocio negocio) => negocio
+      .categoriasOficiales
+      .where((c) => c.slug != 'pendiente-clasificar')
+      .toList();
 
   CategoriaOficial? _categoriaDeSubcategoria(Negocio negocio, Subcategoria sub) {
     for (final c in negocio.categoriasOficiales) {
