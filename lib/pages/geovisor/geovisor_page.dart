@@ -395,12 +395,16 @@ class _GeovisorPageState extends State<GeovisorPage> {
       barrierLabel: 'Cerrar ayuda',
       barrierColor: Colors.black26,
       transitionDuration: const Duration(milliseconds: 200),
-      pageBuilder: (_, _, _) => Align(
+      // `dialogCtx` es el context DEL diálogo — hay que cerrar con ese, no
+      // con el de la página (que resuelve a otro Navigator y dejaba la
+      // pantalla en blanco).
+      pageBuilder: (dialogCtx, _, _) => Align(
         alignment: Alignment.centerRight,
         child: SizedBox(
           width: ancho < 640 ? ancho : 380,
           height: double.infinity,
-          child: _PanelAyuda(onCerrar: () => Navigator.of(context).pop()),
+          child: _PanelAyuda(
+              onCerrar: () => Navigator.of(dialogCtx).pop()),
         ),
       ),
       transitionBuilder: (_, anim, _, child) => SlideTransition(
