@@ -88,8 +88,12 @@ class _GeovisorPageState extends State<GeovisorPage> {
   bool _capaCalor = false;
   int? _anioMin; // registrados desde ese año
   double _zoomActual = 9.2; // para alternar pines livianos / con foto
-  bool _ayudaAbierta = false;
   bool _medirArea = true; // false = solo distancia (línea abierta)
+
+  // Herramienta "negocios cerca de un punto".
+  bool _modoCerca = false;
+  LatLng? _puntoCerca;
+  int _radioCerca = 1000; // metros
 
   // Ubicación del visitante (botón "mi ubicación").
   LatLng? _miUbicacion;
@@ -381,6 +385,32 @@ class _GeovisorPageState extends State<GeovisorPage> {
         .showSnackBar(SnackBar(content: Text(s)));
   }
 
+  /// Ayuda como hoja lateral (showGeneralDialog) — así no interfiere con el
+  /// scroll de la página ni con el layout del mapa.
+  void _abrirAyuda() {
+    final ancho = MediaQuery.sizeOf(context).width;
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Cerrar ayuda',
+      barrierColor: Colors.black26,
+      transitionDuration: const Duration(milliseconds: 200),
+      pageBuilder: (_, _, _) => Align(
+        alignment: Alignment.centerRight,
+        child: SizedBox(
+          width: ancho < 640 ? ancho : 380,
+          height: double.infinity,
+          child: _PanelAyuda(onCerrar: () => Navigator.of(context).pop()),
+        ),
+      ),
+      transitionBuilder: (_, anim, _, child) => SlideTransition(
+        position: Tween(begin: const Offset(1, 0), end: Offset.zero)
+            .animate(CurvedAnimation(parent: anim, curve: Curves.easeOut)),
+        child: child,
+      ),
+    );
+  }
+
   Future<void> _descargarPng() async {
     try {
       final bordo = _claveMapa.currentContext?.findRenderObject()
@@ -443,8 +473,50 @@ class _GeovisorPageState extends State<GeovisorPage> {
   // ------------------------------------------------- herramienta de medición
 
   void _tocarMapa(LatLng p) {
-    if (!_modoMedir) return;
-    setState(() => _medida.add(p));
+    if (_modoMedir) {
+      setState(() => _medida.add(p));
+    } else if (_modoCerca) {
+      setState(() => _puntoCerca = p);
+    }
+  }
+
+  List<Negocio> get _negociosCerca {
+    final c = _puntoCerca;
+    if (c == null) return const [];
+    return (_negocios ?? [])
+        .where((n) => _dist(c, LatLng(n.latitud!, n.longitud!)) <= _radioCerca)
+        .toList()
+      ..sort((a, b) => _dist(c, LatLng(a.latitud!, a.longitud!))
+          .compareTo(_dist(c, LatLng(b.latitud!, b.longitud!))));
+  }
+
+  /// Polígono de ~40 lados que aproxima el círculo (para el GeoJSON).
+  List<LatLng> _circuloComoPoligono(LatLng c, double radioM) {
+    const n = 40;
+    final out = <LatLng>[];
+    final latR = radioM / 111320.0;
+    final lonR = radioM / (111320.0 * math.cos(_rad(c.latitude)));
+    for (var i = 0; i <= n; i++) {
+      final a = 2 * math.pi * i / n;
+      out.add(LatLng(
+          c.latitude + latR * math.sin(a), c.longitude + lonR * math.cos(a)));
+    }
+    return out;
+  }
+
+  void _descargarCerca() {
+    final c = _puntoCerca;
+    if (c == null) return;
+    descargarArchivoTexto(
+      contenido: geoJsonNegocios(
+        _negociosCerca,
+        zona: _circuloComoPoligono(c, _radioCerca.toDouble()),
+        areaKm2: math.pi * math.pow(_radioCerca / 1000, 2).toDouble(),
+        origen: Uri.base.origin,
+      ),
+      nombreArchivo: 'cerca_negocios_verdes_$_fechaArchivo.geojson',
+      tipoMime: 'application/geo+json;charset=utf-8',
+    );
   }
 
   /// Distancia en metros entre dos puntos (haversine).
@@ -897,6 +969,33 @@ class _GeovisorPageState extends State<GeovisorPage> {
                       color: NVColors.accent, size: 30),
                 ),
               ]),
+            // Herramienta "negocios cerca de un punto".
+            if (_puntoCerca != null) ...[
+              CircleLayer(circles: [
+                CircleMarker(
+                  point: _puntoCerca!,
+                  radius: _radioCerca.toDouble(),
+                  useRadiusInMeter: true,
+                  color: NVColors.accent.withValues(alpha: 0.10),
+                  borderColor: NVColors.accent,
+                  borderStrokeWidth: 2,
+                ),
+              ]),
+              MarkerLayer(markers: [
+                Marker(
+                  point: _puntoCerca!,
+                  width: 18,
+                  height: 18,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: NVColors.accent,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 3),
+                    ),
+                  ),
+                ),
+              ]),
+            ],
             // Herramienta de medición / zona.
             if (_medirArea && _medida.length >= 3)
               PolygonLayer(polygons: [
@@ -976,24 +1075,10 @@ class _GeovisorPageState extends State<GeovisorPage> {
               _botonMapa(
                   Icons.photo_camera_outlined, 'Descargar imagen', _descargarPng),
               const SizedBox(height: 6),
-              _botonMapa(
-                _ayudaAbierta ? Icons.help : Icons.help_outline,
-                'Ayuda',
-                () => setState(() => _ayudaAbierta = !_ayudaAbierta),
-              ),
+              _botonMapa(Icons.help_outline, 'Ayuda', _abrirAyuda),
             ],
           ),
         ),
-        if (_ayudaAbierta)
-          Positioned(
-            top: 0,
-            bottom: 0,
-            right: 0,
-            width: MediaQuery.sizeOf(context).width < 700
-                ? MediaQuery.sizeOf(context).width
-                : 360,
-            child: _PanelAyuda(onCerrar: () => setState(() => _ayudaAbierta = false)),
-          ),
         Positioned(
           left: 12,
           right: 12,
@@ -1132,6 +1217,8 @@ class _GeovisorPageState extends State<GeovisorPage> {
             label: const Text('Ver todo (quitar filtros)'),
           ),
         const Divider(height: 20),
+        _miniGrafico(),
+        const Divider(height: 20),
         const _Rotulo('Por municipio'),
         if (_municipios != null)
           for (final m in _municipiosOrdenados) ...[
@@ -1212,6 +1299,77 @@ class _GeovisorPageState extends State<GeovisorPage> {
     );
   }
 
+  /// Barras horizontales compactas: negocios (de la vista actual) por
+  /// categoría y por reconocimiento.
+  Widget _miniGrafico() {
+    final vis = _negociosVisibles;
+    if (vis.isEmpty) return const SizedBox.shrink();
+    final porCat = <String, int>{};
+    for (final n in vis) {
+      final c = n.categoriaOficial;
+      final k = (c == null || c.slug == 'pendiente-clasificar')
+          ? 'Sin clasificar'
+          : c.nombre;
+      porCat[k] = (porCat[k] ?? 0) + 1;
+    }
+    final filas = porCat.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final maxV = filas.first.value;
+
+    Widget barra(String etq, int v, Color color) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(children: [
+            SizedBox(
+              width: 96,
+              child: Text(etq,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 10.5)),
+            ),
+            Expanded(
+              child: Stack(children: [
+                Container(height: 12, color: NVColors.borde.withValues(alpha: 0.4)),
+                FractionallySizedBox(
+                  widthFactor: maxV == 0 ? 0 : v / maxV,
+                  child: Container(height: 12, color: color),
+                ),
+              ]),
+            ),
+            SizedBox(
+                width: 26,
+                child: Text('  $v',
+                    style: const TextStyle(
+                        fontSize: 10.5, fontWeight: FontWeight.w600))),
+          ]),
+        );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Rotulo('${vis.length} negocios en la vista · por categoría'),
+        for (final e in filas)
+          barra(e.key, e.value,
+              e.key == 'Sin clasificar' ? NVColors.textoSecundario : NVColors.primary),
+        const SizedBox(height: 6),
+        Row(children: [
+          _pillConteo('🌱', vis.where((n) => n.emprendimientoVerde).length),
+          _pillConteo('🎖️', vis.where((n) => n.selloMarca).length),
+          _pillConteo('✅', vis.where((n) => n.avalado).length),
+        ]),
+      ],
+    );
+  }
+
+  Widget _pillConteo(String emoji, int n) => Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: NVColors.primaryLight,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text('$emoji $n', style: const TextStyle(fontSize: 11)),
+      );
+
   Widget _tabCapas() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1288,7 +1446,12 @@ class _GeovisorPageState extends State<GeovisorPage> {
           _modoMedir,
           (v) => setState(() {
             _modoMedir = v;
-            if (!v) _medida.clear();
+            if (v) {
+              _modoCerca = false;
+              _puntoCerca = null;
+            } else {
+              _medida.clear();
+            }
           }),
         ),
         if (_modoMedir) ...[
@@ -1352,6 +1515,36 @@ class _GeovisorPageState extends State<GeovisorPage> {
               ),
             ],
           ),
+          if (_medida.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            const _Rotulo('Puntos (lat, lng)'),
+            for (var i = 0; i < _medida.length; i++)
+              InkWell(
+                onTap: () => Clipboard.setData(ClipboardData(
+                    text: '${_medida[i].latitude.toStringAsFixed(6)}, '
+                        '${_medida[i].longitude.toStringAsFixed(6)}')),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 3),
+                  child: Row(children: [
+                    SizedBox(
+                        width: 18,
+                        child: Text('${i + 1}',
+                            style: const TextStyle(
+                                fontSize: 11,
+                                color: NVColors.textoSecundario))),
+                    Expanded(
+                      child: Text(
+                        '${_medida[i].latitude.toStringAsFixed(6)}, '
+                        '${_medida[i].longitude.toStringAsFixed(6)}',
+                        style: const TextStyle(fontSize: 11.5),
+                      ),
+                    ),
+                    const Icon(Icons.copy,
+                        size: 13, color: NVColors.textoSecundario),
+                  ]),
+                ),
+              ),
+          ],
           if (_medirArea) ...[
             const SizedBox(height: 6),
             FilledButton.icon(
@@ -1386,6 +1579,90 @@ class _GeovisorPageState extends State<GeovisorPage> {
                 style: TextStyle(
                     fontSize: 10.5, color: NVColors.textoSecundario),
               ),
+            ),
+          ],
+        ],
+        const Divider(height: 20),
+        _check(
+          'Negocios cerca de un punto',
+          _modoCerca,
+          (v) => setState(() {
+            _modoCerca = v;
+            if (v) {
+              _modoMedir = false;
+              _medida.clear();
+            } else {
+              _puntoCerca = null;
+            }
+          }),
+        ),
+        if (_modoCerca) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
+            child: Row(children: [
+              Expanded(
+                child: Text(
+                  _puntoCerca == null
+                      ? 'Toca el mapa para elegir un punto.'
+                      : '${_negociosCerca.length} negocio'
+                          '${_negociosCerca.length == 1 ? '' : 's'} verde'
+                          '${_negociosCerca.length == 1 ? '' : 's'} a menos de '
+                          '${_fmtDist(_radioCerca.toDouble())}',
+                  style: const TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () async {
+                  await _miUbicacionAhora();
+                  if (_miUbicacion != null) {
+                    setState(() => _puntoCerca = _miUbicacion);
+                  }
+                },
+                icon: const Icon(Icons.my_location, size: 15),
+                label: const Text('Usar mi ubicación'),
+              ),
+            ]),
+          ),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              for (final r in const [500, 1000, 2000, 5000])
+                ChoiceChip(
+                  label: Text(_fmtDist(r.toDouble()),
+                      style: const TextStyle(fontSize: 11)),
+                  selected: _radioCerca == r,
+                  onSelected: (_) => setState(() => _radioCerca = r),
+                ),
+            ],
+          ),
+          if (_puntoCerca != null) ...[
+            const SizedBox(height: 4),
+            for (final n in _negociosCerca.take(12))
+              InkWell(
+                onTap: () => setState(() => _negocioSel = n),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 2),
+                  child: Text(
+                    '· ${n.nombre}  ·  '
+                    '${_fmtDist(_dist(_puntoCerca!, LatLng(n.latitud!, n.longitud!)))}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11.5),
+                  ),
+                ),
+              ),
+            if (_negociosCerca.length > 12)
+              Text('… y ${_negociosCerca.length - 12} más',
+                  style: const TextStyle(
+                      fontSize: 11, color: NVColors.textoSecundario)),
+            const SizedBox(height: 6),
+            OutlinedButton.icon(
+              onPressed:
+                  _negociosCerca.isEmpty ? null : _descargarCerca,
+              icon: const Icon(Icons.download, size: 16),
+              label: const Text('Descargar (GeoJSON)'),
             ),
           ],
         ],
@@ -1801,11 +2078,13 @@ class _PanelAyuda extends StatelessWidget {
                   titulo: 'Pestaña "Filtrar"',
                   parrafos: [
                     'Escribe el nombre de un negocio para saltar a él. Si '
-                        'escribes un lugar ("Provenza", "Cañaveral") aparece la '
-                        'opción de buscarlo como lugar en el mapa.',
+                        'escribes un lugar o municipio ("Girón", "El Playón", '
+                        '"Vetas") aparece la opción de buscarlo como lugar en '
+                        'el mapa.',
                     'Filtra por municipio (y vereda), por categoría, por '
                         'reconocimiento (se pueden combinar) y por año de '
-                        'registro.',
+                        'registro. Arriba, un mini-gráfico muestra cómo se '
+                        'reparten los negocios de la vista.',
                     '"Ver todo" quita todos los filtros. "Copiar enlace de esta '
                         'vista" te da un enlace que abre el geovisor con los '
                         'mismos filtros.',
@@ -1828,12 +2107,17 @@ class _PanelAyuda extends StatelessWidget {
                   titulo: 'Pestaña "Medir"',
                   parrafos: [
                     'Marca "Medir / seleccionar una zona" y toca el mapa para '
-                        'poner puntos.',
-                    'Con 2 puntos ves la distancia. Con 3 o más se cierra una '
+                        'poner puntos. Elige entre medir una DISTANCIA (línea, '
+                        'para una vía o un lindero) o una ZONA (polígono).',
+                    'Con 2 puntos ves la distancia. Con 3 o más se cierra la '
                         'zona y ves el perímetro, el área (m² / ha / km²) y '
                         'cuántos negocios verdes caen dentro.',
-                    'Puedes elegir entre medir una distancia (línea) o una zona '
-                        '(polígono).',
+                    'Cada punto muestra su coordenada (lat, lng) — tócala para '
+                        'copiarla.',
+                    'Otra herramienta: "Negocios cerca de un punto" — toca el '
+                        'mapa (o usa tu ubicación), elige un radio (500 m a '
+                        '5 km) y ves la lista de negocios dentro de ese círculo, '
+                        'descargable.',
                     '"Quitar punto" borra el último; "Limpiar" empieza de nuevo.',
                   ],
                 ),
