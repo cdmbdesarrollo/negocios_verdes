@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -6,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/descargar_archivo_web.dart';
 import '../../core/texto_utils.dart';
 import '../../core/widgets/botones_zoom_mapa.dart';
 import '../../core/widgets/pie_pagina.dart';
@@ -62,14 +66,20 @@ class _GeovisorPageState extends State<GeovisorPage> {
   bool _capaEtiquetas = true;
   bool _capaNegocios = true;
 
-  // Capas extra de contexto (OSM) — se cargan la primera vez que se
+  // Capas de contexto (RUNAP / IDEAM) — se cargan la primera vez que se
   // encienden, no en el arranque.
   bool _capaAreas = false;
+  bool _capaEtiquetasAreas = true;
   bool _capaHidro = false;
   CapaGeo? _areas;
   CapaGeo? _hidro;
   bool _cargandoAreas = false;
   bool _cargandoHidro = false;
+
+  // Herramienta de medición / selección de zona. En este modo, tocar el
+  // mapa agrega un vértice; con 3+ se puede descargar la zona.
+  bool _modoMedir = false;
+  final List<LatLng> _medida = [];
   final Set<String> _categoriasOcultas = {}; // slugs
   /// Reconocimientos EXIGIDOS (ev / sm / av). Vacío = no filtra. Son
   /// independientes y se combinan con AND, igual que en /buscar.
@@ -252,6 +262,180 @@ class _GeovisorPageState extends State<GeovisorPage> {
     }
   }
 
+  // ------------------------------------------------- herramienta de medición
+
+  void _tocarMapa(LatLng p) {
+    if (!_modoMedir) return;
+    setState(() => _medida.add(p));
+  }
+
+  /// Distancia en metros entre dos puntos (haversine).
+  double _dist(LatLng a, LatLng b) {
+    const r = 6371000.0;
+    final dLat = _rad(b.latitude - a.latitude);
+    final dLon = _rad(b.longitude - a.longitude);
+    final h = math.pow(math.sin(dLat / 2), 2) +
+        math.cos(_rad(a.latitude)) *
+            math.cos(_rad(b.latitude)) *
+            math.pow(math.sin(dLon / 2), 2);
+    return 2 * r * math.asin(math.sqrt(h.toDouble()));
+  }
+
+  double _rad(double g) => g * math.pi / 180;
+
+  double get _perimetroMetros {
+    if (_medida.length < 2) return 0;
+    var t = 0.0;
+    for (var i = 0; i < _medida.length - 1; i++) {
+      t += _dist(_medida[i], _medida[i + 1]);
+    }
+    return t;
+  }
+
+  /// Área en m² de la zona dibujada (proyección equirectangular local +
+  /// fórmula del cordonero — exacta a esta escala).
+  double get _areaMetros2 {
+    if (_medida.length < 3) return 0;
+    final lat0 = _rad(_medida
+            .map((p) => p.latitude)
+            .reduce((a, b) => a + b) /
+        _medida.length);
+    const mPorGrado = 111320.0;
+    double x(LatLng p) => p.longitude * mPorGrado * math.cos(lat0);
+    double y(LatLng p) => p.latitude * mPorGrado;
+    var s = 0.0;
+    for (var i = 0; i < _medida.length; i++) {
+      final a = _medida[i];
+      final b = _medida[(i + 1) % _medida.length];
+      s += x(a) * y(b) - x(b) * y(a);
+    }
+    return s.abs() / 2;
+  }
+
+  bool _puntoEnPoligono(LatLng p, List<LatLng> poly) {
+    var dentro = false;
+    for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      final xi = poly[i].longitude, yi = poly[i].latitude;
+      final xj = poly[j].longitude, yj = poly[j].latitude;
+      if (((yi > p.latitude) != (yj > p.latitude)) &&
+          (p.longitude <
+              (xj - xi) * (p.latitude - yi) / (yj - yi) + xi)) {
+        dentro = !dentro;
+      }
+    }
+    return dentro;
+  }
+
+  List<Polygon<String>> _poligonosMunicipio() => [
+        for (final m in _municipios!)
+          Polygon<String>(
+            hitValue: m.nombre,
+            points: m.anillos.isEmpty ? const [] : m.anillos.first,
+            holePointsList:
+                m.anillos.length > 1 ? m.anillos.sublist(1) : null,
+            borderColor: _municipioSel == m.nombre
+                ? NVColors.accent
+                : NVColors.primaryDark,
+            borderStrokeWidth: _municipioSel == m.nombre ? 3 : 1.4,
+            color: (_municipioSel == m.nombre
+                    ? NVColors.accent
+                    : NVColors.primary)
+                .withValues(alpha: 0.07),
+          ),
+      ];
+
+  /// Áreas protegidas con un punto para su etiqueta (centro del anillo más
+  /// grande). Solo las > 300 ha, para no saturar el mapa de rótulos.
+  List<(CapaGeoElemento, LatLng)> get _areasConCentro {
+    final out = <(CapaGeoElemento, LatLng)>[];
+    for (final e in _areas!.elementos) {
+      if (e.poligonos.isEmpty || (e.nombre ?? '').isEmpty) continue;
+      if ((double.tryParse(e.prop('hectareas') ?? '0') ?? 0) < 300) continue;
+      final ring = e.poligonos.reduce((a, b) => a.length >= b.length ? a : b);
+      if (ring.length < 6) continue;
+      var lat = 0.0, lng = 0.0;
+      for (final p in ring) {
+        lat += p.latitude;
+        lng += p.longitude;
+      }
+      out.add((e, LatLng(lat / ring.length, lng / ring.length)));
+    }
+    return out;
+  }
+
+  List<Negocio> get _negociosEnZona => _medida.length < 3
+      ? const []
+      : (_negocios ?? [])
+          .where((n) =>
+              _puntoEnPoligono(LatLng(n.latitud!, n.longitud!), _medida))
+          .toList();
+
+  void _descargarZona() {
+    final negs = _negociosEnZona;
+    final anillo = [
+      for (final p in _medida) [p.longitude, p.latitude],
+      [_medida.first.longitude, _medida.first.latitude],
+    ];
+    final fc = {
+      'type': 'FeatureCollection',
+      'name': 'geovisor_negocios_verdes_zona',
+      'crs': {
+        'type': 'name',
+        'properties': {'name': 'urn:ogc:def:crs:OGC:1.3:CRS84'}
+      },
+      'features': [
+        {
+          'type': 'Feature',
+          'properties': {
+            'tipo': 'zona_seleccionada',
+            'area_km2':
+                double.parse((_areaMetros2 / 1e6).toStringAsFixed(3)),
+            'perimetro_km':
+                double.parse((_perimetroMetros / 1000).toStringAsFixed(3)),
+            'negocios_verdes': negs.length,
+            'generado':
+                DateTime.now().toIso8601String().substring(0, 19),
+            'fuente':
+                'Geovisor Negocios Verdes CDMB — ${Uri.base.origin}',
+          },
+          'geometry': {
+            'type': 'Polygon',
+            'coordinates': [anillo],
+          },
+        },
+        for (final n in negs)
+          {
+            'type': 'Feature',
+            'properties': {
+              'nombre': n.nombre,
+              'categoria': n.categoriaOficial?.slug == 'pendiente-clasificar'
+                  ? null
+                  : n.categoriaOficial?.nombre,
+              'municipio': n.municipio,
+              'vereda': n.vereda?.nombre,
+              'emprendimiento_verde': n.emprendimientoVerde,
+              'sello_marca': n.selloMarca,
+              'avalado': n.avalado,
+              'ficha': '${Uri.base.origin}/negocio/${n.slug}',
+            },
+            'geometry': {
+              'type': 'Point',
+              'coordinates': [n.longitud, n.latitud],
+            },
+          },
+      ],
+    };
+    final hoy = DateTime.now();
+    final fecha = '${hoy.year}'
+        '${hoy.month.toString().padLeft(2, '0')}'
+        '${hoy.day.toString().padLeft(2, '0')}';
+    descargarArchivoTexto(
+      contenido: const JsonEncoder.withIndent('  ').convert(fc),
+      nombreArchivo: 'zona_negocios_verdes_$fecha.geojson',
+      tipoMime: 'application/geo+json;charset=utf-8',
+    );
+  }
+
   // ----------------------------------------------------------------- build
 
   @override
@@ -313,7 +497,8 @@ class _GeovisorPageState extends State<GeovisorPage> {
       children: [
         FlutterMap(
           mapController: _mapController,
-          options: const MapOptions(
+          options: MapOptions(
+            onTap: (_, latlng) => _tocarMapa(latlng),
             initialCenter: _centro,
             initialZoom: 9.2,
             minZoom: 7,
@@ -369,42 +554,41 @@ class _GeovisorPageState extends State<GeovisorPage> {
                       ),
                 ],
               ),
-            if (_capaMunicipios)
-              MouseRegion(
-                hitTestBehavior: HitTestBehavior.deferToChild,
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: () {
-                    final hit = _hitMunicipios.value;
-                    if (hit != null && hit.hitValues.isNotEmpty) {
-                      _seleccionarMunicipio(hit.hitValues.first);
-                    }
-                  },
-                  child: PolygonLayer<String>(
-                    hitNotifier: _hitMunicipios,
-                    polygons: [
-                      for (final m in _municipios!)
-                        Polygon<String>(
-                          hitValue: m.nombre,
-                          points: m.anillos.isEmpty
-                              ? const []
-                              : m.anillos.first,
-                          holePointsList: m.anillos.length > 1
-                              ? m.anillos.sublist(1)
-                              : null,
-                          borderColor: _municipioSel == m.nombre
-                              ? NVColors.accent
-                              : NVColors.primaryDark,
-                          borderStrokeWidth:
-                              _municipioSel == m.nombre ? 3 : 1.4,
-                          color: (_municipioSel == m.nombre
-                                  ? NVColors.accent
-                                  : NVColors.primary)
-                              .withValues(alpha: 0.07),
-                        ),
-                    ],
+            if (_capaMunicipios) ...[
+              // En modo medición no se envuelve en GestureDetector para que
+              // los toques lleguen a MapOptions.onTap.
+              if (_modoMedir)
+                PolygonLayer(polygons: _poligonosMunicipio())
+              else
+                MouseRegion(
+                  hitTestBehavior: HitTestBehavior.deferToChild,
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () {
+                      final hit = _hitMunicipios.value;
+                      if (hit != null && hit.hitValues.isNotEmpty) {
+                        _seleccionarMunicipio(hit.hitValues.first);
+                      }
+                    },
+                    child: PolygonLayer<String>(
+                      hitNotifier: _hitMunicipios,
+                      polygons: _poligonosMunicipio(),
+                    ),
                   ),
                 ),
+            ],
+            if (_capaAreas && _capaEtiquetasAreas && _areas != null)
+              MarkerLayer(
+                markers: [
+                  for (final e in _areasConCentro)
+                    Marker(
+                      point: e.$2,
+                      width: 130,
+                      height: 26,
+                      child: _EtiquetaMunicipio(
+                          texto: e.$1.nombre ?? '', activo: false),
+                    ),
+                ],
               ),
             if (_capaMunicipios && _capaEtiquetas)
               MarkerLayer(
@@ -463,12 +647,51 @@ class _GeovisorPageState extends State<GeovisorPage> {
                   },
                 ),
               ),
+            // Herramienta de medición / zona.
+            if (_medida.length >= 3)
+              PolygonLayer(polygons: [
+                Polygon(
+                  points: _medida,
+                  color: NVColors.accent.withValues(alpha: 0.12),
+                  borderColor: NVColors.accent,
+                  borderStrokeWidth: 2,
+                ),
+              ]),
+            if (_medida.length >= 2)
+              PolylineLayer(polylines: [
+                Polyline(
+                  points: _medida.length >= 3
+                      ? [..._medida, _medida.first]
+                      : _medida,
+                  color: NVColors.accent,
+                  strokeWidth: 2,
+                ),
+              ]),
+            if (_medida.isNotEmpty)
+              MarkerLayer(
+                markers: [
+                  for (final p in _medida)
+                    Marker(
+                      point: p,
+                      width: 14,
+                      height: 14,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border:
+                              Border.all(color: NVColors.accent, width: 3),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             RichAttributionWidget(
               alignment: AttributionAlignment.bottomRight,
               showFlutterMapAttribution: false,
               attributions: [
                 TextSourceAttribution(
-                  'Cartografía base © OpenStreetMap',
+                  'Base © OpenStreetMap · Áreas: RUNAP · Hidrografía: IDEAM',
                   onTap: () => launchUrl(
                       Uri.parse('https://www.openstreetmap.org/copyright')),
                 ),
@@ -599,35 +822,6 @@ class _GeovisorPageState extends State<GeovisorPage> {
             ],
           ],
           const Divider(height: 24),
-          const _Rotulo('Capas de contexto'),
-          _check(
-            _cargandoAreas
-                ? 'Áreas protegidas  (cargando…)'
-                : _areas != null
-                    ? 'Áreas protegidas — RUNAP  (${_areas!.elementos.length})'
-                    : 'Áreas protegidas — RUNAP',
-            _capaAreas,
-            _toggleAreas,
-          ),
-          if (_capaAreas && _areas != null)
-            for (final e in _areasOrdenadas)
-              _FilaArea(
-                elemento: e,
-                onZoom: () =>
-                    _encuadrar([for (final r in e.poligonos) ...r]),
-                onLink: () {
-                  final u = e.prop('url');
-                  if (u != null && u.isNotEmpty) launchUrl(Uri.parse(u));
-                },
-              ),
-          _check(
-            _cargandoHidro
-                ? 'Hidrografía  (cargando…)'
-                : 'Hidrografía — IDEAM  (ríos y cuerpos de agua)',
-            _capaHidro,
-            _toggleHidro,
-          ),
-          const Divider(height: 24),
           _check(
               'Negocios verdes  (${_negociosVisibles.length})',
               _capaNegocios,
@@ -650,6 +844,10 @@ class _GeovisorPageState extends State<GeovisorPage> {
             _checkRecon('✅ Negocio Verde Avalado', 'av'),
           ],
           const Divider(height: 24),
+          _seccionHerramientas(),
+          const Divider(height: 24),
+          _seccionContexto(),
+          const Divider(height: 24),
           OutlinedButton.icon(
             onPressed: _copiarEnlace,
             icon: const Icon(Icons.link, size: 18),
@@ -658,6 +856,132 @@ class _GeovisorPageState extends State<GeovisorPage> {
         ],
         ),
       ),
+    );
+  }
+
+  String _fmtDist(double m) =>
+      m < 1000 ? '${m.toStringAsFixed(0)} m' : '${(m / 1000).toStringAsFixed(2)} km';
+
+  String _fmtArea(double m2) {
+    if (m2 < 10000) return '${m2.toStringAsFixed(0)} m²';
+    final ha = m2 / 10000;
+    if (ha < 100) return '${ha.toStringAsFixed(1)} ha';
+    return '${(m2 / 1e6).toStringAsFixed(2)} km²  (${ha.toStringAsFixed(0)} ha)';
+  }
+
+  Widget _seccionHerramientas() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const _Rotulo('Herramientas'),
+        _check(
+          'Medir / seleccionar una zona',
+          _modoMedir,
+          (v) => setState(() {
+            _modoMedir = v;
+            if (!v) _medida.clear();
+          }),
+        ),
+        if (_modoMedir) ...[
+          const Padding(
+            padding: EdgeInsets.fromLTRB(4, 2, 4, 6),
+            child: Text(
+              'Toca el mapa para marcar puntos. Con 2+ se mide la distancia; '
+              'con 3+ se cierra la zona y se puede descargar.',
+              style: TextStyle(fontSize: 11, color: NVColors.textoSecundario),
+            ),
+          ),
+          if (_medida.length >= 2)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                _medida.length < 3
+                    ? 'Distancia: ${_fmtDist(_perimetroMetros)}'
+                    : 'Perímetro: ${_fmtDist(_perimetroMetros)}\n'
+                        'Área: ${_fmtArea(_areaMetros2)}\n'
+                        'Negocios verdes dentro: ${_negociosEnZona.length}',
+                style: const TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+            ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              OutlinedButton.icon(
+                onPressed: _medida.isEmpty
+                    ? null
+                    : () => setState(() => _medida.removeLast()),
+                icon: const Icon(Icons.undo, size: 16),
+                label: const Text('Quitar punto'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _medida.isEmpty
+                    ? null
+                    : () => setState(_medida.clear),
+                icon: const Icon(Icons.clear, size: 16),
+                label: const Text('Limpiar'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          FilledButton.icon(
+            onPressed: _medida.length >= 3 ? _descargarZona : null,
+            icon: const Icon(Icons.download, size: 18),
+            label: const Text('Descargar zona (GeoJSON)'),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(4, 4, 4, 0),
+            child: Text(
+              'El archivo incluye la zona dibujada y los negocios verdes que '
+              'caen dentro. Se abre en QGIS, ArcGIS o Google Earth.',
+              style: TextStyle(fontSize: 10.5, color: NVColors.textoSecundario),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _seccionContexto() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const _Rotulo('Capas de contexto'),
+        _check(
+          _cargandoAreas
+              ? 'Áreas protegidas  (cargando…)'
+              : _areas != null
+                  ? 'Áreas protegidas — RUNAP  (${_areas!.elementos.length})'
+                  : 'Áreas protegidas — RUNAP',
+          _capaAreas,
+          _toggleAreas,
+        ),
+        if (_capaAreas)
+          Padding(
+            padding: const EdgeInsets.only(left: 24),
+            child: _check('Etiquetas de área protegida', _capaEtiquetasAreas,
+                (v) => setState(() => _capaEtiquetasAreas = v)),
+          ),
+        if (_capaAreas && _areas != null)
+          for (final e in _areasOrdenadas)
+            _FilaArea(
+              elemento: e,
+              onZoom: () => _encuadrar([for (final r in e.poligonos) ...r]),
+              onLink: () {
+                final u = e.prop('url');
+                if (u != null && u.isNotEmpty) launchUrl(Uri.parse(u));
+              },
+            ),
+        _check(
+          _cargandoHidro
+              ? 'Hidrografía  (cargando…)'
+              : 'Hidrografía — IDEAM  (ríos y cuerpos de agua)',
+          _capaHidro,
+          _toggleHidro,
+        ),
+      ],
     );
   }
 
