@@ -88,6 +88,8 @@ class _GeovisorPageState extends State<GeovisorPage> {
   bool _capaCalor = false;
   int? _anioMin; // registrados desde ese año
   double _zoomActual = 9.2; // para alternar pines livianos / con foto
+  bool _ayudaAbierta = false;
+  bool _medirArea = true; // false = solo distancia (línea abierta)
 
   // Ubicación del visitante (botón "mi ubicación").
   LatLng? _miUbicacion;
@@ -459,13 +461,20 @@ class _GeovisorPageState extends State<GeovisorPage> {
 
   double _rad(double g) => g * math.pi / 180;
 
-  double get _perimetroMetros {
+  /// Suma de los segmentos SIN cerrar — la longitud del recorrido dibujado.
+  double get _distanciaLineaMetros {
     if (_medida.length < 2) return 0;
     var t = 0.0;
     for (var i = 0; i < _medida.length - 1; i++) {
       t += _dist(_medida[i], _medida[i + 1]);
     }
     return t;
+  }
+
+  /// Perímetro de la zona = recorrido + el segmento de cierre.
+  double get _perimetroMetros {
+    if (_medida.length < 3) return _distanciaLineaMetros;
+    return _distanciaLineaMetros + _dist(_medida.last, _medida.first);
   }
 
   /// Área en m² de la zona dibujada (proyección equirectangular local +
@@ -889,7 +898,7 @@ class _GeovisorPageState extends State<GeovisorPage> {
                 ),
               ]),
             // Herramienta de medición / zona.
-            if (_medida.length >= 3)
+            if (_medirArea && _medida.length >= 3)
               PolygonLayer(polygons: [
                 Polygon(
                   points: _medida,
@@ -901,7 +910,7 @@ class _GeovisorPageState extends State<GeovisorPage> {
             if (_medida.length >= 2)
               PolylineLayer(polylines: [
                 Polyline(
-                  points: _medida.length >= 3
+                  points: _medirArea && _medida.length >= 3
                       ? [..._medida, _medida.first]
                       : _medida,
                   color: NVColors.accent,
@@ -966,9 +975,25 @@ class _GeovisorPageState extends State<GeovisorPage> {
               const SizedBox(height: 6),
               _botonMapa(
                   Icons.photo_camera_outlined, 'Descargar imagen', _descargarPng),
+              const SizedBox(height: 6),
+              _botonMapa(
+                _ayudaAbierta ? Icons.help : Icons.help_outline,
+                'Ayuda',
+                () => setState(() => _ayudaAbierta = !_ayudaAbierta),
+              ),
             ],
           ),
         ),
+        if (_ayudaAbierta)
+          Positioned(
+            top: 0,
+            bottom: 0,
+            right: 0,
+            width: MediaQuery.sizeOf(context).width < 700
+                ? MediaQuery.sizeOf(context).width
+                : 360,
+            child: _PanelAyuda(onCerrar: () => setState(() => _ayudaAbierta = false)),
+          ),
         Positioned(
           left: 12,
           right: 12,
@@ -1267,20 +1292,38 @@ class _GeovisorPageState extends State<GeovisorPage> {
           }),
         ),
         if (_modoMedir) ...[
-          const Padding(
-            padding: EdgeInsets.fromLTRB(4, 2, 4, 6),
+          const SizedBox(height: 6),
+          SegmentedButton<bool>(
+            showSelectedIcon: false,
+            style: const ButtonStyle(
+              visualDensity: VisualDensity.compact,
+              textStyle: WidgetStatePropertyAll(TextStyle(fontSize: 12)),
+            ),
+            segments: const [
+              ButtonSegment(value: false, label: Text('Distancia')),
+              ButtonSegment(value: true, label: Text('Zona / área')),
+            ],
+            selected: {_medirArea},
+            onSelectionChanged: (s) => setState(() => _medirArea = s.first),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 6, 4, 6),
             child: Text(
-              'Toca el mapa para marcar puntos. Con 2+ se mide la distancia; '
-              'con 3+ se cierra la zona y se puede descargar.',
-              style: TextStyle(fontSize: 11, color: NVColors.textoSecundario),
+              _medirArea
+                  ? 'Toca el mapa para marcar puntos. Con 3+ se cierra la '
+                      'zona y se puede descargar.'
+                  : 'Toca el mapa para marcar el recorrido a medir (una vía, '
+                      'un río, un lindero…).',
+              style: const TextStyle(
+                  fontSize: 11, color: NVColors.textoSecundario),
             ),
           ),
           if (_medida.length >= 2)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(
-                _medida.length < 3
-                    ? 'Distancia: ${_fmtDist(_perimetroMetros)}'
+                !_medirArea || _medida.length < 3
+                    ? 'Distancia total: ${_fmtDist(_distanciaLineaMetros)}'
                     : 'Perímetro: ${_fmtDist(_perimetroMetros)}\n'
                         'Área: ${_fmtArea(_areaMetros2)}\n'
                         'Negocios verdes dentro: ${_negociosEnZona.length}',
@@ -1309,38 +1352,42 @@ class _GeovisorPageState extends State<GeovisorPage> {
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          FilledButton.icon(
-            onPressed: _medida.length >= 3 ? _descargarZona : null,
-            icon: const Icon(Icons.download, size: 18),
-            label: const Text('Descargar zona (GeoJSON)'),
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              OutlinedButton.icon(
-                onPressed: _medida.length >= 3 ? _copiarEnlaceZona : null,
-                icon: const Icon(Icons.link, size: 16),
-                label: const Text('Enlace de la zona'),
-              ),
-              OutlinedButton.icon(
-                onPressed: _medida.length >= 3 ? _descargarReporte : null,
-                icon: const Icon(Icons.description_outlined, size: 16),
-                label: const Text('Reporte (HTML)'),
-              ),
-            ],
-          ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(4, 4, 4, 0),
-            child: Text(
-              'El GeoJSON incluye la zona y los negocios de adentro; se abre '
-              'en QGIS, ArcGIS o Google Earth. El reporte es una página '
-              'lista para imprimir o guardar como PDF.',
-              style: TextStyle(fontSize: 10.5, color: NVColors.textoSecundario),
+          if (_medirArea) ...[
+            const SizedBox(height: 6),
+            FilledButton.icon(
+              onPressed: _medida.length >= 3 ? _descargarZona : null,
+              icon: const Icon(Icons.download, size: 18),
+              label: const Text('Descargar zona (GeoJSON)'),
             ),
-          ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _medida.length >= 3 ? _copiarEnlaceZona : null,
+                  icon: const Icon(Icons.link, size: 16),
+                  label: const Text('Enlace de la zona'),
+                ),
+                OutlinedButton.icon(
+                  onPressed:
+                      _medida.length >= 3 ? _descargarReporte : null,
+                  icon: const Icon(Icons.description_outlined, size: 16),
+                  label: const Text('Reporte (HTML)'),
+                ),
+              ],
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(4, 4, 4, 0),
+              child: Text(
+                'El GeoJSON incluye la zona y los negocios de adentro; se '
+                'abre en QGIS, ArcGIS o Google Earth. El reporte es una '
+                'página lista para imprimir o guardar como PDF.',
+                style: TextStyle(
+                    fontSize: 10.5, color: NVColors.textoSecundario),
+              ),
+            ),
+          ],
         ],
         const SizedBox(height: 10),
         const _Rotulo('Descargar lo que se ve ahora'),
@@ -1687,6 +1734,174 @@ class _FilaArea extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Panel de ayuda del geovisor — al lado del mapa, se abre con el botón "?".
+class _PanelAyuda extends StatelessWidget {
+  final VoidCallback onCerrar;
+  const _PanelAyuda({required this.onCerrar});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      elevation: 6,
+      color: NVColors.superficie,
+      child: Column(
+        children: [
+          Container(
+            color: NVColors.primaryDark,
+            padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+            child: Row(
+              children: [
+                const Icon(Icons.help_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text('Cómo usar el geovisor',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15)),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                  onPressed: onCerrar,
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 40),
+              children: const [
+                _AyudaSeccion(
+                  icono: Icons.travel_explore,
+                  titulo: '¿Qué es?',
+                  parrafos: [
+                    'Muestra los negocios verdes registrados por la CDMB sobre '
+                        'el mapa, con capas oficiales de contexto (municipios, '
+                        'áreas protegidas, ríos). No hay que registrarse.',
+                  ],
+                ),
+                _AyudaSeccion(
+                  icono: Icons.open_with,
+                  titulo: 'Moverse por el mapa',
+                  parrafos: [
+                    'Arrastra para desplazarte; usa la rueda del mouse o los '
+                        'botones + / − para acercar y alejar.',
+                    'El botón de diana ("Mi ubicación") centra el mapa donde '
+                        'estás (el navegador te pedirá permiso).',
+                    'El botón de cámara descarga una imagen PNG del mapa.',
+                  ],
+                ),
+                _AyudaSeccion(
+                  icono: Icons.tune,
+                  titulo: 'Pestaña "Filtrar"',
+                  parrafos: [
+                    'Escribe el nombre de un negocio para saltar a él. Si '
+                        'escribes un lugar ("Provenza", "Cañaveral") aparece la '
+                        'opción de buscarlo como lugar en el mapa.',
+                    'Filtra por municipio (y vereda), por categoría, por '
+                        'reconocimiento (se pueden combinar) y por año de '
+                        'registro.',
+                    '"Ver todo" quita todos los filtros. "Copiar enlace de esta '
+                        'vista" te da un enlace que abre el geovisor con los '
+                        'mismos filtros.',
+                  ],
+                ),
+                _AyudaSeccion(
+                  icono: Icons.layers,
+                  titulo: 'Pestaña "Capas"',
+                  parrafos: [
+                    'Enciende o apaga: los negocios, el mapa de calor '
+                        '(densidad), los límites municipales y las capas de '
+                        'contexto — áreas protegidas (RUNAP) e hidrografía '
+                        '(IDEAM). Las capas de contexto se descargan solo al '
+                        'encenderlas.',
+                    'La leyenda al final explica qué significa cada color.',
+                  ],
+                ),
+                _AyudaSeccion(
+                  icono: Icons.straighten,
+                  titulo: 'Pestaña "Medir"',
+                  parrafos: [
+                    'Marca "Medir / seleccionar una zona" y toca el mapa para '
+                        'poner puntos.',
+                    'Con 2 puntos ves la distancia. Con 3 o más se cierra una '
+                        'zona y ves el perímetro, el área (m² / ha / km²) y '
+                        'cuántos negocios verdes caen dentro.',
+                    'Puedes elegir entre medir una distancia (línea) o una zona '
+                        '(polígono).',
+                    '"Quitar punto" borra el último; "Limpiar" empieza de nuevo.',
+                  ],
+                ),
+                _AyudaSeccion(
+                  icono: Icons.download,
+                  titulo: 'Descargar',
+                  parrafos: [
+                    'De una zona dibujada o de la vista actual puedes descargar:',
+                    '• GeoJSON — se abre en QGIS, ArcGIS o Google Earth.',
+                    '• CSV — para Excel.',
+                    '• Reporte (HTML) — página con mini-mapa y tabla, lista para '
+                        'imprimir o guardar como PDF.',
+                    'Todas las descargas respetan los filtros activos y no '
+                        'requieren registro.',
+                  ],
+                ),
+                _AyudaSeccion(
+                  icono: Icons.verified_outlined,
+                  titulo: 'Fuentes',
+                  parrafos: [
+                    'Cartografía base: © OpenStreetMap. Áreas protegidas: RUNAP '
+                        '(Parques Nacionales). Hidrografía: IDEAM. Datos de '
+                        'negocios: CDMB.',
+                    'El geovisor es informativo y no constituye cartografía '
+                        'oficial de linderos.',
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AyudaSeccion extends StatelessWidget {
+  final IconData icono;
+  final String titulo;
+  final List<String> parrafos;
+  const _AyudaSeccion({
+    required this.icono,
+    required this.titulo,
+    required this.parrafos,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(icono, size: 17, color: NVColors.primaryDark),
+            const SizedBox(width: 8),
+            Text(titulo,
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: 13.5)),
+          ]),
+          const SizedBox(height: 4),
+          for (final p in parrafos)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 5),
+              child: Text(p,
+                  style: const TextStyle(fontSize: 12.5, height: 1.35)),
+            ),
+        ],
       ),
     );
   }
