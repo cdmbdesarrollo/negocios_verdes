@@ -110,26 +110,10 @@ String _esc(String s) => s
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;');
 
-/// bbox `minLon,minLat,maxLon,maxLat` de un conjunto de puntos, con margen.
-String? _bbox(Iterable<LatLng> pts) {
-  final l = pts.toList();
-  if (l.isEmpty) return null;
-  var minLa = 90.0, maxLa = -90.0, minLo = 180.0, maxLo = -180.0;
-  for (final p in l) {
-    minLa = p.latitude < minLa ? p.latitude : minLa;
-    maxLa = p.latitude > maxLa ? p.latitude : maxLa;
-    minLo = p.longitude < minLo ? p.longitude : minLo;
-    maxLo = p.longitude > maxLo ? p.longitude : maxLo;
-  }
-  final mLa = ((maxLa - minLa).abs() * 0.15).clamp(0.01, 1.0);
-  final mLo = ((maxLo - minLo).abs() * 0.15).clamp(0.01, 1.0);
-  return '${(minLo - mLo).toStringAsFixed(4)},${(minLa - mLa).toStringAsFixed(4)},'
-      '${(maxLo + mLo).toStringAsFixed(4)},${(maxLa + mLa).toStringAsFixed(4)}';
-}
-
 /// Reporte HTML autónomo (se abre en el navegador y se puede "Imprimir →
-/// Guardar como PDF"). Sin dependencias externas. Incluye un mini-mapa
-/// vía el iframe embebible oficial de OpenStreetMap.
+/// Guardar como PDF"). Incluye un mini-mapa hecho con Leaflet (cargado de
+/// un CDN) que dibuja la zona seleccionada y los negocios — así se ve el
+/// polígono, no solo un recuadro.
 String htmlReporte({
   required String titulo,
   required List<Negocio> negocios,
@@ -140,19 +124,42 @@ String htmlReporte({
   required String origen,
 }) {
   final hoy = DateTime.now().toIso8601String().substring(0, 10);
-  final bbox = _bbox([
-    ...zona,
+  final puntos = [
     for (final n in negocios)
       if (n.latitud != null && n.longitud != null)
-        LatLng(n.latitud!, n.longitud!),
-  ]);
-  final mapa = bbox == null
+        [n.latitud!, n.longitud!, n.nombre],
+  ];
+  final zonaJs = json.encode(
+      [for (final p in zona) [p.latitude, p.longitude]]);
+  final negsJs = json.encode(puntos);
+  final hayMapa = zona.isNotEmpty || puntos.isNotEmpty;
+  final mapa = !hayMapa
       ? ''
-      : '<iframe class="mapa" loading="lazy" '
-          'src="https://www.openstreetmap.org/export/embed.html?bbox=$bbox&layer=mapnik"></iframe>'
-          '<p class="cap"><a href="https://www.openstreetmap.org/#map=12/'
-          '${negocios.isEmpty ? '7.1/-73.1' : '${negocios.first.latitud}/${negocios.first.longitud}'}">'
-          'Ver mapa más grande</a></p>';
+      : '''
+<div id="mapa" class="mapa"></div>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(function(){
+  var zona = $zonaJs, negs = $negsJs;
+  var m = L.map('mapa', {scrollWheelZoom:false});
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {maxZoom:18, attribution:'&copy; OpenStreetMap'}).addTo(m);
+  var grupo = [];
+  if (zona.length >= 3) {
+    var poly = L.polygon(zona, {color:'#FF8623', weight:2, fillOpacity:0.10}).addTo(m);
+    grupo.push(poly);
+  }
+  negs.forEach(function(x){
+    var mk = L.circleMarker([x[0], x[1]],
+      {radius:6, color:'#038f67', fillColor:'#01BD32', fillOpacity:0.9, weight:2})
+      .addTo(m).bindPopup(x[2]);
+    grupo.push(mk);
+  });
+  if (grupo.length) m.fitBounds(L.featureGroup(grupo).getBounds().pad(0.15));
+  else m.setView([7.1,-73.1], 10);
+})();
+</script>''';
   final porMun = <String, int>{};
   for (final n in negocios) {
     porMun[n.municipio] = (porMun[n.municipio] ?? 0) + 1;
@@ -191,12 +198,13 @@ String htmlReporte({
   h2{font-size:15px;margin:22px 0 6px;border-bottom:2px solid #038f67;padding-bottom:2px}
   ul{margin:6px 0 0 18px}
   .pie{color:#888;font-size:11px;margin-top:28px;border-top:1px solid #ddd;padding-top:8px}
-  .mapa{width:100%;height:340px;border:1px solid #ddd;border-radius:8px;margin-top:8px}
-  .cap{font-size:11px;color:#888;margin:4px 0 0}
-  @media print{a{color:inherit;text-decoration:none} .mapa{height:280px}}
+  .mapa{width:100%;height:360px;border:1px solid #ddd;border-radius:8px;margin-top:8px}
+  .btn{display:inline-block;margin:8px 0;padding:8px 16px;background:#038f67;color:#fff;border:0;border-radius:6px;font:inherit;cursor:pointer}
+  @media print{a{color:inherit;text-decoration:none} .btn{display:none} .mapa{height:300px}}
 </style></head><body>
 <h1>${_esc(titulo)}</h1>
 <p class="sub">Geovisor Negocios Verdes — CDMB · generado el $hoy</p>
+<button class="btn" onclick="window.print()">Imprimir / Guardar como PDF</button>
 $mapa
 <div class="kpis">
   <div class="kpi"><b>${negocios.length}</b>negocios verdes</div>
@@ -212,7 +220,6 @@ ${areasProtegidas.isEmpty ? '' : '<h2>Áreas protegidas que toca la zona</h2><ul
 $filas
 </tbody></table>
 <p class="pie">Fuente: Geovisor Negocios Verdes de la CDMB ($origen). Cartografía base © OpenStreetMap. Áreas protegidas: RUNAP. Hidrografía: IDEAM. Este reporte es informativo y no constituye cartografía oficial.</p>
-<script>try{window.print()}catch(e){}</script>
 </body></html>''';
 }
 
