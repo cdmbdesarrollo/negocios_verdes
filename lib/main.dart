@@ -135,7 +135,11 @@ GoRouter _construirRouter() {
           ),
           GoRoute(
             path: '/geovisor',
-            builder: (context, state) => const GeovisorPage(),
+            builder: (context, state) => GeovisorPage(
+              municipioInicial: state.uri.queryParameters['mun'],
+              reconInicial: state.uri.queryParameters['rec'],
+              sinCategoriasInicial: state.uri.queryParameters['sincat'],
+            ),
           ),
           GoRoute(
             path: '/negocio/:slug',

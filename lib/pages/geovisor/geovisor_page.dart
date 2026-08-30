@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/texto_utils.dart';
 import '../../core/widgets/botones_zoom_mapa.dart';
 import '../../core/widgets/pie_pagina.dart';
 import '../../core/widgets/pin_negocio_mapa.dart';
@@ -15,14 +18,26 @@ import '../../services/categoria_service.dart';
 import '../../services/negocio_service.dart';
 import '../../theme/nv_colors.dart';
 
-/// "Geovisor de Negocios Verdes": mapa a pantalla completa con un panel de
-/// CAPAS al estilo de un visor SIG (ArcGIS) — límites de los 13 municipios
-/// de la jurisdicción CDMB (de OpenStreetMap, ver assets/geo/), los
-/// negocios verdes agrupados, y filtros por categoría / reconocimiento /
-/// municipio. Todo lo que ya tenemos (flutter_map + OSM), sin depender de
-/// ArcGIS ni de un tile server propio.
+const _sinVereda = '(sin vereda registrada)';
+
+/// "Geovisor Negocios Verdes": mapa a pantalla completa con un panel de
+/// CAPAS al estilo de un visor SIG — límites de los 13 municipios de la
+/// jurisdicción CDMB (de OpenStreetMap, ver assets/geo/), negocios verdes
+/// agrupados, filtros por categoría / reconocimiento / municipio / vereda,
+/// buscador y enlace compartible. Todo con flutter_map + OSM.
 class GeovisorPage extends StatefulWidget {
-  const GeovisorPage({super.key});
+  /// Estado inicial desde la URL (`/geovisor?mun=...&rec=...&sincat=...`)
+  /// para poder compartir una vista.
+  final String? municipioInicial;
+  final String? reconInicial;
+  final String? sinCategoriasInicial;
+
+  const GeovisorPage({
+    super.key,
+    this.municipioInicial,
+    this.reconInicial,
+    this.sinCategoriasInicial,
+  });
 
   @override
   State<GeovisorPage> createState() => _GeovisorPageState();
@@ -32,6 +47,8 @@ class _GeovisorPageState extends State<GeovisorPage> {
   final _negocioService = NegocioService();
   final _categoriaService = CategoriaService();
   final _mapController = MapController();
+  final LayerHitNotifier<String> _hitMunicipios = ValueNotifier(null);
+  final _busquedaCtrl = TextEditingController();
 
   List<MunicipioGeo>? _municipios;
   List<Negocio>? _negocios;
@@ -44,7 +61,8 @@ class _GeovisorPageState extends State<GeovisorPage> {
   bool _capaNegocios = true;
   final Set<String> _categoriasOcultas = {}; // slugs
   String? _recon; // null | 'ev' | 'sm' | 'av'
-  String? _municipioSel; // nombre
+  String? _municipioSel;
+  String? _veredaSel;
   bool _panelAbierto = true;
 
   Negocio? _negocioSel;
@@ -54,7 +72,19 @@ class _GeovisorPageState extends State<GeovisorPage> {
   @override
   void initState() {
     super.initState();
+    _municipioSel = widget.municipioInicial;
+    _recon = widget.reconInicial;
+    if ((widget.sinCategoriasInicial ?? '').isNotEmpty) {
+      _categoriasOcultas.addAll(widget.sinCategoriasInicial!.split(','));
+    }
     _cargar();
+  }
+
+  @override
+  void dispose() {
+    _busquedaCtrl.dispose();
+    _hitMunicipios.dispose();
+    super.dispose();
   }
 
   Future<void> _cargar() async {
@@ -72,6 +102,11 @@ class _GeovisorPageState extends State<GeovisorPage> {
             .toList();
         _categorias = res[2] as List<CategoriaOficial>;
       });
+      // Si venía un municipio en la URL, encuadrarlo.
+      if (_municipioSel != null) {
+        final m = _municipios!.where((x) => x.nombre == _municipioSel);
+        if (m.isNotEmpty) _encuadrar(m.first.anillos.expand((r) => r).toList());
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
@@ -79,8 +114,14 @@ class _GeovisorPageState extends State<GeovisorPage> {
     }
   }
 
+  // ---------------------------------------------------------------- filtros
+
   bool _pasaFiltros(Negocio n) {
     if (_municipioSel != null && n.municipio != _municipioSel) return false;
+    if (_veredaSel != null) {
+      final v = n.vereda?.nombre ?? _sinVereda;
+      if (v != _veredaSel) return false;
+    }
     final slug = n.categoriaOficial?.slug;
     if (slug != null && _categoriasOcultas.contains(slug)) return false;
     return switch (_recon) {
@@ -97,19 +138,78 @@ class _GeovisorPageState extends State<GeovisorPage> {
   int _conteoMunicipio(String nombre) =>
       (_negocios ?? []).where((n) => n.municipio == nombre).length;
 
-  void _enfocarMunicipio(MunicipioGeo m) {
+  /// Veredas del municipio seleccionado con su conteo de negocios.
+  List<({String nombre, int conteo})> get _veredasDelMunicipio {
+    if (_municipioSel == null) return const [];
+    final m = <String, int>{};
+    for (final n in _negocios!) {
+      if (n.municipio != _municipioSel) continue;
+      final v = n.vereda?.nombre ?? _sinVereda;
+      m[v] = (m[v] ?? 0) + 1;
+    }
+    final l = m.entries.map((e) => (nombre: e.key, conteo: e.value)).toList();
+    l.sort((a, b) {
+      if (a.nombre == _sinVereda) return 1;
+      if (b.nombre == _sinVereda) return -1;
+      return b.conteo.compareTo(a.conteo);
+    });
+    return l;
+  }
+
+  void _encuadrar(List<LatLng> pts) {
+    if (pts.isEmpty) return;
+    _mapController.fitCamera(
+        CameraFit.coordinates(coordinates: pts, padding: const EdgeInsets.all(40)));
+  }
+
+  void _seleccionarMunicipio(String? nombre) {
     setState(() {
-      _municipioSel = _municipioSel == m.nombre ? null : m.nombre;
+      _municipioSel = _municipioSel == nombre ? null : nombre;
+      _veredaSel = null;
       _negocioSel = null;
     });
     if (_municipioSel != null) {
-      final pts = [for (final r in m.anillos) ...r];
-      _mapController.fitCamera(CameraFit.coordinates(
-        coordinates: pts,
-        padding: const EdgeInsets.all(40),
-      ));
+      final m = _municipios!.firstWhere((x) => x.nombre == _municipioSel);
+      _encuadrar(m.anillos.expand((r) => r).toList());
     }
   }
+
+  void _seleccionarVereda(String? nombre) {
+    setState(() {
+      _veredaSel = _veredaSel == nombre ? null : nombre;
+      _negocioSel = null;
+    });
+    final pts = [
+      for (final n in _negociosVisibles) LatLng(n.latitud!, n.longitud!),
+    ];
+    _encuadrar(pts);
+  }
+
+  void _irANegocio(Negocio n) {
+    setState(() {
+      _negocioSel = n;
+      _busquedaCtrl.clear();
+    });
+    _mapController.move(LatLng(n.latitud!, n.longitud!), 15);
+  }
+
+  Future<void> _copiarEnlace() async {
+    final qp = <String, String>{};
+    if (_municipioSel != null) qp['mun'] = _municipioSel!;
+    if (_recon != null) qp['rec'] = _recon!;
+    if (_categoriasOcultas.isNotEmpty) {
+      qp['sincat'] = _categoriasOcultas.join(',');
+    }
+    final uri = Uri.base.replace(path: '/geovisor', queryParameters: qp.isEmpty ? null : qp);
+    await Clipboard.setData(ClipboardData(text: uri.toString()));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enlace de esta vista copiado')),
+      );
+    }
+  }
+
+  // ----------------------------------------------------------------- build
 
   @override
   Widget build(BuildContext context) {
@@ -121,12 +221,12 @@ class _GeovisorPageState extends State<GeovisorPage> {
           child: Column(
             children: [
               SizedBox(
-                height: ancho ? 640 : 560,
+                height: ancho ? 660 : 580,
                 child: ancho
                     ? Row(
                         children: [
                           if (_panelAbierto)
-                            SizedBox(width: 300, child: _panel()),
+                            SizedBox(width: 310, child: _panel()),
                           Expanded(child: mapa),
                         ],
                       )
@@ -139,7 +239,8 @@ class _GeovisorPageState extends State<GeovisorPage> {
                                 color: Colors.black26,
                                 child: Align(
                                   alignment: Alignment.centerLeft,
-                                  child: SizedBox(width: 280, child: _panel()),
+                                  child: SizedBox(
+                                      width: 290, child: _panel()),
                                 ),
                               ),
                             ),
@@ -155,9 +256,7 @@ class _GeovisorPageState extends State<GeovisorPage> {
   }
 
   Widget _mapa() {
-    if (_error != null) {
-      return Center(child: Text(_error!));
-    }
+    if (_error != null) return Center(child: Text(_error!));
     if (_municipios == null || _negocios == null) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -178,24 +277,41 @@ class _GeovisorPageState extends State<GeovisorPage> {
               userAgentPackageName: 'co.gov.cdmb.negocios_verdes_cdmb',
             ),
             if (_capaMunicipios)
-              PolygonLayer(
-                polygons: [
-                  for (final m in _municipios!)
-                    Polygon(
-                      points: m.anillos.isEmpty ? const [] : m.anillos.first,
-                      holePointsList: m.anillos.length > 1
-                          ? m.anillos.sublist(1)
-                          : null,
-                      borderColor: _municipioSel == m.nombre
-                          ? NVColors.accent
-                          : NVColors.primaryDark,
-                      borderStrokeWidth: _municipioSel == m.nombre ? 3 : 1.5,
-                      color: (_municipioSel == m.nombre
+              MouseRegion(
+                hitTestBehavior: HitTestBehavior.deferToChild,
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () {
+                    final hit = _hitMunicipios.value;
+                    if (hit != null && hit.hitValues.isNotEmpty) {
+                      _seleccionarMunicipio(hit.hitValues.first);
+                    }
+                  },
+                  child: PolygonLayer<String>(
+                    hitNotifier: _hitMunicipios,
+                    polygons: [
+                      for (final m in _municipios!)
+                        Polygon<String>(
+                          hitValue: m.nombre,
+                          points: m.anillos.isEmpty
+                              ? const []
+                              : m.anillos.first,
+                          holePointsList: m.anillos.length > 1
+                              ? m.anillos.sublist(1)
+                              : null,
+                          borderColor: _municipioSel == m.nombre
                               ? NVColors.accent
-                              : NVColors.primary)
-                          .withValues(alpha: 0.08),
-                    ),
-                ],
+                              : NVColors.primaryDark,
+                          borderStrokeWidth:
+                              _municipioSel == m.nombre ? 3 : 1.4,
+                          color: (_municipioSel == m.nombre
+                                  ? NVColors.accent
+                                  : NVColors.primary)
+                              .withValues(alpha: 0.07),
+                        ),
+                    ],
+                  ),
+                ),
               ),
             if (_capaMunicipios && _capaEtiquetas)
               MarkerLayer(
@@ -254,6 +370,17 @@ class _GeovisorPageState extends State<GeovisorPage> {
                   },
                 ),
               ),
+            RichAttributionWidget(
+              alignment: AttributionAlignment.bottomRight,
+              showFlutterMapAttribution: false,
+              attributions: [
+                TextSourceAttribution(
+                  'Cartografía base © OpenStreetMap',
+                  onTap: () => launchUrl(
+                      Uri.parse('https://www.openstreetmap.org/copyright')),
+                ),
+              ],
+            ),
           ],
         ),
         Positioned(
@@ -290,14 +417,19 @@ class _GeovisorPageState extends State<GeovisorPage> {
                     negocio: _negocioSel!,
                     onCerrar: () => setState(() => _negocioSel = null),
                   )
-                : (_municipioSel != null
-                    ? _ChipMunicipio(
-                        nombre: _municipioSel!,
-                        conteo: _conteoMunicipio(_municipioSel!),
-                        onQuitar: () =>
-                            setState(() => _municipioSel = null),
+                : _municipioSel != null || _veredaSel != null
+                    ? _ChipFiltroActivo(
+                        texto: [
+                          if (_municipioSel != null) _municipioSel!,
+                          if (_veredaSel != null) _veredaSel!,
+                        ].join(' · '),
+                        conteo: _negociosVisibles.length,
+                        onQuitar: () => setState(() {
+                          _municipioSel = null;
+                          _veredaSel = null;
+                        }),
                       )
-                    : const SizedBox.shrink()),
+                    : const SizedBox.shrink(),
           ),
         ),
       ],
@@ -317,7 +449,7 @@ class _GeovisorPageState extends State<GeovisorPage> {
                   size: 20, color: NVColors.primaryDark),
               const SizedBox(width: 8),
               const Expanded(
-                child: Text('Capas',
+                child: Text('Capas y filtros',
                     style: TextStyle(
                         fontWeight: FontWeight.bold, fontSize: 16)),
               ),
@@ -329,15 +461,9 @@ class _GeovisorPageState extends State<GeovisorPage> {
               ),
             ],
           ),
-          const Divider(),
-          const _Rotulo('Mapa base'),
-          const ListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            leading: Icon(Icons.public, size: 20),
-            title: Text('OpenStreetMap'),
-          ),
           const SizedBox(height: 4),
+          _buscador(),
+          const Divider(height: 20),
           _check('Límites municipales', _capaMunicipios,
               (v) => setState(() => _capaMunicipios = v)),
           if (_capaMunicipios)
@@ -348,13 +474,31 @@ class _GeovisorPageState extends State<GeovisorPage> {
             ),
           if (_capaMunicipios && _municipios != null) ...[
             const SizedBox(height: 2),
-            for (final m in _municipiosOrdenados)
-              _FilaMunicipio(
+            for (final m in _municipiosOrdenados) ...[
+              _FilaLista(
                 nombre: m.nombre,
                 conteo: _conteoMunicipio(m.nombre),
                 activo: _municipioSel == m.nombre,
-                onTap: () => _enfocarMunicipio(m),
+                onTap: () => _seleccionarMunicipio(m.nombre),
               ),
+              if (_municipioSel == m.nombre)
+                Padding(
+                  padding: const EdgeInsets.only(left: 16),
+                  child: Column(
+                    children: [
+                      const _Rotulo('Veredas'),
+                      for (final v in _veredasDelMunicipio)
+                        _FilaLista(
+                          nombre: v.nombre,
+                          conteo: v.conteo,
+                          activo: _veredaSel == v.nombre,
+                          menor: true,
+                          onTap: () => _seleccionarVereda(v.nombre),
+                        ),
+                    ],
+                  ),
+                ),
+            ],
           ],
           const Divider(height: 24),
           _check(
@@ -379,8 +523,56 @@ class _GeovisorPageState extends State<GeovisorPage> {
             _radioRecon('🎖️ Sello Marca', 'sm'),
             _radioRecon('✅ Negocio Verde Avalado', 'av'),
           ],
+          const Divider(height: 24),
+          OutlinedButton.icon(
+            onPressed: _copiarEnlace,
+            icon: const Icon(Icons.link, size: 18),
+            label: const Text('Copiar enlace de esta vista'),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buscador() {
+    final q = quitarTildes(_busquedaCtrl.text.trim().toLowerCase());
+    final sugerencias = q.isEmpty
+        ? const <Negocio>[]
+        : (_negocios ?? [])
+            .where((n) => quitarTildes(n.nombre.toLowerCase()).contains(q))
+            .take(8)
+            .toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: _busquedaCtrl,
+          decoration: InputDecoration(
+            isDense: true,
+            prefixIcon: const Icon(Icons.search, size: 18),
+            hintText: 'Buscar un negocio…',
+            suffixIcon: _busquedaCtrl.text.isEmpty
+                ? null
+                : IconButton(
+                    iconSize: 16,
+                    icon: const Icon(Icons.close),
+                    onPressed: () => setState(() => _busquedaCtrl.clear()),
+                  ),
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        for (final n in sugerencias)
+          InkWell(
+            onTap: () => _irANegocio(n),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
+              child: Text('${n.nombre}  ·  ${n.municipio}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12)),
+            ),
+          ),
+      ],
     );
   }
 
@@ -433,25 +625,30 @@ class _Rotulo extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(top: 6, bottom: 2),
-        child: Text(texto.toUpperCase(),
-            style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
-                color: NVColors.textoSecundario)),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(texto.toUpperCase(),
+              style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                  color: NVColors.textoSecundario)),
+        ),
       );
 }
 
-class _FilaMunicipio extends StatelessWidget {
+class _FilaLista extends StatelessWidget {
   final String nombre;
   final int conteo;
   final bool activo;
+  final bool menor;
   final VoidCallback onTap;
-  const _FilaMunicipio({
+  const _FilaLista({
     required this.nombre,
     required this.conteo,
     required this.activo,
     required this.onTap,
+    this.menor = false,
   });
   @override
   Widget build(BuildContext context) {
@@ -462,14 +659,21 @@ class _FilaMunicipio extends StatelessWidget {
         color: activo ? NVColors.primaryLight : null,
         child: Row(
           children: [
-            Icon(activo ? Icons.place : Icons.place_outlined,
-                size: 15,
+            Icon(
+                activo
+                    ? (menor ? Icons.check_circle : Icons.place)
+                    : (menor
+                        ? Icons.circle_outlined
+                        : Icons.place_outlined),
+                size: menor ? 13 : 15,
                 color: activo ? NVColors.accent : NVColors.textoSecundario),
             const SizedBox(width: 6),
             Expanded(
                 child: Text(nombre,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                        fontSize: 12,
+                        fontSize: menor ? 11.5 : 12,
                         fontWeight:
                             activo ? FontWeight.w700 : FontWeight.normal))),
             Text('$conteo',
@@ -510,12 +714,12 @@ class _EtiquetaMunicipio extends StatelessWidget {
   }
 }
 
-class _ChipMunicipio extends StatelessWidget {
-  final String nombre;
+class _ChipFiltroActivo extends StatelessWidget {
+  final String texto;
   final int conteo;
   final VoidCallback onQuitar;
-  const _ChipMunicipio({
-    required this.nombre,
+  const _ChipFiltroActivo({
+    required this.texto,
     required this.conteo,
     required this.onQuitar,
   });
@@ -532,7 +736,7 @@ class _ChipMunicipio extends StatelessWidget {
           children: [
             const Icon(Icons.place, size: 16, color: NVColors.accent),
             const SizedBox(width: 6),
-            Text('$nombre · $conteo negocio${conteo == 1 ? '' : 's'}',
+            Text('$texto · $conteo negocio${conteo == 1 ? '' : 's'}',
                 style: const TextStyle(
                     fontSize: 13, fontWeight: FontWeight.w600)),
             IconButton(
@@ -584,6 +788,7 @@ class _TarjetaNegocio extends StatelessWidget {
             Text(
               [
                 negocio.categoriaOficial?.nombre,
+                negocio.vereda?.nombre,
                 negocio.municipio,
               ].whereType<String>().join(' · '),
               style: const TextStyle(
