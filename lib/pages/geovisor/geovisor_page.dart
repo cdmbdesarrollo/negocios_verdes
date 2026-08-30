@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -22,6 +21,7 @@ import '../../models/negocio.dart';
 import '../../services/categoria_service.dart';
 import '../../services/negocio_service.dart';
 import '../../theme/nv_colors.dart';
+import 'geovisor_exportar.dart';
 
 const _sinVereda = '(sin vereda registrada)';
 
@@ -36,12 +36,14 @@ class GeovisorPage extends StatefulWidget {
   final String? municipioInicial;
   final String? reconInicial;
   final String? sinCategoriasInicial;
+  final String? zonaInicial;
 
   const GeovisorPage({
     super.key,
     this.municipioInicial,
     this.reconInicial,
     this.sinCategoriasInicial,
+    this.zonaInicial,
   });
 
   @override
@@ -102,6 +104,11 @@ class _GeovisorPageState extends State<GeovisorPage> {
     if ((widget.sinCategoriasInicial ?? '').isNotEmpty) {
       _categoriasOcultas.addAll(widget.sinCategoriasInicial!.split(','));
     }
+    final z = parseZonaParam(widget.zonaInicial);
+    if (z.length >= 3) {
+      _modoMedir = true;
+      _medida.addAll(z);
+    }
     _cargar();
   }
 
@@ -157,8 +164,10 @@ class _GeovisorPageState extends State<GeovisorPage> {
             .toList();
         _categorias = res[2] as List<CategoriaOficial>;
       });
-      // Si venía un municipio en la URL, encuadrarlo.
-      if (_municipioSel != null) {
+      // Si venía una zona o un municipio en la URL, encuadrarlo.
+      if (_medida.length >= 3) {
+        _encuadrar(List.of(_medida));
+      } else if (_municipioSel != null) {
         final m = _municipios!.where((x) => x.nombre == _municipioSel);
         if (m.isNotEmpty) _encuadrar(m.first.anillos.expand((r) => r).toList());
       }
@@ -370,70 +379,93 @@ class _GeovisorPageState extends State<GeovisorPage> {
               _puntoEnPoligono(LatLng(n.latitud!, n.longitud!), _medida))
           .toList();
 
+  String get _fechaArchivo {
+    final h = DateTime.now();
+    return '${h.year}${h.month.toString().padLeft(2, '0')}'
+        '${h.day.toString().padLeft(2, '0')}';
+  }
+
+  /// Nombres de las áreas protegidas cargadas que intersectan la zona
+  /// dibujada (aprox: un vértice de una dentro de la otra).
+  List<String> get _areasEnZona {
+    if (_areas == null || _medida.length < 3) return const [];
+    final out = <String>{};
+    for (final e in _areas!.elementos) {
+      final n = e.nombre;
+      if (n == null || n.isEmpty) continue;
+      for (final anillo in e.poligonos) {
+        final toca = anillo.any((p) => _puntoEnPoligono(p, _medida)) ||
+            _medida.any((p) => _puntoEnPoligono(p, anillo));
+        if (toca) {
+          out.add(n);
+          break;
+        }
+      }
+    }
+    return out.toList()..sort();
+  }
+
   void _descargarZona() {
-    final negs = _negociosEnZona;
-    final anillo = [
-      for (final p in _medida) [p.longitude, p.latitude],
-      [_medida.first.longitude, _medida.first.latitude],
-    ];
-    final fc = {
-      'type': 'FeatureCollection',
-      'name': 'geovisor_negocios_verdes_zona',
-      'crs': {
-        'type': 'name',
-        'properties': {'name': 'urn:ogc:def:crs:OGC:1.3:CRS84'}
-      },
-      'features': [
-        {
-          'type': 'Feature',
-          'properties': {
-            'tipo': 'zona_seleccionada',
-            'area_km2':
-                double.parse((_areaMetros2 / 1e6).toStringAsFixed(3)),
-            'perimetro_km':
-                double.parse((_perimetroMetros / 1000).toStringAsFixed(3)),
-            'negocios_verdes': negs.length,
-            'generado':
-                DateTime.now().toIso8601String().substring(0, 19),
-            'fuente':
-                'Geovisor Negocios Verdes CDMB — ${Uri.base.origin}',
-          },
-          'geometry': {
-            'type': 'Polygon',
-            'coordinates': [anillo],
-          },
-        },
-        for (final n in negs)
-          {
-            'type': 'Feature',
-            'properties': {
-              'nombre': n.nombre,
-              'categoria': n.categoriaOficial?.slug == 'pendiente-clasificar'
-                  ? null
-                  : n.categoriaOficial?.nombre,
-              'municipio': n.municipio,
-              'vereda': n.vereda?.nombre,
-              'emprendimiento_verde': n.emprendimientoVerde,
-              'sello_marca': n.selloMarca,
-              'avalado': n.avalado,
-              'ficha': '${Uri.base.origin}/negocio/${n.slug}',
-            },
-            'geometry': {
-              'type': 'Point',
-              'coordinates': [n.longitud, n.latitud],
-            },
-          },
-      ],
-    };
-    final hoy = DateTime.now();
-    final fecha = '${hoy.year}'
-        '${hoy.month.toString().padLeft(2, '0')}'
-        '${hoy.day.toString().padLeft(2, '0')}';
     descargarArchivoTexto(
-      contenido: const JsonEncoder.withIndent('  ').convert(fc),
-      nombreArchivo: 'zona_negocios_verdes_$fecha.geojson',
+      contenido: geoJsonNegocios(
+        _negociosEnZona,
+        zona: _medida,
+        areaKm2: _areaMetros2 / 1e6,
+        perimetroKm: _perimetroMetros / 1000,
+        origen: Uri.base.origin,
+      ),
+      nombreArchivo: 'zona_negocios_verdes_$_fechaArchivo.geojson',
       tipoMime: 'application/geo+json;charset=utf-8',
     );
+  }
+
+  void _descargarVisibles({required bool csv}) {
+    final negs = _negociosVisibles;
+    descargarArchivoTexto(
+      contenido: csv
+          ? csvNegocios(negs, origen: Uri.base.origin)
+          : geoJsonNegocios(negs, origen: Uri.base.origin),
+      nombreArchivo:
+          'negocios_verdes_$_fechaArchivo.${csv ? 'csv' : 'geojson'}',
+      tipoMime: csv
+          ? 'text/csv;charset=utf-8'
+          : 'application/geo+json;charset=utf-8',
+    );
+  }
+
+  void _descargarReporte() {
+    final enZona = _medida.length >= 3;
+    final negs = enZona ? _negociosEnZona : _negociosVisibles;
+    final titulo = enZona
+        ? 'Reporte de zona seleccionada'
+        : _municipioSel != null
+            ? 'Negocios verdes de ${_municipioSel!}'
+            : 'Negocios verdes — vista actual';
+    descargarArchivoTexto(
+      contenido: htmlReporte(
+        titulo: titulo,
+        negocios: negs,
+        areaKm2: enZona ? _areaMetros2 / 1e6 : null,
+        perimetroKm: enZona ? _perimetroMetros / 1000 : null,
+        areasProtegidas: enZona ? _areasEnZona : const [],
+        origen: Uri.base.origin,
+      ),
+      nombreArchivo: 'reporte_negocios_verdes_$_fechaArchivo.html',
+      tipoMime: 'text/html;charset=utf-8',
+    );
+  }
+
+  Future<void> _copiarEnlaceZona() async {
+    final z = zonaAParam(_medida);
+    if (z == null) return;
+    final uri = Uri.base
+        .replace(path: '/geovisor', queryParameters: {'zona': z});
+    await Clipboard.setData(ClipboardData(text: uri.toString()));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enlace de la zona copiado')),
+      );
+    }
   }
 
   // ----------------------------------------------------------------- build
@@ -931,15 +963,69 @@ class _GeovisorPageState extends State<GeovisorPage> {
             icon: const Icon(Icons.download, size: 18),
             label: const Text('Descargar zona (GeoJSON)'),
           ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              OutlinedButton.icon(
+                onPressed: _medida.length >= 3 ? _copiarEnlaceZona : null,
+                icon: const Icon(Icons.link, size: 16),
+                label: const Text('Enlace de la zona'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _medida.length >= 3 ? _descargarReporte : null,
+                icon: const Icon(Icons.description_outlined, size: 16),
+                label: const Text('Reporte (HTML)'),
+              ),
+            ],
+          ),
           const Padding(
             padding: EdgeInsets.fromLTRB(4, 4, 4, 0),
             child: Text(
-              'El archivo incluye la zona dibujada y los negocios verdes que '
-              'caen dentro. Se abre en QGIS, ArcGIS o Google Earth.',
+              'El GeoJSON incluye la zona y los negocios de adentro; se abre '
+              'en QGIS, ArcGIS o Google Earth. El reporte es una página '
+              'lista para imprimir o guardar como PDF.',
               style: TextStyle(fontSize: 10.5, color: NVColors.textoSecundario),
             ),
           ),
         ],
+        const SizedBox(height: 10),
+        const _Rotulo('Descargar lo que se ve ahora'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          children: [
+            OutlinedButton.icon(
+              onPressed: _negociosVisibles.isEmpty
+                  ? null
+                  : () => _descargarVisibles(csv: false),
+              icon: const Icon(Icons.map_outlined, size: 16),
+              label: Text('GeoJSON (${_negociosVisibles.length})'),
+            ),
+            OutlinedButton.icon(
+              onPressed: _negociosVisibles.isEmpty
+                  ? null
+                  : () => _descargarVisibles(csv: true),
+              icon: const Icon(Icons.table_chart_outlined, size: 16),
+              label: const Text('CSV'),
+            ),
+            OutlinedButton.icon(
+              onPressed:
+                  _negociosVisibles.isEmpty ? null : _descargarReporte,
+              icon: const Icon(Icons.description_outlined, size: 16),
+              label: const Text('Reporte'),
+            ),
+          ],
+        ),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(4, 4, 4, 0),
+          child: Text(
+            'Respeta los filtros activos (municipio, categoría, '
+            'reconocimiento). Sin registrarse.',
+            style: TextStyle(fontSize: 10.5, color: NVColors.textoSecundario),
+          ),
+        ),
       ],
     );
   }

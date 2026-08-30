@@ -139,6 +139,7 @@ GoRouter _construirRouter() {
               municipioInicial: state.uri.queryParameters['mun'],
               reconInicial: state.uri.queryParameters['rec'],
               sinCategoriasInicial: state.uri.queryParameters['sincat'],
+              zonaInicial: state.uri.queryParameters['zona'],
             ),
           ),
           GoRoute(
