@@ -61,6 +61,20 @@
 
   <title>Negocios Verdes CDMB — Directorio de negocios verdes</title>
   <link rel="manifest" href="manifest.json">
+
+  <!--
+    Sin service worker (se compila con --pwa-strategy=none). Además, si un
+    visitante ya tenía registrado el SW por defecto de Flutter de un deploy
+    anterior, hay que darlo de baja para que deje de servir la versión
+    vieja cacheada ("no veo los cambios" tras cada deploy).
+  -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (rs) {
+        rs.forEach(function (r) { r.unregister(); });
+      }).catch(function () {});
+    }
+  </script>
 </head>
 <body>
   <!--

@@ -35,8 +35,14 @@ jobs:
       - name: flutter test
         run: flutter test
 
+      # --pwa-strategy=none: sin service worker. El SW por defecto de Flutter
+      # cachea todo y solo aplica una version nueva al SEGUNDO refresco
+      # ("no veo mis cambios"). Sin SW, cada carga trae lo ultimo; el
+      # cacheo eficiente lo hacen igual el CDN de Vercel y el HTTP cache
+      # del navegador (ETag/304). Este es un directorio publico, no
+      # necesita funcionar offline.
       - name: Build Flutter Web
-        run: flutter build web --release --source-maps -t lib/main.dart --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+        run: flutter build web --release --pwa-strategy=none --source-maps -t lib/main.dart --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
 
       - name: Instalar Vercel CLI
         run: npm install -g vercel@latest
