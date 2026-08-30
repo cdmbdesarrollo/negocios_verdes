@@ -329,26 +329,25 @@ class _GeovisorPageState extends State<GeovisorPage> {
               PolygonLayer(
                 polygons: [
                   for (final e in _hidro!.elementos)
-                    if (!e.esLinea)
-                      for (final anillo in e.poligonos)
-                        Polygon(
-                          points: anillo,
-                          color: const Color(0xFF4A90D9).withValues(alpha: 0.35),
-                          borderColor: const Color(0xFF2E6DA4),
-                          borderStrokeWidth: 0.8,
-                        ),
+                    for (final anillo in e.poligonos)
+                      Polygon(
+                        points: anillo,
+                        color: const Color(0xFF3D7EB8)
+                            .withValues(alpha: e.tipo == 'río' ? 0.75 : 0.5),
+                        borderColor: const Color(0xFF2E6DA4),
+                        borderStrokeWidth: 0.6,
+                      ),
                 ],
               ),
               PolylineLayer(
                 polylines: [
                   for (final e in _hidro!.elementos)
-                    if (e.esLinea)
-                      for (final linea in e.lineas)
-                        Polyline(
-                          points: linea,
-                          color: const Color(0xFF4A90D9),
-                          strokeWidth: e.tipo == 'river' ? 2 : 1,
-                        ),
+                    for (final linea in e.lineas)
+                      Polyline(
+                        points: linea,
+                        color: const Color(0xFF3D7EB8),
+                        strokeWidth: 1.5,
+                      ),
                 ],
               ),
             ],
@@ -359,8 +358,13 @@ class _GeovisorPageState extends State<GeovisorPage> {
                     for (final anillo in e.poligonos)
                       Polygon(
                         points: anillo,
-                        color: const Color(0xFF2E8B57).withValues(alpha: 0.14),
-                        borderColor: const Color(0xFF1E6B3E),
+                        color: (e.prop('administra') == 'CDMB'
+                                ? const Color(0xFF2E8B57)
+                                : const Color(0xFF6B8E23))
+                            .withValues(alpha: 0.16),
+                        borderColor: e.prop('administra') == 'CDMB'
+                            ? const Color(0xFF1E6B3E)
+                            : const Color(0xFF556B2F),
                         borderStrokeWidth: 1.2,
                       ),
                 ],
@@ -595,30 +599,31 @@ class _GeovisorPageState extends State<GeovisorPage> {
             ],
           ],
           const Divider(height: 24),
-          const _Rotulo('Capas de contexto (OpenStreetMap)'),
+          const _Rotulo('Capas de contexto'),
           _check(
             _cargandoAreas
                 ? 'Áreas protegidas  (cargando…)'
                 : _areas != null
-                    ? 'Áreas protegidas  (${_areas!.elementos.length})'
-                    : 'Áreas protegidas',
+                    ? 'Áreas protegidas — RUNAP  (${_areas!.elementos.length})'
+                    : 'Áreas protegidas — RUNAP',
             _capaAreas,
             _toggleAreas,
           ),
           if (_capaAreas && _areas != null)
             for (final e in _areasOrdenadas)
-              _FilaLista(
-                nombre: e.nombre ?? '(sin nombre)',
-                conteo: -1,
-                activo: false,
-                menor: true,
-                onTap: () => _encuadrar(
-                    [for (final r in e.poligonos) ...r]),
+              _FilaArea(
+                elemento: e,
+                onZoom: () =>
+                    _encuadrar([for (final r in e.poligonos) ...r]),
+                onLink: () {
+                  final u = e.prop('url');
+                  if (u != null && u.isNotEmpty) launchUrl(Uri.parse(u));
+                },
               ),
           _check(
             _cargandoHidro
-                ? 'Ríos y quebradas  (cargando…)'
-                : 'Ríos, quebradas y cuerpos de agua',
+                ? 'Hidrografía  (cargando…)'
+                : 'Hidrografía — IDEAM  (ríos y cuerpos de agua)',
             _capaHidro,
             _toggleHidro,
           ),
@@ -793,6 +798,75 @@ class _FilaLista extends StatelessWidget {
               Text('$conteo',
                   style: const TextStyle(
                       fontSize: 12, color: NVColors.textoSecundario)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FilaArea extends StatelessWidget {
+  final CapaGeoElemento elemento;
+  final VoidCallback onZoom;
+  final VoidCallback onLink;
+  const _FilaArea({
+    required this.elemento,
+    required this.onZoom,
+    required this.onLink,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final e = elemento;
+    final ha = e.prop('hectareas');
+    final sub = [
+      if ((e.tipo ?? '').isNotEmpty) e.tipo!,
+      if (e.prop('administra') == 'CDMB')
+        'CDMB'
+      else if ((e.prop('administra') ?? '').isNotEmpty)
+        e.prop('administra')!,
+      if (ha != null && ha != '0') '$ha ha',
+    ].join(' · ');
+    return InkWell(
+      onTap: onZoom,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 6),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 2),
+              child: Icon(Icons.forest_outlined,
+                  size: 13, color: Color(0xFF556B2F)),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(e.nombre ?? '(sin nombre)',
+                      maxLines: 2,
+                      style: const TextStyle(
+                          fontSize: 11.5, fontWeight: FontWeight.w600)),
+                  if (sub.isNotEmpty)
+                    Text(sub,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 10.5,
+                            color: NVColors.textoSecundario)),
+                ],
+              ),
+            ),
+            if ((e.prop('url') ?? '').isNotEmpty)
+              InkWell(
+                onTap: onLink,
+                child: const Padding(
+                  padding: EdgeInsets.all(2),
+                  child: Icon(Icons.open_in_new,
+                      size: 13, color: NVColors.textoSecundario),
+                ),
+              ),
           ],
         ),
       ),

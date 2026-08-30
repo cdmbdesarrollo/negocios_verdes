@@ -26,36 +26,50 @@ archivo. Si algún día CDMB consigue el shapefile oficial del MGN del DANE,
 reemplazar este archivo por esa versión (mismo formato: `nombre` en
 `properties`).
 
-## areas_protegidas_cdmb.geojson
+## areas_protegidas_cdmb.geojson  — **OFICIAL (RUNAP)**
 
-**31 áreas protegidas** de la región (Parque Natural Regional Páramo de
-Santurbán, PNN Serranía de los Yariguíes, PNR Sisavita, PNR Bosques
-Húmedos Andinos, Reserva Forestal Cerro de la Judía, ~24 Reservas
-Naturales de la Sociedad Civil, etc.).
+**~52 áreas protegidas** de la región tomadas del **RUNAP** (Registro Único
+Nacional de Áreas Protegidas, de Parques Nacionales Naturales): PNR Páramo
+de Santurbán, PNN Serranía de los Yariguíes, PNR Sisavita, PNR Bosques
+Andinos Húmedos El Rasgón, PNR Cerro la Judía, PNR Bosques de Misiguay,
+varios DRMI y DCS de la CDMB, y ~25 Reservas Naturales de la Sociedad
+Civil.
 
-- **Fuente:** OpenStreetMap, vía Overpass API (`boundary=protected_area`,
-  `leisure=nature_reserve`, `boundary=national_park`, con `name`).
-- **Simplificación:** Douglas-Peucker ~180 m. **No es oficial** — la
-  cobertura de OSM para reservas privadas es parcial y los linderos son
-  aproximados. Para el mapa oficial, RUNAP (Registro Único Nacional de
-  Áreas Protegidas) publica shapefiles.
-- **Tamaño:** ~20 KB. `properties.nombre` y `properties.tipo`.
+- **Fuente:** ArcGIS FeatureServer de Parques Nacionales
+  (`mapas.parquesnacionales.gov.co/arcgis/rest/services/pnn/runap/FeatureServer/0`),
+  con `maxAllowableOffset` para simplificar en el servidor.
+- **Tamaño:** ~80 KB. `properties`: `nombre`, `tipo` (categoría RUNAP),
+  `condicion` (REGISTRADA / INSCRITA / CONSTRUCCION), `administra` (CDMB u
+  otra CAR / PNN), `url` (ficha en runap.parquesnacionales.gov.co),
+  `hectareas`.
 
-## hidrografia_cdmb.geojson
+## hidrografia_cdmb.geojson  — **OFICIAL (IDEAM)**
 
-**~400 elementos**: ríos (`waterway=river`), quebradas con nombre
-(`waterway=stream` + `name`) y cuerpos de agua (`natural=water` + `name`).
+Hidrografía del **IDEAM** (cartografía básica IGAC 1:100.000):
+- Drenajes Principales / Drenaje Doble (los ríos con ancho, ~45).
+- Lagunas y ciénagas con nombre o de tamaño relevante (~215).
+- **NO** se traen los "drenajes sencillos" (~9.000 en la zona — el mapa
+  base de OSM ya muestra las quebradas menores).
 
-- **Fuente:** OpenStreetMap / Overpass. Simplificado ~130 m; se descartan
-  los tramos < ~1,5 km sin nombre.
-- **Tamaño:** ~115 KB. Líneas con `properties.tipo` (`river`/`stream`),
-  polígonos para los cuerpos de agua.
+- **Fuente:** ArcGIS MapServer del IDEAM
+  (`dhime.ideam.gov.co/server/rest/services/Cartografia_Basica/Hidrografia/MapServer`,
+  capas 1 / 4 / 2), simplificado en el servidor.
+- **Tamaño:** ~275 KB. Todo polígonos; `properties.tipo` =
+  `río` / `laguna` / `ciénaga`.
 - Capa **opt-in** en el geovisor (se carga solo al encenderla).
 
 ### Regenerar (áreas + hidrografía)
 
-`gen_capas.py` en el scratchpad de la sesión. Bounding box de la
-jurisdicción: `6.79,-73.76,7.76,-72.81`.
+`gen_oficial.py` en el scratchpad de la sesión (RUNAP + IDEAM por ArcGIS
+REST). Bounding box: `-73.95,6.65,-72.65,7.9`. `gen_capas.py` era la
+versión vieja desde OSM (obsoleta).
+
+## Otras fuentes que valdría revisar
+
+- **colombiaenmapas.gov.co** — visor/geoservicios de la ICDE (IGAC, DANE…).
+- **Geoportal de la CDMB** — seguramente publica coberturas, POMCAS,
+  amenazas, uso del suelo. Si aparece el WMS/REST, se enchufa igual.
+- **DANE MGN** — municipios y **veredas** (nivel "sector rural").
 
 ## Veredas — pendiente
 

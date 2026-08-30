@@ -10,6 +10,10 @@ class CapaGeoElemento {
   final String? nombre;
   final String? tipo;
 
+  /// Resto de `properties` del GeoJSON tal cual (condicion, administra,
+  /// url, hectareas… según la capa). `nombre` y `tipo` también están acá.
+  final Map<String, dynamic> props;
+
   /// Anillos de polígono (áreas, cuerpos de agua). Vacío para líneas.
   final List<List<LatLng>> poligonos;
 
@@ -19,11 +23,14 @@ class CapaGeoElemento {
   const CapaGeoElemento({
     this.nombre,
     this.tipo,
+    this.props = const {},
     this.poligonos = const [],
     this.lineas = const [],
   });
 
   bool get esLinea => lineas.isNotEmpty;
+
+  String? prop(String k) => props[k]?.toString();
 }
 
 /// Una capa completa (lista de elementos) + su carga desde el asset.
@@ -68,6 +75,7 @@ class CapaGeo {
       out.add(CapaGeoElemento(
         nombre: props['nombre'] as String?,
         tipo: props['tipo'] as String?,
+        props: Map<String, dynamic>.from(props),
         poligonos: polis,
         lineas: lines,
       ));
