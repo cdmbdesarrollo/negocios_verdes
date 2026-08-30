@@ -17,6 +17,7 @@ import '../../core/widgets/emprendimiento_verde_badge.dart';
 import '../../core/widgets/pin_negocio_mapa.dart';
 import '../../core/widgets/sello_marca_badge.dart';
 import '../../models/categoria_oficial.dart';
+import '../../models/municipio_geo.dart';
 import '../../models/negocio.dart';
 import '../../models/subcategoria.dart';
 import '../../services/negocio_service.dart';
@@ -39,6 +40,11 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
   bool _cargando = true;
   bool _noEncontrado = false;
   bool _descripcionExpandida = false;
+
+  /// Límite del municipio del negocio, para dibujarlo en el mini-mapa
+  /// (mismo dato del geovisor). Carga opcional: si falla, el mapa se
+  /// muestra igual sin el contorno.
+  MunicipioGeo? _municipioGeo;
 
   @override
   void initState() {
@@ -81,6 +87,7 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
         _negocio = negocio;
         _cargando = false;
       });
+      _cargarMunicipioGeo(negocio.municipio);
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -88,6 +95,18 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
           _cargando = false;
         });
       }
+    }
+  }
+
+  Future<void> _cargarMunicipioGeo(String municipio) async {
+    try {
+      final todos = await MunicipioGeo.cargar();
+      final m = todos.where((x) => x.nombre == municipio);
+      if (mounted && m.isNotEmpty) {
+        setState(() => _municipioGeo = m.first);
+      }
+    } catch (_) {
+      // El mini-mapa se muestra igual sin el contorno del municipio.
     }
   }
 
@@ -439,45 +458,95 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
   }
 
   Widget _miniMapa(Negocio negocio) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: SizedBox(
-        height: 240,
-        child: Stack(
-          children: [
-            FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                initialCenter: LatLng(negocio.latitud!, negocio.longitud!),
-                initialZoom: 15,
-              ),
+    final muni = _municipioGeo;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: SizedBox(
+            height: 260,
+            child: Stack(
               children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'co.gov.cdmb.negocios_verdes_cdmb',
-                ),
-                MarkerLayer(markers: [
-                  Marker(
-                    point: LatLng(negocio.latitud!, negocio.longitud!),
-                    width: 46,
-                    height: 46,
-                    child: PinNegocioMapa(
-                      fotoPortadaUrl: negocio.fotoPortadaUrl,
-                      destacado: true,
-                      tamano: 44,
-                    ),
+                FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: LatLng(negocio.latitud!, negocio.longitud!),
+                    initialZoom: 14,
+                    minZoom: 8,
+                    maxZoom: 18,
                   ),
-                ]),
+                  children: [
+                    TileLayer(
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName:
+                          'co.gov.cdmb.negocios_verdes_cdmb',
+                    ),
+                    // Contorno del municipio (mismo dato del geovisor), para
+                    // ubicar el negocio dentro de su municipio.
+                    if (muni != null)
+                      PolygonLayer(
+                        polygons: [
+                          Polygon(
+                            points: muni.anillos.isEmpty
+                                ? const []
+                                : muni.anillos.first,
+                            holePointsList: muni.anillos.length > 1
+                                ? muni.anillos.sublist(1)
+                                : null,
+                            borderColor: NVColors.primaryDark,
+                            borderStrokeWidth: 1.6,
+                            color: NVColors.primary.withValues(alpha: 0.06),
+                          ),
+                        ],
+                      ),
+                    MarkerLayer(markers: [
+                      Marker(
+                        point:
+                            LatLng(negocio.latitud!, negocio.longitud!),
+                        width: 46,
+                        height: 46,
+                        child: PinNegocioMapa(
+                          fotoPortadaUrl: negocio.fotoPortadaUrl,
+                          destacado: true,
+                          tamano: 44,
+                        ),
+                      ),
+                    ]),
+                    RichAttributionWidget(
+                      alignment: AttributionAlignment.bottomLeft,
+                      showFlutterMapAttribution: false,
+                      attributions: [
+                        TextSourceAttribution(
+                          '© OpenStreetMap',
+                          onTap: () => _abrir(
+                              'https://www.openstreetmap.org/copyright'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                Positioned(
+                  right: 12,
+                  top: 12,
+                  child: BotonesZoomMapa(controlador: _mapController),
+                ),
               ],
             ),
-            Positioned(
-              right: 12,
-              top: 12,
-              child: BotonesZoomMapa(controlador: _mapController),
-            ),
-          ],
+          ),
         ),
-      ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => context.go(
+                '/geovisor?mun=${Uri.encodeComponent(negocio.municipio)}'),
+            icon: const Icon(Icons.travel_explore, size: 18),
+            label: const Text('Ver en el geovisor'),
+          ),
+        ),
+      ],
     );
   }
 
