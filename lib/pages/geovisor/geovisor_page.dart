@@ -164,13 +164,20 @@ class _GeovisorPageState extends State<GeovisorPage> {
             .toList();
         _categorias = res[2] as List<CategoriaOficial>;
       });
-      // Si venía una zona o un municipio en la URL, encuadrarlo.
-      if (_medida.length >= 3) {
-        _encuadrar(List.of(_medida));
-      } else if (_municipioSel != null) {
-        final m = _municipios!.where((x) => x.nombre == _municipioSel);
-        if (m.isNotEmpty) _encuadrar(m.first.anillos.expand((r) => r).toList());
-      }
+      // Si venía una zona o un municipio en la URL, encuadrarlo DESPUÉS del
+      // primer frame — el MapController no existe hasta que FlutterMap se
+      // monta.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (_medida.length >= 3) {
+          _encuadrar(List.of(_medida));
+        } else if (_municipioSel != null) {
+          final m = _municipios!.where((x) => x.nombre == _municipioSel);
+          if (m.isNotEmpty) {
+            _encuadrar(m.first.anillos.expand((r) => r).toList());
+          }
+        }
+      });
     } catch (e) {
       if (mounted) {
         setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
@@ -220,8 +227,19 @@ class _GeovisorPageState extends State<GeovisorPage> {
 
   void _encuadrar(List<LatLng> pts) {
     if (pts.isEmpty) return;
-    _mapController.fitCamera(
-        CameraFit.coordinates(coordinates: pts, padding: const EdgeInsets.all(40)));
+    try {
+      _mapController.fitCamera(CameraFit.coordinates(
+          coordinates: pts, padding: const EdgeInsets.all(40)));
+    } catch (_) {
+      // El mapa todavía no está montado — reintentar tras el frame.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        try {
+          _mapController.fitCamera(CameraFit.coordinates(
+              coordinates: pts, padding: const EdgeInsets.all(40)));
+        } catch (_) {}
+      });
+    }
   }
 
   void _seleccionarMunicipio(String? nombre) {
