@@ -332,6 +332,9 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
         : Image.asset('assets/images/iconografia/logo_negocios_verdes.png',
             fit: BoxFit.contain);
 
+    final tieneFotoPropia =
+        negocio.fotoPortadaUrl != null && negocio.fotoPortadaUrl!.isNotEmpty;
+
     // Blanco, no verde: casi todos los logos ya traen su propio fondo
     // blanco — un tinte verde detrás se veía como un recuadro desencajado
     // en vez de integrarse.
@@ -345,6 +348,12 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
             padding: const EdgeInsets.all(16),
             child: Center(child: logo),
           ),
+          // Sello del programa arriba a la izquierda — deja claro que el
+          // negocio pertenece a Negocios Verdes CDMB. Solo cuando el
+          // negocio ya trae su propio logo (si no, el logo del programa
+          // ya está en el centro como respaldo y se vería duplicado).
+          if (tieneFotoPropia)
+            const Positioned(top: 16, left: 16, child: _SelloPrograma()),
           Positioned(
             top: 16,
             right: 16,
@@ -713,6 +722,49 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Sello "Negocios Verdes CDMB" que se pone en la esquina de la portada de
+/// la ficha — mismo lenguaje visual que la insignia del QR (tarjeta blanca
+/// con sombra suave).
+class _SelloPrograma extends StatelessWidget {
+  const _SelloPrograma();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: NVColors.borde),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset('assets/images/iconografia/logo_negocios_verdes.png',
+              height: 34),
+          const SizedBox(width: 8),
+          const Text(
+            'Negocios Verdes\nCDMB',
+            style: TextStyle(
+              fontSize: 10.5,
+              height: 1.15,
+              fontWeight: FontWeight.w700,
+              color: NVColors.primaryDark,
+            ),
+          ),
+        ],
       ),
     );
   }
