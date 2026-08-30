@@ -10,6 +10,7 @@ import '../../core/texto_utils.dart';
 import '../../core/widgets/botones_zoom_mapa.dart';
 import '../../core/widgets/pie_pagina.dart';
 import '../../core/widgets/pin_negocio_mapa.dart';
+import '../../models/capa_geo.dart';
 import '../../models/categoria_oficial.dart';
 import '../../models/filtro_busqueda.dart';
 import '../../models/municipio_geo.dart';
@@ -60,6 +61,15 @@ class _GeovisorPageState extends State<GeovisorPage> {
   bool _capaMunicipios = true;
   bool _capaEtiquetas = true;
   bool _capaNegocios = true;
+
+  // Capas extra de contexto (OSM) — se cargan la primera vez que se
+  // encienden, no en el arranque.
+  bool _capaAreas = false;
+  bool _capaHidro = false;
+  CapaGeo? _areas;
+  CapaGeo? _hidro;
+  bool _cargandoAreas = false;
+  bool _cargandoHidro = false;
   final Set<String> _categoriasOcultas = {}; // slugs
   /// Reconocimientos EXIGIDOS (ev / sm / av). Vacío = no filtra. Son
   /// independientes y se combinan con AND, igual que en /buscar.
@@ -97,6 +107,30 @@ class _GeovisorPageState extends State<GeovisorPage> {
   /// interna, no se muestra ni se filtra en las vistas públicas.
   List<CategoriaOficial> get _categoriasPublicas =>
       _categorias.where((c) => c.slug != 'pendiente-clasificar').toList();
+
+  Future<void> _toggleAreas(bool v) async {
+    setState(() => _capaAreas = v);
+    if (v && _areas == null && !_cargandoAreas) {
+      setState(() => _cargandoAreas = true);
+      try {
+        final c = await CapaGeo.cargar('assets/geo/areas_protegidas_cdmb.geojson');
+        if (mounted) setState(() => _areas = c);
+      } catch (_) {}
+      if (mounted) setState(() => _cargandoAreas = false);
+    }
+  }
+
+  Future<void> _toggleHidro(bool v) async {
+    setState(() => _capaHidro = v);
+    if (v && _hidro == null && !_cargandoHidro) {
+      setState(() => _cargandoHidro = true);
+      try {
+        final c = await CapaGeo.cargar('assets/geo/hidrografia_cdmb.geojson');
+        if (mounted) setState(() => _hidro = c);
+      } catch (_) {}
+      if (mounted) setState(() => _cargandoHidro = false);
+    }
+  }
 
   Future<void> _cargar() async {
     try {
@@ -290,6 +324,47 @@ class _GeovisorPageState extends State<GeovisorPage> {
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'co.gov.cdmb.negocios_verdes_cdmb',
             ),
+            // --- capas de contexto (debajo de municipios y negocios) ---
+            if (_capaHidro && _hidro != null) ...[
+              PolygonLayer(
+                polygons: [
+                  for (final e in _hidro!.elementos)
+                    if (!e.esLinea)
+                      for (final anillo in e.poligonos)
+                        Polygon(
+                          points: anillo,
+                          color: const Color(0xFF4A90D9).withValues(alpha: 0.35),
+                          borderColor: const Color(0xFF2E6DA4),
+                          borderStrokeWidth: 0.8,
+                        ),
+                ],
+              ),
+              PolylineLayer(
+                polylines: [
+                  for (final e in _hidro!.elementos)
+                    if (e.esLinea)
+                      for (final linea in e.lineas)
+                        Polyline(
+                          points: linea,
+                          color: const Color(0xFF4A90D9),
+                          strokeWidth: e.tipo == 'river' ? 2 : 1,
+                        ),
+                ],
+              ),
+            ],
+            if (_capaAreas && _areas != null)
+              PolygonLayer(
+                polygons: [
+                  for (final e in _areas!.elementos)
+                    for (final anillo in e.poligonos)
+                      Polygon(
+                        points: anillo,
+                        color: const Color(0xFF2E8B57).withValues(alpha: 0.14),
+                        borderColor: const Color(0xFF1E6B3E),
+                        borderStrokeWidth: 1.2,
+                      ),
+                ],
+              ),
             if (_capaMunicipios)
               MouseRegion(
                 hitTestBehavior: HitTestBehavior.deferToChild,
@@ -520,6 +595,34 @@ class _GeovisorPageState extends State<GeovisorPage> {
             ],
           ],
           const Divider(height: 24),
+          const _Rotulo('Capas de contexto (OpenStreetMap)'),
+          _check(
+            _cargandoAreas
+                ? 'Áreas protegidas  (cargando…)'
+                : _areas != null
+                    ? 'Áreas protegidas  (${_areas!.elementos.length})'
+                    : 'Áreas protegidas',
+            _capaAreas,
+            _toggleAreas,
+          ),
+          if (_capaAreas && _areas != null)
+            for (final e in _areasOrdenadas)
+              _FilaLista(
+                nombre: e.nombre ?? '(sin nombre)',
+                conteo: -1,
+                activo: false,
+                menor: true,
+                onTap: () => _encuadrar(
+                    [for (final r in e.poligonos) ...r]),
+              ),
+          _check(
+            _cargandoHidro
+                ? 'Ríos y quebradas  (cargando…)'
+                : 'Ríos, quebradas y cuerpos de agua',
+            _capaHidro,
+            _toggleHidro,
+          ),
+          const Divider(height: 24),
           _check(
               'Negocios verdes  (${_negociosVisibles.length})',
               _capaNegocios,
@@ -602,6 +705,12 @@ class _GeovisorPageState extends State<GeovisorPage> {
     return l;
   }
 
+  List<CapaGeoElemento> get _areasOrdenadas {
+    final l = [..._areas!.elementos.where((e) => e.poligonos.isNotEmpty)];
+    l.sort((a, b) => (a.nombre ?? '').compareTo(b.nombre ?? ''));
+    return l;
+  }
+
   Widget _check(String etiqueta, bool valor, ValueChanged<bool> onChanged) {
     return CheckboxListTile(
       dense: true,
@@ -680,9 +789,10 @@ class _FilaLista extends StatelessWidget {
                         fontSize: menor ? 11.5 : 12,
                         fontWeight:
                             activo ? FontWeight.w700 : FontWeight.normal))),
-            Text('$conteo',
-                style: const TextStyle(
-                    fontSize: 12, color: NVColors.textoSecundario)),
+            if (conteo >= 0)
+              Text('$conteo',
+                  style: const TextStyle(
+                      fontSize: 12, color: NVColors.textoSecundario)),
           ],
         ),
       ),
