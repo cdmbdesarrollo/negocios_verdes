@@ -140,6 +140,7 @@ GoRouter _construirRouter() {
               reconInicial: state.uri.queryParameters['rec'],
               sinCategoriasInicial: state.uri.queryParameters['sincat'],
               zonaInicial: state.uri.queryParameters['zona'],
+              anioInicial: state.uri.queryParameters['anio'],
             ),
           ),
           GoRoute(
@@ -161,6 +162,20 @@ GoRouter _construirRouter() {
             builder: (context, state) => const ContactoPage(),
           ),
         ],
+      ),
+      // Geovisor incrustable — sin navbar ni pie, para <iframe> en otra web.
+      GoRoute(
+        path: '/geovisor/embed',
+        builder: (context, state) => Scaffold(
+          body: GeovisorPage(
+            embed: true,
+            municipioInicial: state.uri.queryParameters['mun'],
+            reconInicial: state.uri.queryParameters['rec'],
+            sinCategoriasInicial: state.uri.queryParameters['sincat'],
+            zonaInicial: state.uri.queryParameters['zona'],
+            anioInicial: state.uri.queryParameters['anio'],
+          ),
+        ),
       ),
       GoRoute(
         path: '/admin/login',

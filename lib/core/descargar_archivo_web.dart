@@ -1,4 +1,5 @@
 import 'dart:js_interop';
+import 'dart:typed_data';
 
 import 'package:web/web.dart' as web;
 
@@ -20,6 +21,26 @@ void descargarArchivoTexto({
 }) {
   final blob = web.Blob(
     [contenido.toJS].toJS,
+    web.BlobPropertyBag(type: tipoMime),
+  );
+  final url = web.URL.createObjectURL(blob);
+  final ancla = web.HTMLAnchorElement()
+    ..href = url
+    ..download = nombreArchivo;
+  web.document.body?.appendChild(ancla);
+  ancla.click();
+  ancla.remove();
+  web.URL.revokeObjectURL(url);
+}
+
+/// Igual que [descargarArchivoTexto] pero para bytes crudos (imágenes, etc.).
+void descargarArchivoBinario({
+  required Uint8List bytes,
+  required String nombreArchivo,
+  required String tipoMime,
+}) {
+  final blob = web.Blob(
+    [bytes.toJS].toJS,
     web.BlobPropertyBag(type: tipoMime),
   );
   final url = web.URL.createObjectURL(blob);

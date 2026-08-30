@@ -1,10 +1,15 @@
+import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:ui' show ImageByteFormat;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -25,6 +30,8 @@ import 'geovisor_exportar.dart';
 
 const _sinVereda = '(sin vereda registrada)';
 
+enum _PanelTab { filtrar, capas, herramientas }
+
 /// "Geovisor Negocios Verdes": mapa a pantalla completa con un panel de
 /// CAPAS al estilo de un visor SIG — límites de los 13 municipios de la
 /// jurisdicción CDMB (de OpenStreetMap, ver assets/geo/), negocios verdes
@@ -37,6 +44,12 @@ class GeovisorPage extends StatefulWidget {
   final String? reconInicial;
   final String? sinCategoriasInicial;
   final String? zonaInicial;
+  final String? anioInicial;
+
+  /// Modo incrustado (ruta `/geovisor/embed`): sin barra de navegación ni
+  /// pie de página, mapa a toda la altura — para poner el geovisor en un
+  /// iframe dentro de otra web o un informe.
+  final bool embed;
 
   const GeovisorPage({
     super.key,
@@ -44,6 +57,8 @@ class GeovisorPage extends StatefulWidget {
     this.reconInicial,
     this.sinCategoriasInicial,
     this.zonaInicial,
+    this.anioInicial,
+    this.embed = false,
   });
 
   @override
@@ -57,16 +72,31 @@ class _GeovisorPageState extends State<GeovisorPage> {
   final LayerHitNotifier<String> _hitMunicipios = ValueNotifier(null);
   final _busquedaCtrl = TextEditingController();
   final _panelScroll = ScrollController();
+  final _claveMapa = GlobalKey();
 
   List<MunicipioGeo>? _municipios;
   List<Negocio>? _negocios;
   List<CategoriaOficial> _categorias = [];
   String? _error;
 
+  _PanelTab _panelTab = _PanelTab.filtrar;
+
   // Capas / filtros.
   bool _capaMunicipios = true;
   bool _capaEtiquetas = true;
   bool _capaNegocios = true;
+  bool _capaCalor = false;
+  int? _anioMin; // registrados desde ese año
+  double _zoomActual = 9.2; // para alternar pines livianos / con foto
+
+  // Ubicación del visitante (botón "mi ubicación").
+  LatLng? _miUbicacion;
+  bool _buscandoUbicacion = false;
+
+  // Resultado de "buscar como lugar" (geocoding Nominatim).
+  LatLng? _lugarMarcado;
+  String? _lugarNombre;
+  bool _buscandoLugar = false;
 
   // Capas de contexto (RUNAP / IDEAM) — se cargan la primera vez que se
   // encienden, no en el arranque.
@@ -104,6 +134,7 @@ class _GeovisorPageState extends State<GeovisorPage> {
     if ((widget.sinCategoriasInicial ?? '').isNotEmpty) {
       _categoriasOcultas.addAll(widget.sinCategoriasInicial!.split(','));
     }
+    _anioMin = int.tryParse(widget.anioInicial ?? '');
     final z = parseZonaParam(widget.zonaInicial);
     if (z.length >= 3) {
       _modoMedir = true;
@@ -198,11 +229,19 @@ class _GeovisorPageState extends State<GeovisorPage> {
     if (_reconExigidos.contains('ev') && !n.emprendimientoVerde) return false;
     if (_reconExigidos.contains('sm') && !n.selloMarca) return false;
     if (_reconExigidos.contains('av') && !n.avalado) return false;
+    if (_anioMin != null &&
+        (n.anioRegistro == null || n.anioRegistro! < _anioMin!)) {
+      return false;
+    }
     return true;
   }
 
   List<Negocio> get _negociosVisibles =>
       (_negocios ?? []).where(_pasaFiltros).toList();
+
+  /// A zoom bajo se dibujan puntos simples en vez de pines con foto — así
+  /// no se piden 100+ imágenes de golpe.
+  bool get _pinesLivianos => _zoomActual < 12;
 
   int _conteoMunicipio(String nombre) =>
       (_negocios ?? []).where((n) => n.municipio == nombre).length;
@@ -273,6 +312,114 @@ class _GeovisorPageState extends State<GeovisorPage> {
     _mapController.move(LatLng(n.latitud!, n.longitud!), 15);
   }
 
+  // --------------------------------------------------- mi ubicación / lugar
+
+  Future<void> _miUbicacionAhora() async {
+    setState(() => _buscandoUbicacion = true);
+    try {
+      var permiso = await Geolocator.checkPermission();
+      if (permiso == LocationPermission.denied) {
+        permiso = await Geolocator.requestPermission();
+      }
+      if (permiso == LocationPermission.denied ||
+          permiso == LocationPermission.deniedForever) {
+        _snack('No diste permiso de ubicación.');
+        return;
+      }
+      final pos = await Geolocator.getCurrentPosition();
+      final p = LatLng(pos.latitude, pos.longitude);
+      setState(() => _miUbicacion = p);
+      _mapController.move(p, 13);
+    } catch (_) {
+      _snack('No se pudo obtener tu ubicación.');
+    } finally {
+      if (mounted) setState(() => _buscandoUbicacion = false);
+    }
+  }
+
+  Future<void> _buscarLugar(String texto) async {
+    if (texto.trim().isEmpty) return;
+    setState(() => _buscandoLugar = true);
+    try {
+      final uri = Uri.https('nominatim.openstreetmap.org', '/search', {
+        'q': '$texto, Santander, Colombia',
+        'format': 'jsonv2',
+        'limit': '1',
+        'countrycodes': 'co',
+        'viewbox': '-73.95,7.9,-72.65,6.65',
+        'bounded': '1',
+      });
+      final r = await http.get(uri,
+          headers: {'User-Agent': 'negocios-verdes-cdmb/1.0'});
+      final lista = jsonDecode(r.body) as List;
+      if (lista.isEmpty) {
+        _snack('No se encontró "$texto" en la jurisdicción.');
+        return;
+      }
+      final m = lista.first as Map<String, dynamic>;
+      final lat = double.tryParse('${m['lat']}');
+      final lng = double.tryParse('${m['lon']}');
+      if (lat == null || lng == null) return;
+      setState(() {
+        _lugarMarcado = LatLng(lat, lng);
+        _lugarNombre = (m['display_name'] as String?)?.split(',').first;
+        _busquedaCtrl.clear();
+      });
+      _mapController.move(_lugarMarcado!, 14);
+    } catch (_) {
+      _snack('El buscador de lugares no respondió.');
+    } finally {
+      if (mounted) setState(() => _buscandoLugar = false);
+    }
+  }
+
+  void _snack(String s) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(s)));
+  }
+
+  Future<void> _descargarPng() async {
+    try {
+      final bordo = _claveMapa.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+      if (bordo == null) return;
+      final img = await bordo.toImage(pixelRatio: 2);
+      final bytes = await img.toByteData(format: ImageByteFormat.png);
+      if (bytes == null) return;
+      descargarArchivoBinario(
+        bytes: bytes.buffer.asUint8List(),
+        nombreArchivo: 'mapa_negocios_verdes_$_fechaArchivo.png',
+        tipoMime: 'image/png',
+      );
+    } catch (_) {
+      _snack('No se pudo generar la imagen (el navegador bloqueó la captura '
+          'del mapa). Prueba con una captura de pantalla.');
+    }
+  }
+
+  Widget _botonMapa(IconData icono, String tip, VoidCallback? onTap,
+      {bool cargando = false}) {
+    return Material(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: const BorderSide(color: NVColors.primaryDark, width: 1.5),
+      ),
+      child: IconButton(
+        tooltip: tip,
+        icon: cargando
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2))
+            : Icon(icono),
+        color: NVColors.primaryDark,
+        onPressed: onTap,
+      ),
+    );
+  }
+
   Future<void> _copiarEnlace() async {
     final qp = <String, String>{};
     if (_municipioSel != null) qp['mun'] = _municipioSel!;
@@ -280,7 +427,9 @@ class _GeovisorPageState extends State<GeovisorPage> {
     if (_categoriasOcultas.isNotEmpty) {
       qp['sincat'] = _categoriasOcultas.join(',');
     }
-    final uri = Uri.base.replace(path: '/geovisor', queryParameters: qp.isEmpty ? null : qp);
+    if (_anioMin != null) qp['anio'] = '$_anioMin';
+    final uri = Uri.base.replace(
+        path: '/geovisor', queryParameters: qp.isEmpty ? null : qp);
     await Clipboard.setData(ClipboardData(text: uri.toString()));
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -463,6 +612,7 @@ class _GeovisorPageState extends State<GeovisorPage> {
       contenido: htmlReporte(
         titulo: titulo,
         negocios: negs,
+        zona: enZona ? List.of(_medida) : const [],
         areaKm2: enZona ? _areaMetros2 / 1e6 : null,
         perimetroKm: enZona ? _perimetroMetros / 1000 : null,
         areasProtegidas: enZona ? _areasEnZona : const [],
@@ -493,42 +643,41 @@ class _GeovisorPageState extends State<GeovisorPage> {
     return LayoutBuilder(
       builder: (context, c) {
         final ancho = c.maxWidth >= 900;
+        final mapaWidget = ancho
+            ? Row(
+                children: [
+                  if (_panelAbierto)
+                    SizedBox(width: 310, child: _panel()),
+                  Expanded(child: _mapa()),
+                ],
+              )
+            : Stack(
+                children: [
+                  _mapa(),
+                  if (_panelAbierto)
+                    Positioned.fill(
+                      child: ColoredBox(
+                        color: Colors.black26,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: SizedBox(width: 290, child: _panel()),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+
+        // Modo embed: ocupa todo el alto disponible, sin scroll ni pie.
+        if (widget.embed) return mapaWidget;
+
         // Alto atado a la ventana: así el mapa (y la tarjeta que flota
-        // abajo) siempre caben en pantalla sin scroll. Antes era fijo en
-        // 660 y en portátiles la tarjeta del negocio quedaba cortada.
+        // abajo) siempre caben en pantalla sin scroll.
         final alto = (MediaQuery.sizeOf(context).height - 200)
             .clamp(440.0, 900.0);
-        final mapa = _mapa();
         return SingleChildScrollView(
           child: Column(
             children: [
-              SizedBox(
-                height: alto,
-                child: ancho
-                    ? Row(
-                        children: [
-                          if (_panelAbierto)
-                            SizedBox(width: 310, child: _panel()),
-                          Expanded(child: mapa),
-                        ],
-                      )
-                    : Stack(
-                        children: [
-                          mapa,
-                          if (_panelAbierto)
-                            Positioned.fill(
-                              child: ColoredBox(
-                                color: Colors.black26,
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: SizedBox(
-                                      width: 290, child: _panel()),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-              ),
+              SizedBox(height: alto, child: mapaWidget),
               const PiePagina(),
             ],
           ),
@@ -545,10 +694,17 @@ class _GeovisorPageState extends State<GeovisorPage> {
     final visibles = _negociosVisibles;
     return Stack(
       children: [
-        FlutterMap(
+        RepaintBoundary(
+          key: _claveMapa,
+          child: FlutterMap(
           mapController: _mapController,
           options: MapOptions(
             onTap: (_, latlng) => _tocarMapa(latlng),
+            onPositionChanged: (camara, _) {
+              if ((camara.zoom - _zoomActual).abs() >= 1) {
+                setState(() => _zoomActual = camara.zoom);
+              }
+            },
             initialCenter: _centro,
             initialZoom: 9.2,
             minZoom: 7,
@@ -654,7 +810,21 @@ class _GeovisorPageState extends State<GeovisorPage> {
                     ),
                 ],
               ),
-            if (_capaNegocios)
+            // Mapa de calor: círculos translúcidos superpuestos = densidad.
+            if (_capaCalor)
+              CircleLayer(
+                circles: [
+                  for (final n in visibles)
+                    CircleMarker(
+                      point: LatLng(n.latitud!, n.longitud!),
+                      radius: 26,
+                      useRadiusInMeter: false,
+                      color: const Color(0xFF01BD32).withValues(alpha: 0.14),
+                      borderStrokeWidth: 0,
+                    ),
+                ],
+              ),
+            if (_capaNegocios && !_capaCalor)
               MarkerClusterLayerWidget(
                 options: MarkerClusterLayerOptions(
                   maxClusterRadius: 55,
@@ -665,13 +835,15 @@ class _GeovisorPageState extends State<GeovisorPage> {
                       Marker(
                         key: ValueKey(n.id),
                         point: LatLng(n.latitud!, n.longitud!),
-                        width: 44,
-                        height: 44,
-                        child: PinNegocioMapa(
-                          fotoPortadaUrl: n.fotoPortadaUrl,
-                          destacado: n.id == _negocioSel?.id,
-                          tamano: n.id == _negocioSel?.id ? 42 : 34,
-                        ),
+                        width: _pinesLivianos ? 16 : 44,
+                        height: _pinesLivianos ? 16 : 44,
+                        child: _pinesLivianos && n.id != _negocioSel?.id
+                            ? const _PuntoNegocio()
+                            : PinNegocioMapa(
+                                fotoPortadaUrl: n.fotoPortadaUrl,
+                                destacado: n.id == _negocioSel?.id,
+                                tamano: n.id == _negocioSel?.id ? 42 : 34,
+                              ),
                       ),
                   ],
                   builder: (context, markers) => Container(
@@ -697,6 +869,25 @@ class _GeovisorPageState extends State<GeovisorPage> {
                   },
                 ),
               ),
+            if (_miUbicacion != null)
+              MarkerLayer(markers: [
+                Marker(
+                  point: _miUbicacion!,
+                  width: 22,
+                  height: 22,
+                  child: const _PuntoUbicacion(),
+                ),
+              ]),
+            if (_lugarMarcado != null)
+              MarkerLayer(markers: [
+                Marker(
+                  point: _lugarMarcado!,
+                  width: 30,
+                  height: 30,
+                  child: const Icon(Icons.location_on,
+                      color: NVColors.accent, size: 30),
+                ),
+              ]),
             // Herramienta de medición / zona.
             if (_medida.length >= 3)
               PolygonLayer(polygons: [
@@ -749,6 +940,7 @@ class _GeovisorPageState extends State<GeovisorPage> {
             ),
           ],
         ),
+        ),
         Positioned(
           right: 12,
           top: 12,
@@ -757,19 +949,24 @@ class _GeovisorPageState extends State<GeovisorPage> {
         Positioned(
           left: 12,
           top: 12,
-          child: Material(
-            color: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-              side: const BorderSide(color: NVColors.primaryDark, width: 1.5),
-            ),
-            child: IconButton(
-              tooltip: _panelAbierto ? 'Ocultar capas' : 'Mostrar capas',
-              icon: Icon(_panelAbierto ? Icons.layers_clear : Icons.layers),
-              color: NVColors.primaryDark,
-              onPressed: () =>
-                  setState(() => _panelAbierto = !_panelAbierto),
-            ),
+          child: Column(
+            children: [
+              _botonMapa(
+                _panelAbierto ? Icons.layers_clear : Icons.layers,
+                _panelAbierto ? 'Ocultar panel' : 'Mostrar panel',
+                () => setState(() => _panelAbierto = !_panelAbierto),
+              ),
+              const SizedBox(height: 6),
+              _botonMapa(
+                Icons.my_location,
+                'Mi ubicación',
+                _buscandoUbicacion ? null : _miUbicacionAhora,
+                cargando: _buscandoUbicacion,
+              ),
+              const SizedBox(height: 6),
+              _botonMapa(
+                  Icons.photo_camera_outlined, 'Descargar imagen', _descargarPng),
+            ],
           ),
         ),
         Positioned(
@@ -802,110 +999,247 @@ class _GeovisorPageState extends State<GeovisorPage> {
     );
   }
 
+  bool get _hayFiltro =>
+      _municipioSel != null ||
+      _veredaSel != null ||
+      _categoriasOcultas.isNotEmpty ||
+      _reconExigidos.isNotEmpty ||
+      _anioMin != null;
+
+  void _verTodo() {
+    setState(() {
+      _municipioSel = null;
+      _veredaSel = null;
+      _categoriasOcultas.clear();
+      _reconExigidos.clear();
+      _anioMin = null;
+      _negocioSel = null;
+    });
+  }
+
   Widget _panel() {
+    final cuerpo = switch (_panelTab) {
+      _PanelTab.filtrar => _tabFiltrar(),
+      _PanelTab.capas => _tabCapas(),
+      _PanelTab.herramientas => _tabHerramientas(),
+    };
     return Material(
       elevation: 2,
       color: NVColors.superficie,
-      child: Scrollbar(
-        controller: _panelScroll,
-        thumbVisibility: true,
-        child: ListView(
-        controller: _panelScroll,
-        primary: false,
-        padding: const EdgeInsets.fromLTRB(14, 14, 18, 40),
+      child: Column(
         children: [
-          Row(
-            children: [
-              const Icon(Icons.layers_outlined,
-                  size: 20, color: NVColors.primaryDark),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text('Capas y filtros',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16)),
-              ),
-              IconButton(
-                iconSize: 18,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 6, 4),
+            child: Row(
+              children: [
+                const Icon(Icons.travel_explore,
+                    size: 20, color: NVColors.primaryDark),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text('Geovisor',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16)),
+                ),
+                IconButton(
+                  iconSize: 18,
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.close),
+                  onPressed: () => setState(() => _panelAbierto = false),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: SegmentedButton<_PanelTab>(
+              showSelectedIcon: false,
+              style: const ButtonStyle(
                 visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.close),
-                onPressed: () => setState(() => _panelAbierto = false),
+                textStyle: WidgetStatePropertyAll(TextStyle(fontSize: 12)),
               ),
-            ],
+              segments: const [
+                ButtonSegment(
+                    value: _PanelTab.filtrar,
+                    label: Text('Filtrar'),
+                    icon: Icon(Icons.tune, size: 15)),
+                ButtonSegment(
+                    value: _PanelTab.capas,
+                    label: Text('Capas'),
+                    icon: Icon(Icons.layers, size: 15)),
+                ButtonSegment(
+                    value: _PanelTab.herramientas,
+                    label: Text('Medir'),
+                    icon: Icon(Icons.straighten, size: 15)),
+              ],
+              selected: {_panelTab},
+              onSelectionChanged: (s) =>
+                  setState(() => _panelTab = s.first),
+            ),
           ),
           const SizedBox(height: 4),
-          _buscador(),
-          const Divider(height: 20),
-          _check('Límites municipales', _capaMunicipios,
-              (v) => setState(() => _capaMunicipios = v)),
-          if (_capaMunicipios)
-            Padding(
-              padding: const EdgeInsets.only(left: 24),
-              child: _check('Etiquetas de municipio', _capaEtiquetas,
-                  (v) => setState(() => _capaEtiquetas = v)),
+          Expanded(
+            child: Scrollbar(
+              controller: _panelScroll,
+              thumbVisibility: true,
+              child: ListView(
+                controller: _panelScroll,
+                primary: false,
+                padding: const EdgeInsets.fromLTRB(14, 8, 18, 40),
+                children: [cuerpo],
+              ),
             ),
-          if (_capaMunicipios && _municipios != null) ...[
-            const SizedBox(height: 2),
-            for (final m in _municipiosOrdenados) ...[
-              _FilaLista(
-                nombre: m.nombre,
-                conteo: _conteoMunicipio(m.nombre),
-                activo: _municipioSel == m.nombre,
-                onTap: () => _seleccionarMunicipio(m.nombre),
-              ),
-              if (_municipioSel == m.nombre)
-                Padding(
-                  padding: const EdgeInsets.only(left: 16),
-                  child: Column(
-                    children: [
-                      const _Rotulo('Veredas'),
-                      for (final v in _veredasDelMunicipio)
-                        _FilaLista(
-                          nombre: v.nombre,
-                          conteo: v.conteo,
-                          activo: _veredaSel == v.nombre,
-                          menor: true,
-                          onTap: () => _seleccionarVereda(v.nombre),
-                        ),
-                    ],
-                  ),
-                ),
-            ],
-          ],
-          const Divider(height: 24),
-          _check(
-              'Negocios verdes  (${_negociosVisibles.length})',
-              _capaNegocios,
-              (v) => setState(() => _capaNegocios = v)),
-          if (_capaNegocios) ...[
-            const SizedBox(height: 4),
-            const _Rotulo('Por categoría'),
-            for (final c in _categoriasPublicas)
-              _check(
-                '${c.iconoOTexto} ${c.nombre}',
-                !_categoriasOcultas.contains(c.slug),
-                (v) => setState(() => v
-                    ? _categoriasOcultas.remove(c.slug)
-                    : _categoriasOcultas.add(c.slug)),
-              ),
-            const SizedBox(height: 8),
-            const _Rotulo('Por reconocimiento  (se pueden combinar)'),
-            _checkRecon('🌱 Emprendimiento Verde', 'ev'),
-            _checkRecon('🎖️ Sello Marca', 'sm'),
-            _checkRecon('✅ Negocio Verde Avalado', 'av'),
-          ],
-          const Divider(height: 24),
-          _seccionHerramientas(),
-          const Divider(height: 24),
-          _seccionContexto(),
-          const Divider(height: 24),
-          OutlinedButton.icon(
-            onPressed: _copiarEnlace,
-            icon: const Icon(Icons.link, size: 18),
-            label: const Text('Copiar enlace de esta vista'),
           ),
         ],
-        ),
       ),
+    );
+  }
+
+  Widget _tabFiltrar() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buscador(),
+        const SizedBox(height: 8),
+        if (_hayFiltro)
+          OutlinedButton.icon(
+            onPressed: _verTodo,
+            icon: const Icon(Icons.restart_alt, size: 16),
+            label: const Text('Ver todo (quitar filtros)'),
+          ),
+        const Divider(height: 20),
+        const _Rotulo('Por municipio'),
+        if (_municipios != null)
+          for (final m in _municipiosOrdenados) ...[
+            _FilaLista(
+              nombre: m.nombre,
+              conteo: _conteoMunicipio(m.nombre),
+              activo: _municipioSel == m.nombre,
+              onTap: () => _seleccionarMunicipio(m.nombre),
+            ),
+            if (_municipioSel == m.nombre)
+              Padding(
+                padding: const EdgeInsets.only(left: 16),
+                child: Column(
+                  children: [
+                    const _Rotulo('Veredas'),
+                    for (final v in _veredasDelMunicipio)
+                      _FilaLista(
+                        nombre: v.nombre,
+                        conteo: v.conteo,
+                        activo: _veredaSel == v.nombre,
+                        menor: true,
+                        onTap: () => _seleccionarVereda(v.nombre),
+                      ),
+                  ],
+                ),
+              ),
+          ],
+        const Divider(height: 24),
+        const _Rotulo('Por categoría'),
+        for (final c in _categoriasPublicas)
+          _check(
+            '${c.iconoOTexto} ${c.nombre}',
+            !_categoriasOcultas.contains(c.slug),
+            (v) => setState(() => v
+                ? _categoriasOcultas.remove(c.slug)
+                : _categoriasOcultas.add(c.slug)),
+          ),
+        const SizedBox(height: 8),
+        const _Rotulo('Por reconocimiento  (se pueden combinar)'),
+        _checkRecon('🌱 Emprendimiento Verde', 'ev'),
+        _checkRecon('🎖️ Sello Marca', 'sm'),
+        _checkRecon('✅ Negocio Verde Avalado', 'av'),
+        const SizedBox(height: 8),
+        _filtroAnio(),
+        const Divider(height: 24),
+        OutlinedButton.icon(
+          onPressed: _copiarEnlace,
+          icon: const Icon(Icons.link, size: 18),
+          label: const Text('Copiar enlace de esta vista'),
+        ),
+      ],
+    );
+  }
+
+  Widget _filtroAnio() {
+    final anios = <int>{
+      for (final n in (_negocios ?? []))
+        if (n.anioRegistro != null) n.anioRegistro!,
+    }.toList()
+      ..sort();
+    if (anios.length < 2) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _Rotulo('Registrados desde'),
+        DropdownButton<int?>(
+          isDense: true,
+          value: _anioMin,
+          hint: const Text('Cualquier año', style: TextStyle(fontSize: 13)),
+          items: [
+            const DropdownMenuItem(value: null, child: Text('Cualquier año')),
+            for (final a in anios)
+              DropdownMenuItem(value: a, child: Text('$a o después')),
+          ],
+          onChanged: (v) => setState(() => _anioMin = v),
+        ),
+      ],
+    );
+  }
+
+  Widget _tabCapas() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _check('Negocios verdes  (${_negociosVisibles.length})',
+            _capaNegocios, (v) => setState(() => _capaNegocios = v)),
+        _check('Mapa de calor (densidad)', _capaCalor,
+            (v) => setState(() => _capaCalor = v)),
+        const Divider(height: 20),
+        _check('Límites municipales', _capaMunicipios,
+            (v) => setState(() => _capaMunicipios = v)),
+        if (_capaMunicipios)
+          Padding(
+            padding: const EdgeInsets.only(left: 24),
+            child: _check('Etiquetas de municipio', _capaEtiquetas,
+                (v) => setState(() => _capaEtiquetas = v)),
+          ),
+        const Divider(height: 20),
+        _seccionContexto(),
+        const Divider(height: 20),
+        _leyenda(),
+      ],
+    );
+  }
+
+  Widget _tabHerramientas() => _seccionHerramientas();
+
+  Widget _leyenda() {
+    Widget fila(Color c, String t, {bool linea = false}) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Row(children: [
+            Container(
+              width: 16,
+              height: linea ? 3 : 12,
+              decoration: BoxDecoration(
+                color: linea ? c : c.withValues(alpha: 0.25),
+                border: linea ? null : Border.all(color: c, width: 1.4),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(child: Text(t, style: const TextStyle(fontSize: 11.5))),
+          ]),
+        );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _Rotulo('Leyenda'),
+        fila(NVColors.primaryDark, 'Municipio'),
+        fila(NVColors.accent, 'Municipio / zona seleccionada'),
+        fila(const Color(0xFF1E6B3E), 'Área protegida administrada por CDMB'),
+        fila(const Color(0xFF556B2F), 'Área protegida de otra entidad'),
+        fila(const Color(0xFF3D7EB8), 'Ríos y cuerpos de agua'),
+      ],
     );
   }
 
@@ -1104,8 +1438,15 @@ class _GeovisorPageState extends State<GeovisorPage> {
           controller: _busquedaCtrl,
           decoration: InputDecoration(
             isDense: true,
-            prefixIcon: const Icon(Icons.search, size: 18),
-            hintText: 'Buscar un negocio…',
+            prefixIcon: _buscandoLugar
+                ? const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2)))
+                : const Icon(Icons.search, size: 18),
+            hintText: 'Buscar un negocio o un lugar…',
             suffixIcon: _busquedaCtrl.text.isEmpty
                 ? null
                 : IconButton(
@@ -1114,7 +1455,15 @@ class _GeovisorPageState extends State<GeovisorPage> {
                     onPressed: () => setState(() => _busquedaCtrl.clear()),
                   ),
           ),
+          textInputAction: TextInputAction.search,
           onChanged: (_) => setState(() {}),
+          onSubmitted: (v) {
+            if (sugerencias.isNotEmpty) {
+              _irANegocio(sugerencias.first);
+            } else {
+              _buscarLugar(v);
+            }
+          },
         ),
         for (final n in sugerencias)
           InkWell(
@@ -1126,6 +1475,47 @@ class _GeovisorPageState extends State<GeovisorPage> {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 12)),
             ),
+          ),
+        if (_busquedaCtrl.text.trim().length >= 3 && sugerencias.isEmpty)
+          InkWell(
+            onTap: () => _buscarLugar(_busquedaCtrl.text),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+              child: Row(children: [
+                const Icon(Icons.place_outlined,
+                    size: 15, color: NVColors.primary),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Buscar "${_busquedaCtrl.text.trim()}" como lugar en el mapa',
+                    style: const TextStyle(
+                        fontSize: 12, color: NVColors.primary),
+                  ),
+                ),
+              ]),
+            ),
+          ),
+        if (_lugarMarcado != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, left: 4),
+            child: Row(children: [
+              const Icon(Icons.location_on, size: 14, color: NVColors.accent),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text('Lugar: ${_lugarNombre ?? 'marcado'}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 11, color: NVColors.textoSecundario)),
+              ),
+              InkWell(
+                onTap: () => setState(() {
+                  _lugarMarcado = null;
+                  _lugarNombre = null;
+                }),
+                child: const Icon(Icons.close, size: 14),
+              ),
+            ]),
           ),
       ],
     );
@@ -1302,6 +1692,36 @@ class _FilaArea extends StatelessWidget {
   }
 }
 
+/// Punto simple de negocio (a zoom bajo, en vez del pin con foto).
+class _PuntoNegocio extends StatelessWidget {
+  const _PuntoNegocio();
+  @override
+  Widget build(BuildContext context) => Container(
+        decoration: BoxDecoration(
+          color: NVColors.verdeVivo,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 2),
+        ),
+      );
+}
+
+/// Punto "tú estás aquí".
+class _PuntoUbicacion extends StatelessWidget {
+  const _PuntoUbicacion();
+  @override
+  Widget build(BuildContext context) => Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A73E8),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 3),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3), blurRadius: 4),
+          ],
+        ),
+      );
+}
+
 class _EtiquetaMunicipio extends StatelessWidget {
   final String texto;
   final bool activo;
@@ -1417,13 +1837,24 @@ class _TarjetaNegocio extends StatelessWidget {
                   style: const TextStyle(fontSize: 12)),
             ],
             const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: FilledButton.icon(
-                onPressed: () => context.go('/negocio/${negocio.slug}'),
-                icon: const Icon(Icons.open_in_new, size: 16),
-                label: const Text('Ver'),
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (negocio.tieneUbicacion)
+                  TextButton.icon(
+                    onPressed: () => launchUrl(Uri.parse(
+                        'https://www.google.com/maps/@?api=1&map_action=pano'
+                        '&viewpoint=${negocio.latitud},${negocio.longitud}')),
+                    icon: const Icon(Icons.streetview, size: 16),
+                    label: const Text('Street View'),
+                  ),
+                const SizedBox(width: 4),
+                FilledButton.icon(
+                  onPressed: () => context.go('/negocio/${negocio.slug}'),
+                  icon: const Icon(Icons.open_in_new, size: 16),
+                  label: const Text('Ver'),
+                ),
+              ],
             ),
           ],
         ),

@@ -110,17 +110,49 @@ String _esc(String s) => s
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;');
 
+/// bbox `minLon,minLat,maxLon,maxLat` de un conjunto de puntos, con margen.
+String? _bbox(Iterable<LatLng> pts) {
+  final l = pts.toList();
+  if (l.isEmpty) return null;
+  var minLa = 90.0, maxLa = -90.0, minLo = 180.0, maxLo = -180.0;
+  for (final p in l) {
+    minLa = p.latitude < minLa ? p.latitude : minLa;
+    maxLa = p.latitude > maxLa ? p.latitude : maxLa;
+    minLo = p.longitude < minLo ? p.longitude : minLo;
+    maxLo = p.longitude > maxLo ? p.longitude : maxLo;
+  }
+  final mLa = ((maxLa - minLa).abs() * 0.15).clamp(0.01, 1.0);
+  final mLo = ((maxLo - minLo).abs() * 0.15).clamp(0.01, 1.0);
+  return '${(minLo - mLo).toStringAsFixed(4)},${(minLa - mLa).toStringAsFixed(4)},'
+      '${(maxLo + mLo).toStringAsFixed(4)},${(maxLa + mLa).toStringAsFixed(4)}';
+}
+
 /// Reporte HTML autónomo (se abre en el navegador y se puede "Imprimir →
-/// Guardar como PDF"). Sin dependencias externas.
+/// Guardar como PDF"). Sin dependencias externas. Incluye un mini-mapa
+/// vía el iframe embebible oficial de OpenStreetMap.
 String htmlReporte({
   required String titulo,
   required List<Negocio> negocios,
+  List<LatLng> zona = const [],
   double? areaKm2,
   double? perimetroKm,
   List<String> areasProtegidas = const [],
   required String origen,
 }) {
   final hoy = DateTime.now().toIso8601String().substring(0, 10);
+  final bbox = _bbox([
+    ...zona,
+    for (final n in negocios)
+      if (n.latitud != null && n.longitud != null)
+        LatLng(n.latitud!, n.longitud!),
+  ]);
+  final mapa = bbox == null
+      ? ''
+      : '<iframe class="mapa" loading="lazy" '
+          'src="https://www.openstreetmap.org/export/embed.html?bbox=$bbox&layer=mapnik"></iframe>'
+          '<p class="cap"><a href="https://www.openstreetmap.org/#map=12/'
+          '${negocios.isEmpty ? '7.1/-73.1' : '${negocios.first.latitud}/${negocios.first.longitud}'}">'
+          'Ver mapa más grande</a></p>';
   final porMun = <String, int>{};
   for (final n in negocios) {
     porMun[n.municipio] = (porMun[n.municipio] ?? 0) + 1;
@@ -159,10 +191,13 @@ String htmlReporte({
   h2{font-size:15px;margin:22px 0 6px;border-bottom:2px solid #038f67;padding-bottom:2px}
   ul{margin:6px 0 0 18px}
   .pie{color:#888;font-size:11px;margin-top:28px;border-top:1px solid #ddd;padding-top:8px}
-  @media print{a{color:inherit;text-decoration:none}}
+  .mapa{width:100%;height:340px;border:1px solid #ddd;border-radius:8px;margin-top:8px}
+  .cap{font-size:11px;color:#888;margin:4px 0 0}
+  @media print{a{color:inherit;text-decoration:none} .mapa{height:280px}}
 </style></head><body>
 <h1>${_esc(titulo)}</h1>
 <p class="sub">Geovisor Negocios Verdes — CDMB · generado el $hoy</p>
+$mapa
 <div class="kpis">
   <div class="kpi"><b>${negocios.length}</b>negocios verdes</div>
   <div class="kpi"><b>${munOrd.length}</b>municipios</div>
