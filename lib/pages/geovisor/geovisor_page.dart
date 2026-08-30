@@ -60,7 +60,9 @@ class _GeovisorPageState extends State<GeovisorPage> {
   bool _capaEtiquetas = true;
   bool _capaNegocios = true;
   final Set<String> _categoriasOcultas = {}; // slugs
-  String? _recon; // null | 'ev' | 'sm' | 'av'
+  /// Reconocimientos EXIGIDOS (ev / sm / av). Vacío = no filtra. Son
+  /// independientes y se combinan con AND, igual que en /buscar.
+  final Set<String> _reconExigidos = {};
   String? _municipioSel;
   String? _veredaSel;
   bool _panelAbierto = true;
@@ -73,7 +75,9 @@ class _GeovisorPageState extends State<GeovisorPage> {
   void initState() {
     super.initState();
     _municipioSel = widget.municipioInicial;
-    _recon = widget.reconInicial;
+    if ((widget.reconInicial ?? '').isNotEmpty) {
+      _reconExigidos.addAll(widget.reconInicial!.split(','));
+    }
     if ((widget.sinCategoriasInicial ?? '').isNotEmpty) {
       _categoriasOcultas.addAll(widget.sinCategoriasInicial!.split(','));
     }
@@ -124,12 +128,10 @@ class _GeovisorPageState extends State<GeovisorPage> {
     }
     final slug = n.categoriaOficial?.slug;
     if (slug != null && _categoriasOcultas.contains(slug)) return false;
-    return switch (_recon) {
-      'ev' => n.emprendimientoVerde,
-      'sm' => n.selloMarca,
-      'av' => n.avalado,
-      _ => true,
-    };
+    if (_reconExigidos.contains('ev') && !n.emprendimientoVerde) return false;
+    if (_reconExigidos.contains('sm') && !n.selloMarca) return false;
+    if (_reconExigidos.contains('av') && !n.avalado) return false;
+    return true;
   }
 
   List<Negocio> get _negociosVisibles =>
@@ -196,7 +198,7 @@ class _GeovisorPageState extends State<GeovisorPage> {
   Future<void> _copiarEnlace() async {
     final qp = <String, String>{};
     if (_municipioSel != null) qp['mun'] = _municipioSel!;
-    if (_recon != null) qp['rec'] = _recon!;
+    if (_reconExigidos.isNotEmpty) qp['rec'] = _reconExigidos.join(',');
     if (_categoriasOcultas.isNotEmpty) {
       qp['sincat'] = _categoriasOcultas.join(',');
     }
@@ -216,12 +218,17 @@ class _GeovisorPageState extends State<GeovisorPage> {
     return LayoutBuilder(
       builder: (context, c) {
         final ancho = c.maxWidth >= 900;
+        // Alto atado a la ventana: así el mapa (y la tarjeta que flota
+        // abajo) siempre caben en pantalla sin scroll. Antes era fijo en
+        // 660 y en portátiles la tarjeta del negocio quedaba cortada.
+        final alto = (MediaQuery.sizeOf(context).height - 200)
+            .clamp(440.0, 900.0);
         final mapa = _mapa();
         return SingleChildScrollView(
           child: Column(
             children: [
               SizedBox(
-                height: ancho ? 660 : 580,
+                height: alto,
                 child: ancho
                     ? Row(
                         children: [
@@ -440,8 +447,10 @@ class _GeovisorPageState extends State<GeovisorPage> {
     return Material(
       elevation: 2,
       color: NVColors.superficie,
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 28),
+      child: Scrollbar(
+        thumbVisibility: true,
+        child: ListView(
+        padding: const EdgeInsets.fromLTRB(14, 14, 18, 40),
         children: [
           Row(
             children: [
@@ -517,11 +526,10 @@ class _GeovisorPageState extends State<GeovisorPage> {
                     : _categoriasOcultas.add(c.slug)),
               ),
             const SizedBox(height: 8),
-            const _Rotulo('Por reconocimiento'),
-            _radioRecon('Todos', null),
-            _radioRecon('🌱 Emprendimiento Verde', 'ev'),
-            _radioRecon('🎖️ Sello Marca', 'sm'),
-            _radioRecon('✅ Negocio Verde Avalado', 'av'),
+            const _Rotulo('Por reconocimiento  (se pueden combinar)'),
+            _checkRecon('🌱 Emprendimiento Verde', 'ev'),
+            _checkRecon('🎖️ Sello Marca', 'sm'),
+            _checkRecon('✅ Negocio Verde Avalado', 'av'),
           ],
           const Divider(height: 24),
           OutlinedButton.icon(
@@ -530,6 +538,7 @@ class _GeovisorPageState extends State<GeovisorPage> {
             label: const Text('Copiar enlace de esta vista'),
           ),
         ],
+        ),
       ),
     );
   }
@@ -594,27 +603,12 @@ class _GeovisorPageState extends State<GeovisorPage> {
     );
   }
 
-  Widget _radioRecon(String etiqueta, String? valor) {
-    final sel = _recon == valor;
-    return InkWell(
-      onTap: () => setState(() => _recon = valor),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 5),
-        child: Row(
-          children: [
-            Icon(
-                sel
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_unchecked,
-                size: 18,
-                color: sel ? NVColors.primary : NVColors.textoSecundario),
-            const SizedBox(width: 8),
-            Expanded(
-                child:
-                    Text(etiqueta, style: const TextStyle(fontSize: 13))),
-          ],
-        ),
-      ),
+  Widget _checkRecon(String etiqueta, String clave) {
+    return _check(
+      etiqueta,
+      _reconExigidos.contains(clave),
+      (v) => setState(() =>
+          v ? _reconExigidos.add(clave) : _reconExigidos.remove(clave)),
     );
   }
 }
