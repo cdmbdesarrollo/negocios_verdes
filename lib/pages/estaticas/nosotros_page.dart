@@ -217,8 +217,9 @@ class _NosotrosPageState extends State<NosotrosPage> {
                     ),
                     const SizedBox(height: 12),
                     // Mismo orden y mismos nombres que el filtro del buscador
-                    // (/buscar) y las insignias: Emprendimiento Verde es la
-                    // puerta de entrada, luego Sello Marca, luego Avalado.
+                    // (/buscar) y las insignias, para que el usuario no se
+                    // confunda: Emprendimiento Verde (puerta de entrada) →
+                    // Negocio Verde Avalado → Sello Marca.
                     _cajaReconocimiento(
                       Icons.eco_outlined,
                       NVColors.emprendimientoVerdeGris,
@@ -227,6 +228,15 @@ class _NosotrosPageState extends State<NosotrosPage> {
                       'emprendimientos que ya iniciaron su proceso con la '
                       'Ventanilla de Negocios Verdes de la CDMB, en camino '
                       'hacia el Sello Marca o el Aval.',
+                    ),
+                    const SizedBox(height: 20),
+                    _cajaReconocimiento(
+                      Icons.verified_outlined,
+                      NVColors.avaladoAzul,
+                      'Negocio Verde Avalado',
+                      'Negocio avalado por la CDMB: cumple los criterios del '
+                      'programa y fue reconocido directamente por la '
+                      'Ventanilla de Negocios Verdes.',
                     ),
                     const SizedBox(height: 20),
                     _cajaReconocimiento(
@@ -239,15 +249,6 @@ class _NosotrosPageState extends State<NosotrosPage> {
                       'económicas, y protegen los recursos naturales. Se '
                       'otorga a los negocios que superan el 71 % de '
                       'cumplimiento en la evaluación de criterios.',
-                    ),
-                    const SizedBox(height: 20),
-                    _cajaReconocimiento(
-                      Icons.verified_outlined,
-                      NVColors.avaladoAzul,
-                      'Negocio Verde Avalado',
-                      'Negocio avalado por la CDMB: cumple los criterios del '
-                      'programa y fue reconocido directamente por la '
-                      'Ventanilla de Negocios Verdes.',
                     ),
                     const SizedBox(height: 20),
                     Container(

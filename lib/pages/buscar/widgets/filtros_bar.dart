@@ -394,18 +394,18 @@ class _FiltrosBarState extends State<FiltrosBar> {
                         : widget.filtro.copyWith(emprendimientoVerde: true)),
               ),
               ChipFiltro(
-                etiqueta: '🎖️ Sello Marca',
-                seleccionado: widget.filtro.selloMarca == true,
-                onTap: () => widget.onCambio(widget.filtro.selloMarca == true
-                    ? widget.filtro.copyWith(limpiarSelloMarca: true)
-                    : widget.filtro.copyWith(selloMarca: true)),
-              ),
-              ChipFiltro(
                 etiqueta: '✅ Negocio Verde Avalado',
                 seleccionado: widget.filtro.avalado == true,
                 onTap: () => widget.onCambio(widget.filtro.avalado == true
                     ? widget.filtro.copyWith(limpiarAvalado: true)
                     : widget.filtro.copyWith(avalado: true)),
+              ),
+              ChipFiltro(
+                etiqueta: '🎖️ Sello Marca',
+                seleccionado: widget.filtro.selloMarca == true,
+                onTap: () => widget.onCambio(widget.filtro.selloMarca == true
+                    ? widget.filtro.copyWith(limpiarSelloMarca: true)
+                    : widget.filtro.copyWith(selloMarca: true)),
               ),
             ],
           ),
