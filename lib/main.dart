@@ -15,6 +15,7 @@ import 'core/site_shell.dart';
 import 'pages/admin/actividades/admin_actividades_page.dart';
 import 'pages/admin/apariencia/admin_apariencia_page.dart';
 import 'pages/admin/categorias/admin_categorias_page.dart';
+import 'pages/admin/cuenta/admin_cuenta_page.dart';
 import 'pages/admin/dashboard/admin_dashboard_page.dart';
 import 'pages/admin/login/admin_login_page.dart';
 import 'pages/admin/logs/admin_logs_page.dart';
@@ -22,6 +23,7 @@ import 'pages/admin/negocios/admin_negocio_form_page.dart';
 import 'pages/admin/negocios/admin_negocios_page.dart';
 import 'pages/admin/personas/admin_personas_page.dart';
 import 'pages/admin/subcategorias/admin_subcategorias_page.dart';
+import 'pages/admin/usuarios/admin_usuarios_page.dart';
 import 'pages/buscar/buscar_page.dart';
 import 'pages/estaticas/contacto_page.dart';
 import 'pages/estaticas/no_encontrado_page.dart';
@@ -224,6 +226,14 @@ GoRouter _construirRouter() {
           GoRoute(
             path: '/admin/apariencia',
             builder: (context, state) => const AdminAparienciaPage(),
+          ),
+          GoRoute(
+            path: '/admin/usuarios',
+            builder: (context, state) => const AdminUsuariosPage(),
+          ),
+          GoRoute(
+            path: '/admin/cuenta',
+            builder: (context, state) => const AdminCuentaPage(),
           ),
           GoRoute(
             path: '/admin/logs',

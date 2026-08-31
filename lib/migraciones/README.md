@@ -310,6 +310,23 @@ en un Supabase nuevo:
 38. `0038_indices_fk_personas.sql` — índice en `negocio_delegado.delegado_id`
     y `negocio_responsable.responsable_id` (el advisor los marcaba;
     `negocio_representante` ya lo tenía desde 0029).
+39. `0039_roles_super_admin_y_usuarios.sql` — dos niveles de cuenta:
+    **súper administrador** (`perfiles.es_super_admin`) y **administrador**
+    normal. `perfiles` gana `es_super_admin` / `activo` / `nombre`;
+    `es_admin()` pasa a `is_admin OR es_super_admin` y exige `activo`;
+    nueva `es_super_admin()`. Semilla: luislozanocamacho@gmail.com queda
+    como súper admin. Se cierra un hueco viejo (la policy de UPDATE de
+    `perfiles` era `es_admin()` — cualquier admin podía promoverse) y las
+    policies de `categorias_oficiales` / `subcategorias` /
+    `actividades_productivas` / `configuracion_sitio` / `banners` + el
+    bucket `sitio-assets` suben de `es_admin()` a `es_super_admin()`. La
+    creación de la cuenta de Auth NO la hace esta migración: va por la
+    Edge Function `admin-usuarios` (ver
+    `supabase/functions/admin-usuarios/`, se despliega aparte con el MCP
+    de Supabase o `supabase functions deploy`, no desde el GitHub Actions
+    de Vercel). El cambio de contraseña propio de cada admin ("Mi cuenta",
+    `/admin/cuenta`) es client-side (`supabase.auth.updateUser`), sin SQL.
+    Sin dependencias de orden más allá de 0002.
 
 ## Sobre trabajo concurrente de dos sesiones
 

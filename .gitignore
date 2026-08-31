@@ -47,3 +47,4 @@ app.*.map.json
 # Secretos locales (SUPABASE_URL / SUPABASE_ANON_KEY para --dart-define)
 env.local.ps1
 .claude/scheduled_tasks.lock
+.claude/settings.local.json

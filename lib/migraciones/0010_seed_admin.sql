@@ -15,3 +15,8 @@
 update perfiles
 set is_admin = true
 where email = 'luislozanocamacho@gmail.com';
+
+-- NOTA: 0039 agregó un segundo nivel (`es_super_admin`) y ahí este mismo
+-- correo queda además como súper admin (el que puede crear las demás
+-- cuentas desde /admin/usuarios). Si el primer administrador es otro
+-- correo, cámbialo también en 0039.

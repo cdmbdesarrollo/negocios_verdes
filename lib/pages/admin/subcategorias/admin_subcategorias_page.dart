@@ -34,7 +34,8 @@ class _AdminSubcategoriasPageState extends State<AdminSubcategoriasPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => exigirAdmin(context));
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => exigirSuperAdmin(context));
     _cargar();
   }
 

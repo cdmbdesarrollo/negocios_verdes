@@ -37,7 +37,8 @@ class _AdminAparienciaPageState extends State<AdminAparienciaPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => exigirAdmin(context));
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => exigirSuperAdmin(context));
     _cargar();
   }
 

@@ -14,3 +14,26 @@ Future<void> exigirAdmin(BuildContext context) async {
     context.go('/admin/login');
   }
 }
+
+/// Para las secciones que solo puede ver un súper administrador (usuarios,
+/// categorías, subcategorías, actividades productivas, apariencia). Un
+/// admin normal con sesión válida no va al login — va al panel, con un
+/// aviso. La RLS de esas tablas ya rechaza sus escrituras de todas formas.
+Future<void> exigirSuperAdmin(BuildContext context) async {
+  final esSuper = await RolesService.esSuperAdmin();
+  if (!context.mounted) return;
+  if (esSuper) return;
+
+  final esAdmin = await RolesService.esAdmin();
+  if (!context.mounted) return;
+  if (!esAdmin) {
+    context.go('/admin/login');
+    return;
+  }
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('Esta sección es solo para súper administradores.'),
+    ),
+  );
+  context.go('/admin');
+}

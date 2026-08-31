@@ -11,19 +11,37 @@ class EnlaceAdmin {
   final String titulo;
   final String ruta;
   final IconData icono;
-  const EnlaceAdmin(this.titulo, this.ruta, this.icono);
+
+  /// Solo visible para un súper administrador (ver 0039). Un admin normal
+  /// ni ve el enlace ni puede entrar por URL — exigirSuperAdmin() lo
+  /// devuelve al panel, y la RLS rechaza sus escrituras.
+  final bool soloSuper;
+
+  const EnlaceAdmin(this.titulo, this.ruta, this.icono,
+      {this.soloSuper = false});
 }
 
 const List<EnlaceAdmin> enlacesAdmin = [
   EnlaceAdmin('Panel', '/admin', Icons.dashboard_outlined),
   EnlaceAdmin('Negocios', '/admin/negocios', Icons.storefront_outlined),
   EnlaceAdmin('Personas', '/admin/personas', Icons.badge_outlined),
-  EnlaceAdmin('Categorías', '/admin/categorias', Icons.category_outlined),
-  EnlaceAdmin('Subcategorías', '/admin/subcategorias', Icons.label_outline),
-  EnlaceAdmin('Actividades productivas', '/admin/actividades', Icons.eco_outlined),
-  EnlaceAdmin('Apariencia', '/admin/apariencia', Icons.palette_outlined),
+  EnlaceAdmin('Categorías', '/admin/categorias', Icons.category_outlined,
+      soloSuper: true),
+  EnlaceAdmin('Subcategorías', '/admin/subcategorias', Icons.label_outline,
+      soloSuper: true),
+  EnlaceAdmin('Actividades productivas', '/admin/actividades',
+      Icons.eco_outlined,
+      soloSuper: true),
+  EnlaceAdmin('Apariencia', '/admin/apariencia', Icons.palette_outlined,
+      soloSuper: true),
+  EnlaceAdmin('Usuarios', '/admin/usuarios', Icons.group_outlined,
+      soloSuper: true),
   EnlaceAdmin('Auditoría', '/admin/logs', Icons.history),
+  EnlaceAdmin('Mi cuenta', '/admin/cuenta', Icons.account_circle_outlined),
 ];
+
+List<EnlaceAdmin> _enlacesVisibles(bool esSuper) =>
+    enlacesAdmin.where((e) => esSuper || !e.soloSuper).toList();
 
 /// Un enlace está "activo" si la ruta actual es exactamente la suya, o cae
 /// dentro de ella (p. ej. /admin/negocios/nuevo debe resaltar "Negocios") —
@@ -47,33 +65,61 @@ String _tituloSeccion(String rutaActual) {
 /// pantalla angosta, vuelve al patrón de AppBar + drawer. Envuelve
 /// /admin/* (excepto /admin/login) vía ShellRoute en main.dart. Este shell
 /// solo da la navegación — la verificación real de rol la hace
-/// exigirAdmin() (admin_guard.dart) en cada página hija, y el límite de
-/// seguridad de verdad son las políticas RLS, no este widget.
-class AdminShellPage extends StatelessWidget {
+/// exigirAdmin() / exigirSuperAdmin() (admin_guard.dart) en cada página
+/// hija, y el límite de seguridad de verdad son las políticas RLS, no este
+/// widget. El menú se filtra por rol solo para no mostrar puertas que igual
+/// están cerradas.
+class AdminShellPage extends StatefulWidget {
   final Widget child;
 
   const AdminShellPage({super.key, required this.child});
 
-  Future<void> _cerrarSesion(BuildContext context) async {
+  @override
+  State<AdminShellPage> createState() => _AdminShellPageState();
+}
+
+class _AdminShellPageState extends State<AdminShellPage> {
+  // Arranca en false: si todavía no sabemos el rol, mejor ocultar las
+  // secciones de súper admin que mostrarlas y esconderlas medio segundo
+  // después.
+  bool _esSuper = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarRol();
+  }
+
+  Future<void> _cargarRol() async {
+    final esSuper = await RolesService.esSuperAdmin();
+    if (mounted && esSuper != _esSuper) setState(() => _esSuper = esSuper);
+  }
+
+  Future<void> _cerrarSesion() async {
     await AuthService().logout();
     RolesService.invalidarCache();
-    if (context.mounted) context.go('/admin/login');
+    if (mounted) context.go('/admin/login');
   }
 
   @override
   Widget build(BuildContext context) {
     final rutaActual = GoRouterState.of(context).matchedLocation;
+    final enlaces = _enlacesVisibles(_esSuper);
 
     if (esPantallaAncha(context)) {
       return Scaffold(
         body: Row(
           children: [
-            _BarraLateral(rutaActual: rutaActual, onLogout: () => _cerrarSesion(context)),
+            _BarraLateral(
+              enlaces: enlaces,
+              rutaActual: rutaActual,
+              onLogout: _cerrarSesion,
+            ),
             Expanded(
               child: Column(
                 children: [
                   _EncabezadoSuperior(titulo: _tituloSeccion(rutaActual)),
-                  Expanded(child: child),
+                  Expanded(child: widget.child),
                 ],
               ),
             ),
@@ -91,7 +137,7 @@ class AdminShellPage extends StatelessWidget {
           IconButton(
             tooltip: 'Cerrar sesión',
             icon: const Icon(Icons.logout),
-            onPressed: () => _cerrarSesion(context),
+            onPressed: _cerrarSesion,
           ),
         ],
       ),
@@ -123,7 +169,7 @@ class AdminShellPage extends StatelessWidget {
                   ),
                 ),
               ),
-              for (final enlace in enlacesAdmin)
+              for (final enlace in enlaces)
                 ListTile(
                   leading: Icon(enlace.icono),
                   title: Text(enlace.titulo),
@@ -155,16 +201,21 @@ class AdminShellPage extends StatelessWidget {
           ),
         ),
       ),
-      body: SafeArea(child: child),
+      body: SafeArea(child: widget.child),
     );
   }
 }
 
 class _BarraLateral extends StatelessWidget {
+  final List<EnlaceAdmin> enlaces;
   final String rutaActual;
   final VoidCallback onLogout;
 
-  const _BarraLateral({required this.rutaActual, required this.onLogout});
+  const _BarraLateral({
+    required this.enlaces,
+    required this.rutaActual,
+    required this.onLogout,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -198,7 +249,7 @@ class _BarraLateral extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 children: [
-                  for (final enlace in enlacesAdmin)
+                  for (final enlace in enlaces)
                     _itemBarra(
                       context,
                       icono: enlace.icono,
