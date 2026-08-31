@@ -1354,24 +1354,32 @@ class _GeovisorPageState extends State<GeovisorPage> {
         for (final e in filas)
           barra(e.key, e.value,
               e.key == 'Sin clasificar' ? NVColors.textoSecundario : NVColors.primary),
-        const SizedBox(height: 6),
-        Row(children: [
-          _pillConteo('🌱', vis.where((n) => n.emprendimientoVerde).length),
-          _pillConteo('🎖️', vis.where((n) => n.selloMarca).length),
-          _pillConteo('✅', vis.where((n) => n.avalado).length),
-        ]),
+        const SizedBox(height: 8),
+        const _Rotulo('Por reconocimiento · un negocio puede tener varios'),
+        _filaRecon('🌱 Emprendimiento Verde',
+            vis.where((n) => n.emprendimientoVerde).length),
+        _filaRecon(
+            '🎖️ Sello Marca', vis.where((n) => n.selloMarca).length),
+        _filaRecon('✅ Negocio Verde Avalado',
+            vis.where((n) => n.avalado).length),
       ],
     );
   }
 
-  Widget _pillConteo(String emoji, int n) => Container(
-        margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: NVColors.primaryLight,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Text('$emoji $n', style: const TextStyle(fontSize: 11)),
+  /// Una línea "etiqueta ............ conteo" para el desglose por
+  /// reconocimiento. Sin barra a propósito: los 3 tipos se solapan (un
+  /// negocio puede tener varios), así que una barra proporcional al total
+  /// de la vista engañaría — se leen como conteos sueltos.
+  Widget _filaRecon(String etiqueta, int n) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(children: [
+          Expanded(
+            child: Text(etiqueta, style: const TextStyle(fontSize: 11)),
+          ),
+          Text('$n',
+              style: const TextStyle(
+                  fontSize: 11, fontWeight: FontWeight.w600)),
+        ]),
       );
 
   Widget _tabCapas() {
