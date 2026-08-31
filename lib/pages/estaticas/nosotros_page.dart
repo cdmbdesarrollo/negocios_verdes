@@ -216,97 +216,38 @@ class _NosotrosPageState extends State<NosotrosPage> {
                           TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                     ),
                     const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: NVColors.fondo,
-                        border: Border.all(color: NVColors.borde),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _encabezadoReconocimiento(
-                              Icons.verified_outlined,
-                              NVColors.avaladoAzul,
-                              'Negocio Verde Avalado'),
-                          const SizedBox(height: 6),
-                          const Text(
-                            'Negocio avalado por la CDMB: cumple los '
-                            'criterios del programa y fue reconocido '
-                            'directamente por la Ventanilla de Negocios '
-                            'Verdes.',
-                            style: TextStyle(
-                                color: NVColors.textoSecundario,
-                                fontSize: 13,
-                                height: 1.4),
-                          ),
-                        ],
-                      ),
+                    // Mismo orden y mismos nombres que el filtro del buscador
+                    // (/buscar) y las insignias: Emprendimiento Verde es la
+                    // puerta de entrada, luego Sello Marca, luego Avalado.
+                    _cajaReconocimiento(
+                      Icons.eco_outlined,
+                      NVColors.emprendimientoVerdeGris,
+                      'Emprendimiento Verde',
+                      'La puerta de entrada al programa: negocios y '
+                      'emprendimientos que ya iniciaron su proceso con la '
+                      'Ventanilla de Negocios Verdes de la CDMB, en camino '
+                      'hacia el Sello Marca o el Aval.',
                     ),
                     const SizedBox(height: 20),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: NVColors.fondo,
-                        border: Border.all(color: NVColors.borde),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _encabezadoReconocimiento(
-                              Icons.military_tech,
-                              NVColors.selloMarcaVerde,
-                              'Sello Marca de Negocios Verdes'),
-                          const SizedBox(height: 6),
-                          const Text(
-                            'Certificación oficial que reconoce a las '
-                            'empresas y emprendimientos que generan un '
-                            'impacto ambiental positivo, garantizan buenas '
-                            'prácticas sociales y económicas, y protegen '
-                            'los recursos naturales. Se otorga a los '
-                            'negocios que superan el 71 % de cumplimiento '
-                            'en la evaluación de criterios.',
-                            style: TextStyle(
-                                color: NVColors.textoSecundario,
-                                fontSize: 13,
-                                height: 1.4),
-                          ),
-                        ],
-                      ),
+                    _cajaReconocimiento(
+                      Icons.military_tech,
+                      NVColors.selloMarcaVerde,
+                      'Sello Marca',
+                      'Certificación oficial que reconoce a las empresas y '
+                      'emprendimientos que generan un impacto ambiental '
+                      'positivo, garantizan buenas prácticas sociales y '
+                      'económicas, y protegen los recursos naturales. Se '
+                      'otorga a los negocios que superan el 71 % de '
+                      'cumplimiento en la evaluación de criterios.',
                     ),
                     const SizedBox(height: 20),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: NVColors.fondo,
-                        border: Border.all(color: NVColors.borde),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _encabezadoReconocimiento(
-                              Icons.eco_outlined,
-                              NVColors.emprendimientoVerdeGris,
-                              'Emprendimiento Verde'),
-                          const SizedBox(height: 6),
-                          const Text(
-                            'La puerta de entrada al programa: negocios y '
-                            'emprendimientos que ya iniciaron su proceso con '
-                            'la Ventanilla de Negocios Verdes de la CDMB, en '
-                            'camino hacia el Sello Marca o el Aval.',
-                            style: TextStyle(
-                                color: NVColors.textoSecundario,
-                                fontSize: 13,
-                                height: 1.4),
-                          ),
-                        ],
-                      ),
+                    _cajaReconocimiento(
+                      Icons.verified_outlined,
+                      NVColors.avaladoAzul,
+                      'Negocio Verde Avalado',
+                      'Negocio avalado por la CDMB: cumple los criterios del '
+                      'programa y fue reconocido directamente por la '
+                      'Ventanilla de Negocios Verdes.',
                     ),
                     const SizedBox(height: 20),
                     Container(
@@ -396,6 +337,33 @@ class _NosotrosPageState extends State<NosotrosPage> {
         Text(titulo,
             style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
       ],
+    );
+  }
+
+  /// Una caja de la sección "Reconocimientos" (borde + ícono/título de
+  /// marca + descripción).
+  Widget _cajaReconocimiento(
+      IconData icono, Color color, String titulo, String descripcion) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: NVColors.fondo,
+        border: Border.all(color: NVColors.borde),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _encabezadoReconocimiento(icono, color, titulo),
+          const SizedBox(height: 6),
+          Text(
+            descripcion,
+            style: const TextStyle(
+                color: NVColors.textoSecundario, fontSize: 13, height: 1.4),
+          ),
+        ],
+      ),
     );
   }
 
