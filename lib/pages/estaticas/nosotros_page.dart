@@ -230,7 +230,7 @@ class _NosotrosPageState extends State<NosotrosPage> {
                           _encabezadoReconocimiento(
                               Icons.verified_outlined,
                               NVColors.avaladoAzul,
-                              'Avalado'),
+                              'Negocio Verde Avalado'),
                           const SizedBox(height: 6),
                           const Text(
                             'Negocio avalado por la CDMB: cumple los '
