@@ -139,7 +139,6 @@ GoRouter _construirRouter() {
             path: '/geovisor',
             builder: (context, state) => GeovisorPage(
               municipioInicial: state.uri.queryParameters['mun'],
-              reconInicial: state.uri.queryParameters['rec'],
               sinCategoriasInicial: state.uri.queryParameters['sincat'],
               zonaInicial: state.uri.queryParameters['zona'],
               anioInicial: state.uri.queryParameters['anio'],
@@ -172,7 +171,6 @@ GoRouter _construirRouter() {
           body: GeovisorPage(
             embed: true,
             municipioInicial: state.uri.queryParameters['mun'],
-            reconInicial: state.uri.queryParameters['rec'],
             sinCategoriasInicial: state.uri.queryParameters['sincat'],
             zonaInicial: state.uri.queryParameters['zona'],
             anioInicial: state.uri.queryParameters['anio'],

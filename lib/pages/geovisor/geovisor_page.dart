@@ -35,13 +35,12 @@ enum _PanelTab { filtrar, capas, herramientas }
 /// "Geovisor Negocios Verdes": mapa a pantalla completa con un panel de
 /// CAPAS al estilo de un visor SIG — límites de los 13 municipios de la
 /// jurisdicción CDMB (de OpenStreetMap, ver assets/geo/), negocios verdes
-/// agrupados, filtros por categoría / reconocimiento / municipio / vereda,
-/// buscador y enlace compartible. Todo con flutter_map + OSM.
+/// agrupados, filtros por categoría / municipio / vereda, buscador y
+/// enlace compartible. Todo con flutter_map + OSM.
 class GeovisorPage extends StatefulWidget {
-  /// Estado inicial desde la URL (`/geovisor?mun=...&rec=...&sincat=...`)
+  /// Estado inicial desde la URL (`/geovisor?mun=...&sincat=...`)
   /// para poder compartir una vista.
   final String? municipioInicial;
-  final String? reconInicial;
   final String? sinCategoriasInicial;
   final String? zonaInicial;
   final String? anioInicial;
@@ -54,7 +53,6 @@ class GeovisorPage extends StatefulWidget {
   const GeovisorPage({
     super.key,
     this.municipioInicial,
-    this.reconInicial,
     this.sinCategoriasInicial,
     this.zonaInicial,
     this.anioInicial,
@@ -119,9 +117,6 @@ class _GeovisorPageState extends State<GeovisorPage> {
   bool _modoMedir = false;
   final List<LatLng> _medida = [];
   final Set<String> _categoriasOcultas = {}; // slugs
-  /// Reconocimientos EXIGIDOS (ev / sm / av). Vacío = no filtra. Son
-  /// independientes y se combinan con AND, igual que en /buscar.
-  final Set<String> _reconExigidos = {};
   String? _municipioSel;
   String? _veredaSel;
   bool _panelAbierto = true;
@@ -134,9 +129,6 @@ class _GeovisorPageState extends State<GeovisorPage> {
   void initState() {
     super.initState();
     _municipioSel = widget.municipioInicial;
-    if ((widget.reconInicial ?? '').isNotEmpty) {
-      _reconExigidos.addAll(widget.reconInicial!.split(','));
-    }
     if ((widget.sinCategoriasInicial ?? '').isNotEmpty) {
       _categoriasOcultas.addAll(widget.sinCategoriasInicial!.split(','));
     }
@@ -232,9 +224,6 @@ class _GeovisorPageState extends State<GeovisorPage> {
     }
     final slug = n.categoriaOficial?.slug;
     if (slug != null && _categoriasOcultas.contains(slug)) return false;
-    if (_reconExigidos.contains('ev') && !n.emprendimientoVerde) return false;
-    if (_reconExigidos.contains('sm') && !n.selloMarca) return false;
-    if (_reconExigidos.contains('av') && !n.avalado) return false;
     if (_anioMin != null &&
         (n.anioRegistro == null || n.anioRegistro! < _anioMin!)) {
       return false;
@@ -459,7 +448,6 @@ class _GeovisorPageState extends State<GeovisorPage> {
   Future<void> _copiarEnlace() async {
     final qp = <String, String>{};
     if (_municipioSel != null) qp['mun'] = _municipioSel!;
-    if (_reconExigidos.isNotEmpty) qp['rec'] = _reconExigidos.join(',');
     if (_categoriasOcultas.isNotEmpty) {
       qp['sincat'] = _categoriasOcultas.join(',');
     }
@@ -1117,7 +1105,6 @@ class _GeovisorPageState extends State<GeovisorPage> {
       _municipioSel != null ||
       _veredaSel != null ||
       _categoriasOcultas.isNotEmpty ||
-      _reconExigidos.isNotEmpty ||
       _anioMin != null;
 
   void _verTodo() {
@@ -1125,7 +1112,6 @@ class _GeovisorPageState extends State<GeovisorPage> {
       _municipioSel = null;
       _veredaSel = null;
       _categoriasOcultas.clear();
-      _reconExigidos.clear();
       _anioMin = null;
       _negocioSel = null;
     });
@@ -1261,11 +1247,6 @@ class _GeovisorPageState extends State<GeovisorPage> {
                 : _categoriasOcultas.add(c.slug)),
           ),
         const SizedBox(height: 8),
-        const _Rotulo('Por reconocimiento  (se pueden combinar)'),
-        _checkRecon('🌱 Emprendimiento Verde', 'ev'),
-        _checkRecon('🎖️ Sello Marca', 'sm'),
-        _checkRecon('✅ Negocio Verde Avalado', 'av'),
-        const SizedBox(height: 8),
         _filtroAnio(),
         const Divider(height: 24),
         OutlinedButton.icon(
@@ -1303,8 +1284,8 @@ class _GeovisorPageState extends State<GeovisorPage> {
     );
   }
 
-  /// Barras horizontales compactas: negocios (de la vista actual) por
-  /// categoría y por reconocimiento.
+  /// Barras horizontales compactas: negocios de la vista actual por
+  /// categoría.
   Widget _miniGrafico() {
     final vis = _negociosVisibles;
     if (vis.isEmpty) return const SizedBox.shrink();
@@ -1354,33 +1335,9 @@ class _GeovisorPageState extends State<GeovisorPage> {
         for (final e in filas)
           barra(e.key, e.value,
               e.key == 'Sin clasificar' ? NVColors.textoSecundario : NVColors.primary),
-        const SizedBox(height: 8),
-        const _Rotulo('Por reconocimiento · un negocio puede tener varios'),
-        _filaRecon('🌱 Emprendimiento Verde',
-            vis.where((n) => n.emprendimientoVerde).length),
-        _filaRecon(
-            '🎖️ Sello Marca', vis.where((n) => n.selloMarca).length),
-        _filaRecon('✅ Negocio Verde Avalado',
-            vis.where((n) => n.avalado).length),
       ],
     );
   }
-
-  /// Una línea "etiqueta ............ conteo" para el desglose por
-  /// reconocimiento. Sin barra a propósito: los 3 tipos se solapan (un
-  /// negocio puede tener varios), así que una barra proporcional al total
-  /// de la vista engañaría — se leen como conteos sueltos.
-  Widget _filaRecon(String etiqueta, int n) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(children: [
-          Expanded(
-            child: Text(etiqueta, style: const TextStyle(fontSize: 11)),
-          ),
-          Text('$n',
-              style: const TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.w600)),
-        ]),
-      );
 
   Widget _tabCapas() {
     return Column(
@@ -1710,7 +1667,7 @@ class _GeovisorPageState extends State<GeovisorPage> {
           padding: EdgeInsets.fromLTRB(4, 4, 4, 0),
           child: Text(
             'Respeta los filtros activos (municipio, categoría, '
-            'reconocimiento). Sin registrarse.',
+            'año). Sin registrarse.',
             style: TextStyle(fontSize: 10.5, color: NVColors.textoSecundario),
           ),
         ),
@@ -1881,14 +1838,6 @@ class _GeovisorPageState extends State<GeovisorPage> {
     );
   }
 
-  Widget _checkRecon(String etiqueta, String clave) {
-    return _check(
-      etiqueta,
-      _reconExigidos.contains(clave),
-      (v) => setState(() =>
-          v ? _reconExigidos.add(clave) : _reconExigidos.remove(clave)),
-    );
-  }
 }
 
 class _Rotulo extends StatelessWidget {
@@ -2093,9 +2042,8 @@ class _PanelAyuda extends StatelessWidget {
                         'escribes un lugar o municipio ("Girón", "El Playón", '
                         '"Vetas") aparece la opción de buscarlo como lugar en '
                         'el mapa.',
-                    'Filtra por municipio (y vereda), por categoría, por '
-                        'reconocimiento (se pueden combinar) y por año de '
-                        'registro. Arriba, un mini-gráfico muestra cómo se '
+                    'Filtra por municipio (y vereda), por categoría y por año '
+                        'de registro. Arriba, un mini-gráfico muestra cómo se '
                         'reparten los negocios de la vista.',
                     '"Ver todo" quita todos los filtros. "Copiar enlace de esta '
                         'vista" te da un enlace que abre el geovisor con los '
