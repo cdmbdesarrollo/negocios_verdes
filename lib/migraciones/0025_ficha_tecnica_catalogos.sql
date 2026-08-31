@@ -229,13 +229,30 @@ on conflict (campo, valor) do nothing;
 --    columnas borradas. Cambia el tipo de parámetros (menos), hay que
 --    borrar la firma anterior explícitamente antes de crear la nueva —
 --    mismo motivo de siempre (0015/0016/0018/0019/0020/0022).
-drop function if exists guardar_ficha_tecnica_negocio(
-  uuid, text, text, text, smallint, text, text, text, text, text, text,
-  text, text, text, text, date, text, date, text, text, text, text,
-  text, date, text, date, text, text, text, text, text, text, text,
-  text, text, text, text, text, text, text, text, text, text, text,
-  text, text, text, text, text, text, text
-);
+--
+--    En vez de escribir a mano la firma vieja exacta (51 parámetros —
+--    frágil, y ya causó "function name ... is not unique" una vez porque
+--    la firma realmente aplicada en la base no calzó carácter por
+--    carácter con la reconstruida a mano): este bloque borra TODAS las
+--    versiones que existan hoy de guardar_ficha_tecnica_negocio en el
+--    esquema public, sin importar cuántos parámetros tenga cada una.
+--    Así no depende de adivinar nada — después de este bloque queda
+--    garantizado que existe como máximo una función con ese nombre antes
+--    de crear la nueva.
+do $$
+declare
+  r record;
+begin
+  for r in
+    select p.oid::regprocedure as firma
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.proname = 'guardar_ficha_tecnica_negocio'
+  loop
+    execute format('drop function %s', r.firma);
+  end loop;
+end $$;
 
 create or replace function guardar_ficha_tecnica_negocio(
   p_id uuid,
@@ -341,8 +358,18 @@ begin
 end;
 $$;
 
-revoke all on function guardar_ficha_tecnica_negocio from public;
-grant execute on function guardar_ficha_tecnica_negocio to authenticated;
+revoke all on function guardar_ficha_tecnica_negocio(
+  uuid, text, text, smallint, text, text, text, text, text, text, text,
+  text, text, date, text, date, text, text, text, text, text, date,
+  text, date, text, text, text, text, text, text, text, text, text,
+  text, text, text, text, text, text
+) from public;
+grant execute on function guardar_ficha_tecnica_negocio(
+  uuid, text, text, smallint, text, text, text, text, text, text, text,
+  text, text, date, text, date, text, text, text, text, text, date,
+  text, date, text, text, text, text, text, text, text, text, text,
+  text, text, text, text, text, text
+) to authenticated;
 
 -- 5) guardar_opcion_campo: agrega una opción nueva a un campo del catálogo
 --    ("deja una opción adicional si es necesario para el administrador")
