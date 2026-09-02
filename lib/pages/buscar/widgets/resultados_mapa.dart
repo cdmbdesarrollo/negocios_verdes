@@ -89,10 +89,18 @@ class ResultadosMapa extends StatelessWidget {
                   point: LatLng(negocio.latitud!, negocio.longitud!),
                   width: 48,
                   height: 48,
-                  child: PinNegocioMapa(
-                    fotoPortadaUrl: negocio.fotoPortadaUrl,
-                    destacado: negocio.id == negocioSeleccionadoId,
-                    tamano: negocio.id == negocioSeleccionadoId ? 46 : 36,
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: Tooltip(
+                      message: negocio.nombre,
+                      waitDuration: const Duration(milliseconds: 150),
+                      preferBelow: false,
+                      child: PinNegocioMapa(
+                        fotoPortadaUrl: negocio.fotoPortadaUrl,
+                        destacado: negocio.id == negocioSeleccionadoId,
+                        tamano: negocio.id == negocioSeleccionadoId ? 46 : 36,
+                      ),
+                    ),
                   ),
                 ),
             ],

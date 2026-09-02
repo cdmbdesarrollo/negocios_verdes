@@ -940,13 +940,21 @@ class _GeovisorPageState extends State<GeovisorPage> {
                         point: LatLng(n.latitud!, n.longitud!),
                         width: _pinesLivianos ? 16 : 44,
                         height: _pinesLivianos ? 16 : 44,
-                        child: _pinesLivianos && n.id != _negocioSel?.id
-                            ? const _PuntoNegocio()
-                            : PinNegocioMapa(
-                                fotoPortadaUrl: n.fotoPortadaUrl,
-                                destacado: n.id == _negocioSel?.id,
-                                tamano: n.id == _negocioSel?.id ? 42 : 34,
-                              ),
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: Tooltip(
+                            message: n.nombre,
+                            waitDuration: const Duration(milliseconds: 150),
+                            preferBelow: false,
+                            child: _pinesLivianos && n.id != _negocioSel?.id
+                                ? const _PuntoNegocio()
+                                : PinNegocioMapa(
+                                    fotoPortadaUrl: n.fotoPortadaUrl,
+                                    destacado: n.id == _negocioSel?.id,
+                                    tamano: n.id == _negocioSel?.id ? 42 : 34,
+                                  ),
+                          ),
+                        ),
                       ),
                   ],
                   builder: (context, markers) => Container(
