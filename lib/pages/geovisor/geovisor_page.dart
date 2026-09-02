@@ -675,20 +675,50 @@ class _GeovisorPageState extends State<GeovisorPage> {
 
   void _descargarReporte() {
     final enZona = _medida.length >= 3;
-    final negs = enZona ? _negociosEnZona : _negociosVisibles;
-    final titulo = enZona
-        ? 'Reporte de zona seleccionada'
-        : _municipioSel != null
-            ? 'Negocios verdes de ${_municipioSel!}'
-            : 'Negocios verdes — vista actual';
+    final cerca = !enZona && _puntoCerca != null;
+    final c = _puntoCerca;
+
+    final List<Negocio> negs;
+    final String titulo;
+    final List<LatLng> zonaReporte;
+    final double? areaKm2;
+    final double? perimetroKm;
+    final List<String> areasProtegidas;
+
+    if (enZona) {
+      negs = _negociosEnZona;
+      titulo = 'Reporte de zona seleccionada';
+      zonaReporte = List.of(_medida);
+      areaKm2 = _areaMetros2 / 1e6;
+      perimetroKm = _perimetroMetros / 1000;
+      areasProtegidas = _areasEnZona;
+    } else if (cerca && c != null) {
+      negs = _negociosCerca;
+      titulo = 'Negocios verdes a menos de ${_fmtDist(_radioCerca.toDouble())} '
+          'de un punto';
+      zonaReporte = _circuloComoPoligono(c, _radioCerca.toDouble());
+      areaKm2 = math.pi * math.pow(_radioCerca / 1000, 2).toDouble();
+      perimetroKm = null;
+      areasProtegidas = const [];
+    } else {
+      negs = _negociosVisibles;
+      titulo = _municipioSel != null
+          ? 'Negocios verdes de ${_municipioSel!}'
+          : 'Negocios verdes — vista actual';
+      zonaReporte = const [];
+      areaKm2 = null;
+      perimetroKm = null;
+      areasProtegidas = const [];
+    }
+
     descargarArchivoTexto(
       contenido: htmlReporte(
         titulo: titulo,
         negocios: negs,
-        zona: enZona ? List.of(_medida) : const [],
-        areaKm2: enZona ? _areaMetros2 / 1e6 : null,
-        perimetroKm: enZona ? _perimetroMetros / 1000 : null,
-        areasProtegidas: enZona ? _areasEnZona : const [],
+        zona: zonaReporte,
+        areaKm2: areaKm2,
+        perimetroKm: perimetroKm,
+        areasProtegidas: areasProtegidas,
         origen: Uri.base.origin,
       ),
       nombreArchivo: 'reporte_negocios_verdes_$_fechaArchivo.html',
