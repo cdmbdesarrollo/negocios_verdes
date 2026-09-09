@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Genera los GeoJSON de capas de contexto EXTERNAS del geovisor:
+Genera TODOS los GeoJSON de capas de contexto del geovisor (retiró a
+gen_oficial.py):
 
-  - paramos_cdmb.geojson       -> Páramos delimitados (MADS)
-  - veredas_cdmb.geojson        -> Veredas (DANE, espejo Esri Colombia)
-  - aicas_cdmb.geojson          -> Áreas de conservación de aves / AICA (Humboldt)
-  - bosque_seco_cdmb.geojson    -> Bosque seco tropical (MADS)
-  - reserva_ley2_cdmb.geojson   -> Reserva Forestal de Ley 2ª de 1959 (MADS)
+  - areas_protegidas_cdmb.geojson -> Áreas protegidas (RUNAP)
+  - paramos_cdmb.geojson          -> Páramos delimitados (MADS)
+  - veredas_cdmb.geojson          -> Veredas (DANE, espejo Esri Colombia)
+  - aicas_cdmb.geojson            -> Áreas de conservación de aves / AICA (Humboldt)
+  - bosque_seco_cdmb.geojson      -> Bosque seco tropical (MADS)
+  - hidrografia_cdmb.geojson      -> Ríos y cuerpos de agua (IDEAM)
+  - subzonas_cdmb.geojson         -> Subzonas hidrográficas (IDEAM)
 
-Recorta a la jurisdicción CDMB (13 municipios de Santander): clip al bbox
-(_clip_bbox) + simplificación (maxAllowableOffset del servidor y/o
-Douglas-Peucker _simplify_geom) + coords a 5 decimales. No se ejecuta sola:
-correr a mano cuando la fuente se actualice y sobreescribir los assets.
+Pipeline por capa: descarga ArcGIS REST (f=geojson, paginado) -> _clip_bbox
+(solo polígonos) -> _simplify_geom (Douglas-Peucker) -> _toca_jurisdiccion
+(descarta lo que no intersecta ninguno de los 13 municipios) -> coords a 5
+decimales. No se ejecuta sola: correr a mano cuando la fuente se actualice.
 Ver README.md.
 
     python assets/geo/gen_capas_externas.py
@@ -49,6 +52,76 @@ def _get(url, params):
 
 
 _XMIN, _YMIN, _XMAX, _YMAX = (float(v) for v in BBOX.split(","))
+
+
+# --- filtro "toca la jurisdicción" ------------------------------------------
+# Se usan los 13 polígonos de municipios_cdmb.geojson como máscara: una capa
+# solo conserva las features que realmente intersectan alguno de los 13
+# municipios (no basta con caer dentro del bbox rectangular).
+def _muni_rings():
+    fc = json.load(io.open(os.path.join(OUT_DIR, "municipios_cdmb.geojson"),
+                           encoding="utf-8"))
+    rings = []
+    for f in fc["features"]:
+        g = f["geometry"]
+        polys = g["coordinates"] if g["type"] == "MultiPolygon" \
+            else [g["coordinates"]]
+        for poly in polys:
+            rings.append([(x, y) for x, y in poly[0]])
+    return rings
+
+
+_MUNIS = _muni_rings()
+
+
+def _pip(pt, ring):
+    x, y = pt[0], pt[1]
+    inside = False
+    n = len(ring)
+    j = n - 1
+    for i in range(n):
+        xi, yi = ring[i]
+        xj, yj = ring[j]
+        if (yi > y) != (yj > y) and \
+                x < (xj - xi) * (y - yi) / ((yj - yi) or 1e-30) + xi:
+            inside = not inside
+        j = i
+    return inside
+
+
+def _seg_cross(a, b, c, d):
+    def ccw(p, q, r):
+        return (r[1] - p[1]) * (q[0] - p[0]) > (q[1] - p[1]) * (r[0] - p[0])
+    return ccw(a, c, d) != ccw(b, c, d) and ccw(a, b, c) != ccw(a, b, d)
+
+
+def _toca_jurisdiccion(geom):
+    """True si la geometría intersecta alguno de los 13 municipios.
+    Acepta (Multi)Polygon y (Multi)LineString."""
+    t = geom["type"]
+    c = geom["coordinates"]
+    if t == "Polygon":
+        líneas = [c[0]]
+    elif t == "MultiPolygon":
+        líneas = [poly[0] for poly in c]
+    elif t == "LineString":
+        líneas = [c]
+    elif t == "MultiLineString":
+        líneas = list(c)
+    else:
+        return False
+    for pts in líneas:
+        for mr in _MUNIS:
+            if any(_pip(p, mr) for p in pts):
+                return True
+            if any(_pip(mp, pts) for mp in mr) and len(pts) >= 3:
+                return True
+            for i in range(len(pts) - 1):
+                a, b = pts[i], pts[i + 1]
+                for k in range(0, len(mr) - 1, 2):
+                    if _seg_cross(a, b, mr[k], mr[k + 1]):
+                        return True
+    return False
 
 
 def _clip_ring(ring, edge):
@@ -158,6 +231,13 @@ def _simplify_geom(geom, tol=0.0009, min_ring_deg2=1e-7):
     if t == "MultiPolygon":
         ps = [p for p in (_rings(poly) for poly in geom["coordinates"]) if p]
         return {"type": "MultiPolygon", "coordinates": ps} if ps else None
+    if t == "LineString":
+        s = _dp([list(p) for p in geom["coordinates"]], tol)
+        return {"type": "LineString", "coordinates": s} if len(s) >= 2 else None
+    if t == "MultiLineString":
+        ls = [s for s in ([list(p) for p in _dp([list(p) for p in l], tol)]
+                          for l in geom["coordinates"]) if len(s) >= 2]
+        return {"type": "MultiLineString", "coordinates": ls} if ls else None
     return geom
 
 
@@ -172,6 +252,10 @@ def _round_geom(g, nd=5):
         g["coordinates"] = [_round_ring(r, nd) for r in c]
     elif t == "MultiPolygon":
         g["coordinates"] = [[_round_ring(r, nd) for r in poly] for poly in c]
+    elif t == "LineString":
+        g["coordinates"] = _round_ring(c, nd)
+    elif t == "MultiLineString":
+        g["coordinates"] = [_round_ring(l, nd) for l in c]
     return g
 
 
@@ -223,7 +307,8 @@ def gen_paramos():
     })
     out = []
     for f in raw:
-        if not f.get("geometry"):
+        g = f.get("geometry")
+        if not g or not _toca_jurisdiccion(g):
             continue
         p = f.get("properties", {})
         nom = (p.get("nombre") or "").strip()
@@ -238,7 +323,7 @@ def gen_paramos():
                 "escala": (p.get("escala") or "").strip(),
                 "hectareas": round(p.get("area_ha") or 0, 1),
             },
-            "geometry": _round_geom(f["geometry"]),
+            "geometry": _round_geom(g),
         })
     _write("paramos_cdmb.geojson", "paramos_delimitados_cdmb", out)
 
@@ -293,7 +378,7 @@ def _gen_mads(svc, fname, name, tipo, fuente, mapfn, mao="0.0009"):
         g = _clip_bbox(g)          # recorta el polígono al área CDMB
         if g:
             g = _simplify_geom(g)  # DP + descarta fragmentos minúsculos
-        if not g:
+        if not g or not _toca_jurisdiccion(g):
             continue
         props = {"tipo": tipo, "fuente": fuente}
         props.update(mapfn(f.get("properties", {})))
@@ -327,15 +412,135 @@ def gen_bosque_seco():
     )
 
 
-def gen_reserva_ley2():
-    # Reservas Forestales de Ley 2ª de 1959 (p. ej. RF Río Magdalena).
-    _gen_mads(
-        "Reservas_Forestales_de_Ley_2da_de_1959_",
-        "reserva_ley2_cdmb.geojson", "reserva_forestal_ley2_cdmb",
-        "reserva-forestal", "MADS",
-        lambda p: {"nombre": (p.get("nom_ley2") or "").strip(),
-                   "acto": (p.get("res_zoni") or "").strip()},
-    )
+# ------------------------------------------------ ÁREAS PROTEGIDAS (RUNAP)
+def _administra(org):
+    o = (org or "").lower()
+    if "meseta de bucaramanga" in o:
+        return "CDMB"
+    if "parques nacionales" in o:
+        return "PNN"
+    if "regional de santander" in o:
+        return "CAS"
+    if "frontera nororiental" in o or "nororiente" in o or "corponor" in o:
+        return "CORPONOR"
+    return (org or "").strip()[:40]
+
+
+def gen_areas_protegidas():
+    """RUNAP — áreas protegidas que tocan la jurisdicción (PNR, DRMI, DCS,
+    Reservas Naturales de la Sociedad Civil…). Reemplaza el viejo
+    gen_oficial.py."""
+    url = ("https://mapas.parquesnacionales.gov.co/arcgis/rest/services/"
+           "pnn/runap/FeatureServer/0/query")
+    raw = _fetch_paged(url, "1=1", {
+        "outFields": "ap_nombre,ap_categoria,condicion,organizacion,url,"
+                     "area_ha_total_geografica",
+        "maxAllowableOffset": "0.0004",
+    })
+    out = []
+    for f in raw:
+        g = f.get("geometry")
+        if not g:
+            continue
+        g = _simplify_geom(g, tol=0.0004, min_ring_deg2=5e-9)
+        if not g or not _toca_jurisdiccion(g):
+            continue
+        p = f.get("properties", {})
+        out.append({
+            "type": "Feature",
+            "properties": {
+                "nombre": (p.get("ap_nombre") or "").strip(),
+                "tipo": (p.get("ap_categoria") or "").strip(),
+                "fuente": "RUNAP",
+                "condicion": (p.get("condicion") or "").strip(),
+                "administra": _administra(p.get("organizacion")),
+                "url": (p.get("url") or "").strip(),
+                "hectareas": round(p.get("area_ha_total_geografica") or 0, 1),
+            },
+            "geometry": _round_geom(g),
+        })
+    out.sort(key=lambda x: x["properties"]["nombre"])
+    _write("areas_protegidas_cdmb.geojson", "areas_protegidas_runap_cdmb", out)
+
+
+# ------------------------------------------------ HIDROGRAFÍA (IDEAM)
+def gen_hidrografia():
+    """Ríos (drenaje doble) y cuerpos de agua del IDEAM que tocan la
+    jurisdicción. Los 'drenajes sencillos' (miles) NO se traen: el mapa base
+    de OSM ya muestra las quebradas menores."""
+    base = ("https://dhime.ideam.gov.co/server/rest/services/"
+            "Cartografia_Basica/Hidrografia/MapServer")
+    out = []
+
+    def add(lyr, tipo, where, mao, tol, min_ring=2e-9):
+        raw = _fetch_paged(f"{base}/{lyr}/query", where, {
+            "outFields": "nombre_geografico", "maxAllowableOffset": mao,
+        })
+        for f in raw:
+            g = f.get("geometry")
+            if not g:
+                continue
+            if g["type"] in ("Polygon", "MultiPolygon"):
+                g = _clip_bbox(g)
+            if g:
+                g = _simplify_geom(g, tol=tol, min_ring_deg2=min_ring)
+            if not g or not _toca_jurisdiccion(g):
+                continue
+            nom = ((f.get("properties") or {}).get("nombre_geografico")
+                   or "").strip()
+            out.append({
+                "type": "Feature",
+                "properties": {"nombre": nom, "tipo": tipo, "fuente": "IDEAM"},
+                "geometry": _round_geom(g),
+            })
+
+    # Ríos anchos (drenaje doble, polígono) + cuerpos de agua.
+    add(1, "río", "1=1", "0.0004", 0.0003)
+    add(4, "laguna", "1=1", "0.0003", 0.0002)
+    add(2, "ciénaga", "1=1", "0.0004", 0.0003)
+    add(3, "embalse", "1=1", "0.0003", 0.0002)
+    # Ríos con nombre que solo existen como drenaje sencillo (línea): Río de
+    # Oro, Suratá, Tona, Frío, Charta, Vetas, Manco… (las quebradas sin
+    # nombre —miles— NO se traen: el mapa base de OSM ya las muestra).
+    add(0, "río", "UPPER(nombre_geografico) LIKE 'R_O %' OR "
+                  "UPPER(nombre_geografico) LIKE 'RIO %'", "0.0004", 0.0004)
+
+    out.sort(key=lambda x: (x["properties"]["tipo"], x["properties"]["nombre"]))
+    _write("hidrografia_cdmb.geojson", "hidrografia_ideam_cdmb", out)
+
+
+# ------------------------------------------------ SUBZONAS HIDROGRÁFICAS (IDEAM)
+def gen_subzonas():
+    """Subzonas hidrográficas (SZH homologadas 2024) que tocan la
+    jurisdicción: Río Lebrija, Chicamocha, Sogamoso, Suárez, etc."""
+    url = ("https://services.arcgis.com/wLfHepIACaM0pwj9/arcgis/rest/services/"
+           "SUBZONAS_HIDROGRAFICAS_HOM_2024/FeatureServer/0/query")
+    raw = _fetch_paged(url, "1=1", {
+        "outFields": "COD_SZH,NOM_SZH", "maxAllowableOffset": "0.002",
+    })
+    out = []
+    for f in raw:
+        g = f.get("geometry")
+        if not g:
+            continue
+        g = _clip_bbox(g)
+        if g:
+            g = _simplify_geom(g, tol=0.0018)
+        if not g or not _toca_jurisdiccion(g):
+            continue
+        p = f.get("properties", {})
+        out.append({
+            "type": "Feature",
+            "properties": {
+                "nombre": (p.get("NOM_SZH") or "").strip(),
+                "tipo": "subzona-hidrografica",
+                "fuente": "IDEAM",
+                "codigo": str(p.get("COD_SZH") or ""),
+            },
+            "geometry": _round_geom(g),
+        })
+    out.sort(key=lambda x: x["properties"]["nombre"])
+    _write("subzonas_cdmb.geojson", "subzonas_hidrograficas_cdmb", out)
 
 
 def _write(fname, name, feats):
@@ -348,6 +553,8 @@ def _write(fname, name, feats):
 
 
 if __name__ == "__main__":
+    print("Areas protegidas (RUNAP)...")
+    gen_areas_protegidas()
     print("Paramos delimitados (MADS)...")
     gen_paramos()
     print("Veredas (DANE, via espejo Esri Colombia)...")
@@ -356,6 +563,8 @@ if __name__ == "__main__":
     gen_aicas()
     print("Bosque seco tropical (MADS)...")
     gen_bosque_seco()
-    print("Reserva Forestal Ley 2a (MADS)...")
-    gen_reserva_ley2()
+    print("Hidrografia (IDEAM)...")
+    gen_hidrografia()
+    print("Subzonas hidrograficas (IDEAM)...")
+    gen_subzonas()
     print("listo.")

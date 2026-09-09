@@ -18,41 +18,39 @@ Charta, Matanza, Suratá, Tona, Vetas), para las capas del **geovisor**
 - **Licencia:** © OpenStreetMap contributors, ODbL 1.0
   (https://osm.org/copyright).
 
-### Regenerar
+Regenerar: ver el final de este README.
 
-El script está en el scratchpad de la sesión que lo creó
-(`gen_municipios.py`): descarga los 13, simplifica y sobrescribe este
-archivo. Si algún día CDMB consigue el shapefile oficial del MGN del DANE,
-reemplazar este archivo por esa versión (mismo formato: `nombre` en
-`properties`).
+> **Todas las capas de contexto se filtran a la jurisdicción real:** solo se
+> conservan las features que intersectan alguno de los 13 municipios (no basta
+> con caer en el bbox rectangular). El filtro es `_toca_jurisdiccion()` en el
+> generador, usando `municipios_cdmb.geojson` como máscara.
 
-## areas_protegidas_cdmb.geojson  — **OFICIAL (RUNAP)**
+## areas_protegidas_cdmb.geojson  — **EXTERNA (RUNAP)**
 
-**~52 áreas protegidas** de la región tomadas del **RUNAP** (Registro Único
-Nacional de Áreas Protegidas, de Parques Nacionales Naturales): PNR Páramo
-de Santurbán, PNN Serranía de los Yariguíes, PNR Sisavita, PNR Bosques
-Andinos Húmedos El Rasgón, PNR Cerro la Judía, PNR Bosques de Misiguay,
-varios DRMI y DCS de la CDMB, y ~25 Reservas Naturales de la Sociedad
-Civil.
+**~16 áreas protegidas** que tocan la jurisdicción, del **RUNAP** (Registro
+Único Nacional de Áreas Protegidas): PNR Páramo de Santurbán, PNR Bosques
+Andinos Húmedos El Rasgón, PNR Cerro la Judía, PNR Bosques de Misiguay, DRMI
+Bucaramanga, DCS Umpalá–Cañón del Chicamocha, y los PNR de la CAR vecina
+(CORPONOR) y el DRMI Yariguíes (CAS) que rozan el borde.
 
 - **Fuente:** ArcGIS FeatureServer de Parques Nacionales
-  (`mapas.parquesnacionales.gov.co/arcgis/rest/services/pnn/runap/FeatureServer/0`),
-  con `maxAllowableOffset` para simplificar en el servidor.
-- **Tamaño:** ~80 KB. `properties`: `nombre`, `tipo` (categoría RUNAP),
-  `condicion` (REGISTRADA / INSCRITA / CONSTRUCCION), `administra` (CDMB u
-  otra CAR / PNN), `url` (ficha en runap.parquesnacionales.gov.co),
-  `hectareas`.
+  (`mapas.parquesnacionales.gov.co/arcgis/rest/services/pnn/runap/FeatureServer/0`).
+- **Tamaño:** ~95 KB. `properties`: `nombre`, `tipo` (categoría RUNAP),
+  `fuente` (`RUNAP`), `condicion` (REGISTRADA / INSCRITA / CONSTRUCCION),
+  `administra` (`CDMB` / `CAS` / `CORPONOR` / `PNN`), `url` (ficha en
+  runap.parquesnacionales.gov.co), `hectareas`.
 
 ## paramos_cdmb.geojson  — **EXTERNA (MADS)**
 
-**Páramos delimitados** de la jurisdicción CDMB (7 polígonos): complejo
-**Jurisdicciones – Santurbán – Berlín** (Res. 2090 de 2014), **Almorzadero**
-(Res. 152 de 2018) y parte de **Yariguíes** (Res. 1554 de 2016).
+**Páramos delimitados** que tocan la jurisdicción (2): complejo
+**Jurisdicciones – Santurbán – Berlín** (Res. 2090 de 2014) y **Almorzadero**
+(Res. 152 de 2018). Los fragmentos de Yariguíes quedaban en el bbox pero
+fuera de los 13 municipios → el filtro los descarta.
 
 - **Fuente:** Feature Service público de **Datos Abiertos MADS** (Ministerio
   de Ambiente y Desarrollo Sostenible) en ArcGIS Online:
   `services6.arcgis.com/hxAwRYAu9QHliJ8T/arcgis/rest/services/Páramos_Delimitados/FeatureServer/0`.
-- **Tamaño:** ~80 KB. `properties`: `nombre`, `tipo` (`páramo`), `fuente`
+- **Tamaño:** ~75 KB. `properties`: `nombre`, `tipo` (`páramo`), `fuente`
   (`MADS`), `acto` (acto administrativo), `escala`, `hectareas`.
 - Capa **opt-in**, se carga solo al encenderla.
 
@@ -105,67 +103,74 @@ sábila/cactáceas, restauración.
   `region`.
 - Capa **opt-in**.
 
-## reserva_ley2_cdmb.geojson  — **EXTERNA (MADS)**
+## hidrografia_cdmb.geojson  — **EXTERNA (IDEAM)**
 
-**Reserva Forestal de Ley 2ª de 1959** en la jurisdicción (2 polígonos):
-la **Reserva Forestal del Río Magdalena** (Res. 1924 de 2013 de
-zonificación — cubre el flanco occidental hacia el Magdalena Medio:
-Lebrija, Rionegro) y un área en sustracción temporal. Es contexto
-regulatorio: define dónde hay restricciones y qué tipo de aprovechamiento
-está permitido.
-
-- **Fuente:** `Reservas_Forestales_de_Ley_2da_de_1959_` del org de Datos
-  Abiertos del MADS (`services6.arcgis.com/hxAwRYAu9QHliJ8T`).
-- **Recorte + simplificación:** clip al bbox CDMB + Douglas-Peucker. ~24 KB.
-- `properties`: `nombre`, `tipo` (`reserva-forestal`), `fuente` (`MADS`),
-  `acto`.
-- Capa **opt-in**.
-
-## hidrografia_cdmb.geojson  — **OFICIAL (IDEAM)**
-
-Hidrografía del **IDEAM** (cartografía básica IGAC 1:100.000):
-- Drenajes Principales / Drenaje Doble (los ríos con ancho, ~45).
-- Lagunas y ciénagas con nombre o de tamaño relevante (~215).
-- **NO** se traen los "drenajes sencillos" (~9.000 en la zona — el mapa
-  base de OSM ya muestra las quebradas menores).
+Hidrografía del **IDEAM** (cartografía básica IGAC 1:100.000), solo lo que
+toca la jurisdicción (~79 features):
+- **Ríos** — los anchos como polígono (drenaje doble: Lebrija, Chicamocha,
+  Sogamoso, Sucio) **más** los ríos con nombre que solo existen como línea
+  (drenaje sencillo): Río de Oro, Suratá, Tona, Frío, Charta, Vetas, Manco,
+  Negro, Umpalá, Cáchira, Salamaga, Jordán…
+- **Lagunas, ciénagas y embalses**.
+- **NO** se traen las quebradas sin nombre (miles — el mapa base de OSM ya
+  las muestra).
 
 - **Fuente:** ArcGIS MapServer del IDEAM
   (`dhime.ideam.gov.co/server/rest/services/Cartografia_Basica/Hidrografia/MapServer`,
-  capas 1 / 4 / 2), simplificado en el servidor.
-- **Tamaño:** ~275 KB. Todo polígonos; `properties.tipo` =
-  `río` / `laguna` / `ciénaga`.
-- Capa **opt-in** en el geovisor (se carga solo al encenderla).
+  capas 0 / 1 / 2 / 3 / 4).
+- **Tamaño:** ~90 KB. `properties`: `nombre`, `tipo`
+  (`río` / `laguna` / `ciénaga` / `embalse`), `fuente` (`IDEAM`). Geometría
+  mixta: polígonos y líneas.
+- Capa **opt-in**.
+
+## subzonas_cdmb.geojson  — **EXTERNA (IDEAM)**
+
+**Subzonas hidrográficas** (SZH homologadas 2024) que tocan la jurisdicción
+(~5): Río Lebrija, Río Chicamocha, Río Sogamoso, Río Chítaga, Río Zulia.
+Encaja con el eje del proyecto ADEI-22 (unidades hidrográficas).
+
+- **Fuente:** Feature Service público
+  `services.arcgis.com/wLfHepIACaM0pwj9/.../SUBZONAS_HIDROGRAFICAS_HOM_2024/FeatureServer/0`
+  (IDEAM). Clip al bbox + Douglas-Peucker (es contexto, no linderos).
+- **Tamaño:** ~14 KB. `properties`: `nombre`, `tipo`
+  (`subzona-hidrografica`), `fuente` (`IDEAM`), `codigo` (COD_SZH).
+- Capa **opt-in**, se dibuja solo el contorno.
 
 ### Regenerar
 
-- **`gen_capas_externas.py`** (en esta carpeta) — páramos (MADS), veredas
-  (DANE / espejo Esri Colombia), AICAS (Humboldt), bosque seco tropical y
-  reserva forestal Ley 2ª (MADS). `python assets/geo/gen_capas_externas.py`:
-  trae por ArcGIS REST (`f=geojson`), recorta al bbox (`_clip_bbox`,
-  Sutherland-Hodgman), simplifica (`maxAllowableOffset` del servidor y/o
-  Douglas-Peucker `_simplify_geom`), redondea a 5 decimales y sobreescribe
-  los assets.
-- `gen_oficial.py` — áreas protegidas (RUNAP) + hidrografía (IDEAM). Vive en
-  el scratchpad de la sesión que lo creó (pendiente de traerlo al repo).
+**`gen_capas_externas.py`** (en esta carpeta) genera **todas** las capas de
+contexto: áreas protegidas (RUNAP), páramos + bosque seco (MADS), veredas
+(DANE / espejo Esri Colombia), AICAS (Humboldt), hidrografía + subzonas
+(IDEAM). `python assets/geo/gen_capas_externas.py`.
 
-Bounding box común: `-73.95,6.6,-72.65,7.95`.
+Pipeline por capa: descarga por ArcGIS REST (`f=geojson`, paginado) →
+`_clip_bbox` (Sutherland-Hodgman, solo polígonos) → `_simplify_geom`
+(Douglas-Peucker, descarta anillos minúsculos) → `_toca_jurisdiccion`
+(descarta lo que no intersecta ninguno de los 13 municipios) → redondeo a
+5 decimales.
+
+Bounding box común: `-73.95,6.6,-72.65,7.95`. Retiró a `gen_oficial.py`
+(RUNAP + IDEAM) y consolidó todo aquí.
 
 **Regla:** las capas propias del **GeoServer de la CDMB** (POMCAS, uso del
 suelo, amenazas locales, cartografía 25k, DEM) NO se consumen en vivo — es
 infraestructura inestable. Si alguna hace falta, se pide el export
 (shapefile / GeoPackage) y se hace un snapshot local, igual que estas.
 
-## Otras fuentes que valdría sumar (mismo patrón de snapshot)
+### municipios_cdmb.geojson — regenerar
+
+Sigue en el scratchpad de la sesión que lo creó (`gen_municipios.py`, desde
+OSM/Nominatim). Si CDMB consigue el shapefile oficial del MGN del DANE,
+reemplazar por esa versión (mismo formato: `nombre` en `properties`).
+
+## Otras fuentes que valdría sumar (mismo patrón)
 
 - **Frontera agrícola nacional (UPRA)** — para negocios agro. Su servicio
   (`geoservicios.upra.gov.co/.../ordenamiento_productivo/frontera_agricola`)
-  estaba caído (`service not started`) al implementar esto; sumar con
-  `gen_capas_externas.py` cuando responda.
-- **Coberturas de la tierra / Corine Land Cover 2018 (IDEAM o MADS
-  `Cobertura_2018`)** — contexto de bosque/ecosistema; capa pesada, exige
-  clip + DP agresivo.
-- **Capa Nacional de Humedales (MADS)** — ~2.500 polígonos en el bbox;
-  habría que filtrar por tamaño.
-- **Amenaza por movimientos en masa (SGC, `srvags.sgc.gov.co`)** — contexto
-  de riesgo.
+  estaba caído (`service not started`); sumar con `gen_capas_externas.py`
+  cuando responda.
+- **Coberturas de la tierra / Corine Land Cover 2018 (MADS `Cobertura_2018`)**
+  — contexto de bosque/ecosistema; capa pesada, exige DP agresivo.
+- **Capa Nacional de Humedales (MADS)** — filtrar por tamaño.
+- **Amenaza por movimientos en masa (SGC, `srvags.sgc.gov.co`)** — riesgo.
 - **colombiaenmapas.gov.co** — visor/geoservicios de la ICDE (IGAC, DANE…).

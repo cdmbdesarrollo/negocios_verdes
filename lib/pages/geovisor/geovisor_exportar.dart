@@ -14,10 +14,9 @@ const List<String> fuentesCapasExternas = [
   'Áreas protegidas: RUNAP — Parques Nacionales Naturales de Colombia',
   'Páramos delimitados: MADS — Ministerio de Ambiente y Desarrollo Sostenible',
   'Veredas: DANE (nivel de referencia veredal)',
-  'Hidrografía: IDEAM',
+  'Hidrografía y subzonas hidrográficas: IDEAM',
   'Áreas de conservación de aves (AICA): Instituto Humboldt',
   'Bosque seco tropical: MADS',
-  'Reserva Forestal de Ley 2ª de 1959: MADS',
   'Datos de negocios verdes: CDMB',
 ];
 

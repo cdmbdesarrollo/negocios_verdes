@@ -85,6 +85,7 @@ class _GeovisorPageState extends State<GeovisorPage> {
   bool _capaNegocios = true;
   int? _anioMin; // registrados desde ese año
   double _zoomActual = 9.2; // para alternar pines livianos / con foto
+  LatLng _centroVereda = const LatLng(7.25, -73.15); // para refrescar etiquetas
   bool _medirArea = true; // false = solo distancia (línea abierta)
 
   // Herramienta "negocios cerca de un punto".
@@ -124,8 +125,9 @@ class _GeovisorPageState extends State<GeovisorPage> {
         'assets/geo/aicas_cdmb.geojson', Color(0xFF00897B)),
     _CapaSimple('bosque_seco', 'Bosque seco tropical', 'MADS',
         'assets/geo/bosque_seco_cdmb.geojson', Color(0xFFC17817)),
-    _CapaSimple('reserva_ley2', 'Reserva Forestal (Ley 2ª de 1959)', 'MADS',
-        'assets/geo/reserva_ley2_cdmb.geojson', Color(0xFF33691E)),
+    _CapaSimple('subzonas', 'Subzonas hidrográficas', 'IDEAM',
+        'assets/geo/subzonas_cdmb.geojson', Color(0xFF1565C0),
+        soloContorno: true),
   ];
   final Map<String, CapaGeo> _capaSimpleData = {};
   final Set<String> _capaSimpleOn = {};
@@ -669,6 +671,43 @@ class _GeovisorPageState extends State<GeovisorPage> {
     return out;
   }
 
+  /// Zoom actual leído del mapa (más fiable que `_zoomActual`, que solo se
+  /// actualiza a saltos). Antes de que el mapa se monte, cae a `_zoomActual`.
+  double get _zoom {
+    try {
+      return _mapController.camera.zoom;
+    } catch (_) {
+      return _zoomActual;
+    }
+  }
+
+  /// Veredas con un punto para su etiqueta (centro del anillo más grande).
+  /// Solo a zoom >= 12 y solo las que caen dentro de la vista, si no serían
+  /// cientos de rótulos encimados.
+  List<(String, LatLng)> get _veredasConCentro {
+    if (_veredas == null || _zoom < 12) return const [];
+    LatLngBounds? vista;
+    try {
+      vista = _mapController.camera.visibleBounds;
+    } catch (_) {}
+    final out = <(String, LatLng)>[];
+    for (final e in _veredas!.elementos) {
+      final nom = e.nombre ?? '';
+      if (e.poligonos.isEmpty || nom.isEmpty) continue;
+      final ring = e.poligonos.reduce((a, b) => a.length >= b.length ? a : b);
+      if (ring.length < 4) continue;
+      var lat = 0.0, lng = 0.0;
+      for (final p in ring) {
+        lat += p.latitude;
+        lng += p.longitude;
+      }
+      final centro = LatLng(lat / ring.length, lng / ring.length);
+      if (vista != null && !vista.contains(centro)) continue;
+      out.add((nom, centro));
+    }
+    return out;
+  }
+
   List<Negocio> get _negociosEnZona => _medida.length < 3
       ? const []
       : (_negocios ?? [])
@@ -852,6 +891,8 @@ class _GeovisorPageState extends State<GeovisorPage> {
       return const Center(child: CircularProgressIndicator());
     }
     final visibles = _negociosVisibles;
+    final etiquetasVereda =
+        _capaVeredas ? _veredasConCentro : const <(String, LatLng)>[];
     return Stack(
       children: [
         RepaintBoundary(
@@ -861,8 +902,23 @@ class _GeovisorPageState extends State<GeovisorPage> {
           options: MapOptions(
             onTap: (_, latlng) => _tocarMapa(latlng),
             onPositionChanged: (camara, _) {
-              if ((camara.zoom - _zoomActual).abs() >= 1) {
-                setState(() => _zoomActual = camara.zoom);
+              // Umbral fino entre zoom ~11 y ~13 (ahí aparecen las etiquetas
+              // de vereda y cambian los pines); grueso en el resto.
+              final z = camara.zoom;
+              final fino = z > 10.5 && z < 13.5;
+              if ((z - _zoomActual).abs() >= (fino ? 0.3 : 1)) {
+                setState(() => _zoomActual = z);
+                return;
+              }
+              // A zoom de vereda, al desplazarse hay que recalcular qué
+              // etiquetas caen en la vista (un setState ligero, sin cambio
+              // de estado real).
+              if (z >= 12 && _capaVeredas) {
+                final d = camara.center.latitude - _centroVereda.latitude;
+                final e = camara.center.longitude - _centroVereda.longitude;
+                if (d * d + e * e > 0.0004) {
+                  setState(() => _centroVereda = camara.center);
+                }
               }
             },
             initialCenter: _centro,
@@ -930,7 +986,7 @@ class _GeovisorPageState extends State<GeovisorPage> {
                       ),
                 ],
               ),
-            // Capas de contexto simples (AICA, bosque seco, RF Ley 2ª).
+            // Capas de contexto simples (AICA, bosque seco, subzonas).
             for (final c in _capasSimples)
               if (_capaSimpleOn.contains(c.id) &&
                   _capaSimpleData[c.id] != null)
@@ -940,9 +996,11 @@ class _GeovisorPageState extends State<GeovisorPage> {
                       for (final anillo in e.poligonos)
                         Polygon(
                           points: anillo,
-                          color: c.color.withValues(alpha: 0.13),
+                          color: c.soloContorno
+                              ? Colors.transparent
+                              : c.color.withValues(alpha: 0.13),
                           borderColor: c.color,
-                          borderStrokeWidth: 1.1,
+                          borderStrokeWidth: c.soloContorno ? 1.6 : 1.1,
                         ),
                   ],
                 ),
@@ -997,6 +1055,19 @@ class _GeovisorPageState extends State<GeovisorPage> {
                       height: 26,
                       child: _EtiquetaMunicipio(
                           texto: e.$1.nombre ?? '', activo: false),
+                    ),
+                ],
+              ),
+            // Etiquetas de vereda — solo a zoom alto (ver _veredasConCentro).
+            if (etiquetasVereda.isNotEmpty)
+              MarkerLayer(
+                markers: [
+                  for (final e in etiquetasVereda)
+                    Marker(
+                      point: e.$2,
+                      width: 128,
+                      height: 20,
+                      child: _EtiquetaVereda(texto: e.$1),
                     ),
                 ],
               ),
@@ -2009,8 +2080,14 @@ class _CapaSimple {
   final String fuente;
   final String asset;
   final Color color;
+
+  /// Si true, se dibuja solo el contorno (para polígonos grandes que taparían
+  /// el mapa, p. ej. las subzonas hidrográficas).
+  final bool soloContorno;
+
   const _CapaSimple(
-      this.id, this.titulo, this.fuente, this.asset, this.color);
+      this.id, this.titulo, this.fuente, this.asset, this.color,
+      {this.soloContorno = false});
 
   String get leyenda => '$titulo ($fuente)';
 }
@@ -2233,11 +2310,12 @@ class _PanelAyuda extends StatelessWidget {
                         'las capas de contexto. Estas últimas vienen de la '
                         'entidad externa que las produce, señalada entre '
                         'paréntesis: áreas protegidas (RUNAP), páramos '
-                        'delimitados (MADS), veredas (DANE), hidrografía '
-                        '(IDEAM), áreas de conservación de aves (Humboldt), '
-                        'bosque seco tropical y reserva forestal de Ley 2ª '
-                        '(MADS). Se descargan solo al encenderlas y se citan '
-                        'en cada descarga.',
+                        'delimitados (MADS), veredas (DANE), hidrografía y '
+                        'subzonas hidrográficas (IDEAM), áreas de conservación '
+                        'de aves (Humboldt) y bosque seco tropical (MADS). '
+                        'Cada capa solo trae lo que toca la jurisdicción. Se '
+                        'descargan al encenderlas y se citan en cada descarga.',
+                    'Los nombres de las veredas aparecen al acercar el mapa.',
                     'La leyenda al final explica qué significa cada color.',
                   ],
                 ),
@@ -2279,12 +2357,12 @@ class _PanelAyuda extends StatelessWidget {
                   parrafos: [
                     'Cartografía base: © OpenStreetMap. Capas de contexto '
                         '(externas): áreas protegidas — RUNAP (Parques '
-                        'Nacionales Naturales); páramos delimitados — MADS '
-                        '(Ministerio de Ambiente y Desarrollo Sostenible); '
-                        'veredas — DANE; hidrografía — IDEAM; áreas de '
-                        'conservación de aves (AICA) — Instituto Humboldt; '
-                        'bosque seco tropical y reserva forestal de Ley 2ª de '
-                        '1959 — MADS. Datos de negocios verdes: CDMB.',
+                        'Nacionales Naturales); páramos delimitados y bosque '
+                        'seco tropical — MADS (Ministerio de Ambiente y '
+                        'Desarrollo Sostenible); veredas — DANE; hidrografía y '
+                        'subzonas hidrográficas — IDEAM; áreas de conservación '
+                        'de aves (AICA) — Instituto Humboldt. Datos de '
+                        'negocios verdes: CDMB.',
                     'Cada capa externa se cita también en las descargas '
                         '(GeoJSON y reporte).',
                     'El geovisor es informativo y no constituye cartografía '
@@ -2388,6 +2466,33 @@ class _EtiquetaMunicipio extends StatelessWidget {
             fontSize: 10,
             fontWeight: activo ? FontWeight.w800 : FontWeight.w600,
             color: activo ? NVColors.accent : NVColors.primaryDark,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EtiquetaVereda extends StatelessWidget {
+  final String texto;
+  const _EtiquetaVereda({required this.texto});
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.7),
+          borderRadius: BorderRadius.circular(3),
+        ),
+        child: Text(
+          texto,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 9.5,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF5D4037),
           ),
         ),
       ),
