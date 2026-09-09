@@ -22,6 +22,17 @@ const List<String> fuentesCapasExternas = [
 
 String get _fuentesLinea => fuentesCapasExternas.join('. ');
 
+/// Una capa de contexto y los elementos suyos que toca la zona del reporte
+/// (p. ej. `Veredas` → ["Vega Grande", "El Palmar"]). Solo se arman para
+/// las capas que el usuario tiene encendidas. Sirve para el reporte HTML y
+/// para el GeoJSON (ahí con `slug`, para procesarlo después).
+class CapaContexto {
+  final String titulo; // "Áreas protegidas"
+  final String slug; // "areas_protegidas"
+  final List<String> elementos;
+  const CapaContexto(this.titulo, this.slug, this.elementos);
+}
+
 String _cat(Negocio n) => n.categoriaOficial?.slug == 'pendiente-clasificar'
     ? ''
     : (n.categoriaOficial?.nombre ?? '');
@@ -45,16 +56,22 @@ Map<String, dynamic> _featureNegocio(Negocio n, String origen) => {
     };
 
 /// FeatureCollection con los [negocios] como puntos. Si se pasa [zona]
-/// (polígono), se agrega como primer Feature con su área/perímetro.
+/// (polígono), se agrega como primer Feature con su área/perímetro y, en
+/// `properties.contexto`, qué elementos de cada capa encendida toca la zona.
 String geoJsonNegocios(
   List<Negocio> negocios, {
   List<LatLng>? zona,
   double? areaKm2,
   double? perimetroKm,
+  List<CapaContexto> contexto = const [],
   required String origen,
 }) {
   final feats = <Map<String, dynamic>>[];
   if (zona != null && zona.length >= 3) {
+    final ctx = {
+      for (final c in contexto)
+        if (c.elementos.isNotEmpty) c.slug: c.elementos,
+    };
     feats.add({
       'type': 'Feature',
       'properties': {
@@ -64,6 +81,7 @@ String geoJsonNegocios(
         if (perimetroKm != null)
           'perimetro_km': double.parse(perimetroKm.toStringAsFixed(3)),
         'negocios_verdes': negocios.length,
+        if (ctx.isNotEmpty) 'contexto': ctx,
         'generado': DateTime.now().toIso8601String().substring(0, 19),
         'fuente': 'Geovisor Negocios Verdes CDMB — $origen',
       },
@@ -122,6 +140,22 @@ String csvNegocios(List<Negocio> negocios, {required String origen}) {
   return b.toString();
 }
 
+/// Sección del reporte "Qué toca la zona": un bloque por capa encendida que
+/// intersecta la zona, con la lista de elementos.
+String _bloqueContexto(List<CapaContexto> contexto) {
+  final conDatos = contexto.where((c) => c.elementos.isNotEmpty).toList();
+  if (conDatos.isEmpty) return '';
+  final b = StringBuffer('<h2>Qué toca la zona</h2>');
+  for (final c in conDatos) {
+    b.write('<h3>${_esc(c.titulo)} (${c.elementos.length})</h3><ul>');
+    for (final e in c.elementos) {
+      b.write('<li>${_esc(e)}</li>');
+    }
+    b.write('</ul>');
+  }
+  return b.toString();
+}
+
 String _esc(String s) => s
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
@@ -137,7 +171,7 @@ String htmlReporte({
   List<LatLng> zona = const [],
   double? areaKm2,
   double? perimetroKm,
-  List<String> areasProtegidas = const [],
+  List<CapaContexto> contexto = const [],
   required String origen,
 }) {
   final hoy = DateTime.now().toIso8601String().substring(0, 10);
@@ -213,6 +247,7 @@ String htmlReporte({
   th,td{border:1px solid #e2e2e2;padding:6px 8px;text-align:left;vertical-align:top}
   th{background:#f2f7f4}
   h2{font-size:15px;margin:22px 0 6px;border-bottom:2px solid #038f67;padding-bottom:2px}
+  h3{font-size:13px;margin:12px 0 2px;color:#333}
   ul{margin:6px 0 0 18px}
   .pie{color:#888;font-size:11px;margin-top:28px;border-top:1px solid #ddd;padding-top:8px}
   .mapa{width:100%;height:360px;border:1px solid #ddd;border-radius:8px;margin-top:8px}
@@ -230,7 +265,7 @@ ${areaKm2 != null ? '  <div class="kpi"><b>${areaKm2.toStringAsFixed(2)}</b>km²
 ${perimetroKm != null ? '  <div class="kpi"><b>${perimetroKm.toStringAsFixed(2)}</b>km de perímetro</div>' : ''}
 </div>
 ${munOrd.isEmpty ? '' : '<h2>Por municipio</h2><ul>${munOrd.map((e) => '<li>${_esc(e.key)}: ${e.value}</li>').join()}</ul>'}
-${areasProtegidas.isEmpty ? '' : '<h2>Áreas protegidas que toca la zona</h2><ul>${areasProtegidas.map((a) => '<li>${_esc(a)}</li>').join()}</ul>'}
+${_bloqueContexto(contexto)}
 <h2>Fuentes de las capas</h2>
 <ul>${fuentesCapasExternas.map((f) => '<li>${_esc(f)}</li>').join()}</ul>
 <h2>Negocios verdes (${negocios.length})</h2>

@@ -721,17 +721,34 @@ class _GeovisorPageState extends State<GeovisorPage> {
         '${h.day.toString().padLeft(2, '0')}';
   }
 
-  /// Nombres de las áreas protegidas cargadas que intersectan la zona
-  /// dibujada (aprox: un vértice de una dentro de la otra).
-  List<String> get _areasEnZona {
-    if (_areas == null || _medida.length < 3) return const [];
+  static bool _segsCruzan(LatLng a, LatLng b, LatLng c, LatLng d) {
+    double cross(LatLng p, LatLng q, LatLng r) =>
+        (r.latitude - p.latitude) * (q.longitude - p.longitude) -
+        (q.latitude - p.latitude) * (r.longitude - p.longitude);
+    return cross(a, c, d) * cross(b, c, d) < 0 &&
+        cross(c, a, b) * cross(d, a, b) < 0;
+  }
+
+  /// Nombres de los elementos de [capa] (una capa de contexto encendida) que
+  /// intersectan el polígono [zona]: un vértice de uno dentro del otro, o un
+  /// borde que cruza. Sirve tanto para polígonos como para líneas (ríos).
+  List<String> _capaEnZona(CapaGeo? capa, List<LatLng> zona) {
+    if (capa == null || zona.length < 3) return const [];
     final out = <String>{};
-    for (final e in _areas!.elementos) {
+    for (final e in capa.elementos) {
       final n = e.nombre;
-      if (n == null || n.isEmpty) continue;
-      for (final anillo in e.poligonos) {
-        final toca = anillo.any((p) => _puntoEnPoligono(p, _medida)) ||
-            _medida.any((p) => _puntoEnPoligono(p, anillo));
+      if (n == null || n.isEmpty || out.contains(n)) continue;
+      for (final linea in [...e.poligonos, ...e.lineas]) {
+        var toca = linea.any((p) => _puntoEnPoligono(p, zona)) ||
+            zona.any((p) => _puntoEnPoligono(p, linea));
+        for (var i = 0; !toca && i + 1 < linea.length; i++) {
+          for (var j = 0; j + 1 < zona.length; j++) {
+            if (_segsCruzan(linea[i], linea[i + 1], zona[j], zona[j + 1])) {
+              toca = true;
+              break;
+            }
+          }
+        }
         if (toca) {
           out.add(n);
           break;
@@ -741,6 +758,27 @@ class _GeovisorPageState extends State<GeovisorPage> {
     return out.toList()..sort();
   }
 
+  /// Para cada capa de contexto encendida, qué elementos suyos toca [zona].
+  /// Alimenta el reporte HTML y el GeoJSON (para inferencia posterior).
+  List<CapaContexto> _contextoDeZona(List<LatLng> zona) {
+    final capas = <(String, String, CapaGeo?)>[
+      ('Áreas protegidas', 'areas_protegidas', _areas),
+      ('Páramos delimitados', 'paramos', _paramos),
+      ('Veredas', 'veredas', _veredas),
+      ('Hidrografía', 'hidrografia', _hidro),
+      ('Áreas de conservación de aves (AICA)', 'aica',
+          _capaSimpleData['aicas']),
+      ('Bosque seco tropical', 'bosque_seco_tropical',
+          _capaSimpleData['bosque_seco']),
+      ('Subzonas hidrográficas', 'subzonas_hidrograficas',
+          _capaSimpleData['subzonas']),
+    ];
+    return [
+      for (final (titulo, slug, capa) in capas)
+        CapaContexto(titulo, slug, _capaEnZona(capa, zona)),
+    ].where((c) => c.elementos.isNotEmpty).toList();
+  }
+
   void _descargarZona() {
     descargarArchivoTexto(
       contenido: geoJsonNegocios(
@@ -748,6 +786,7 @@ class _GeovisorPageState extends State<GeovisorPage> {
         zona: _medida,
         areaKm2: _areaMetros2 / 1e6,
         perimetroKm: _perimetroMetros / 1000,
+        contexto: _contextoDeZona(_medida),
         origen: Uri.base.origin,
       ),
       nombreArchivo: 'zona_negocios_verdes_$_fechaArchivo.geojson',
@@ -779,7 +818,6 @@ class _GeovisorPageState extends State<GeovisorPage> {
     final List<LatLng> zonaReporte;
     final double? areaKm2;
     final double? perimetroKm;
-    final List<String> areasProtegidas;
 
     if (enZona) {
       negs = _negociosEnZona;
@@ -787,7 +825,6 @@ class _GeovisorPageState extends State<GeovisorPage> {
       zonaReporte = List.of(_medida);
       areaKm2 = _areaMetros2 / 1e6;
       perimetroKm = _perimetroMetros / 1000;
-      areasProtegidas = _areasEnZona;
     } else if (cerca && c != null) {
       negs = _negociosCerca;
       titulo = 'Negocios verdes a menos de ${_fmtDist(_radioCerca.toDouble())} '
@@ -795,7 +832,6 @@ class _GeovisorPageState extends State<GeovisorPage> {
       zonaReporte = _circuloComoPoligono(c, _radioCerca.toDouble());
       areaKm2 = math.pi * math.pow(_radioCerca / 1000, 2).toDouble();
       perimetroKm = null;
-      areasProtegidas = const [];
     } else {
       negs = _negociosVisibles;
       titulo = _municipioSel != null
@@ -804,7 +840,6 @@ class _GeovisorPageState extends State<GeovisorPage> {
       zonaReporte = const [];
       areaKm2 = null;
       perimetroKm = null;
-      areasProtegidas = const [];
     }
 
     descargarArchivoTexto(
@@ -814,7 +849,7 @@ class _GeovisorPageState extends State<GeovisorPage> {
         zona: zonaReporte,
         areaKm2: areaKm2,
         perimetroKm: perimetroKm,
-        areasProtegidas: areasProtegidas,
+        contexto: _contextoDeZona(zonaReporte),
         origen: Uri.base.origin,
       ),
       nombreArchivo: 'reporte_negocios_verdes_$_fechaArchivo.html',
@@ -2347,6 +2382,11 @@ class _PanelAyuda extends StatelessWidget {
                     '• CSV — para Excel.',
                     '• Reporte (HTML) — página con mini-mapa y tabla, lista para '
                         'imprimir o guardar como PDF.',
+                    'Si dibujas una zona (o usas "negocios cerca de un punto") '
+                        'y tienes capas de contexto encendidas, el reporte y el '
+                        'GeoJSON incluyen "Qué toca la zona": qué áreas '
+                        'protegidas, páramos, veredas, ríos, subzonas, etc. '
+                        'cruza esa zona.',
                     'Todas las descargas respetan los filtros activos y no '
                         'requieren registro.',
                   ],

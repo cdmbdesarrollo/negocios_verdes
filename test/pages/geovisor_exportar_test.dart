@@ -71,6 +71,24 @@ void main() {
       final ring = feats[0]['geometry']['coordinates'][0] as List;
       expect(ring.first, ring.last);
     });
+
+    test('con contexto lo agrega a properties.contexto de la zona', () {
+      final z = [
+        const LatLng(7.0, -73.2),
+        const LatLng(7.2, -73.2),
+        const LatLng(7.2, -73.0),
+      ];
+      final fc = json.decode(geoJsonNegocios([n],
+          zona: z,
+          origen: 'https://x.co',
+          contexto: const [
+            CapaContexto('Veredas', 'veredas', ['El Palmar', 'Centro']),
+            CapaContexto('Páramos delimitados', 'paramos', []), // vacía → se omite
+          ])) as Map;
+      final ctx = (fc['features'] as List)[0]['properties']['contexto'] as Map;
+      expect(ctx['veredas'], ['El Palmar', 'Centro']);
+      expect(ctx.containsKey('paramos'), isFalse);
+    });
   });
 
   test('csvNegocios escapa comas y comillas', () {
@@ -88,6 +106,25 @@ void main() {
     expect(h.contains('1</b>negocios verdes'), isTrue);
     expect(h.contains('Caf&eacute;, Verde') || h.contains('Café, Verde'), isTrue);
     expect(h.contains('window.print()'), isTrue);
+  });
+
+  test('htmlReporte lista "Qué toca la zona" por capa', () {
+    final h = htmlReporte(
+      titulo: 'Zona X',
+      negocios: [n],
+      origen: 'https://x.co',
+      contexto: const [
+        CapaContexto('Áreas protegidas', 'areas_protegidas', ['Cerro la Judía']),
+        CapaContexto('Hidrografía', 'hidrografia', ['Río de Oro', 'Río Frío']),
+        CapaContexto('Veredas', 'veredas', []),
+      ],
+    );
+    expect(h.contains('Qué toca la zona'), isTrue);
+    expect(h.contains('Hidrografía (2)'), isTrue);
+    expect(h.contains('Río de Oro'), isTrue);
+    expect(h.contains('Cerro la Judía'), isTrue);
+    // capa vacía no aparece
+    expect(h.contains('Veredas (0)'), isFalse);
   });
 
   test('las descargas citan siempre las fuentes de las capas externas', () {
