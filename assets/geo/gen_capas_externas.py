@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Genera los GeoJSON de capas EXTERNAS del geovisor de Negocios Verdes:
+Genera los GeoJSON de capas de contexto EXTERNAS del geovisor:
 
-  - paramos_cdmb.geojson  -> Páramos delimitados (MADS)  -- FUENTE EXTERNA
-  - veredas_cdmb.geojson   -> Veredas (DANE, espejo Esri Colombia) -- EXTERNA
+  - paramos_cdmb.geojson       -> Páramos delimitados (MADS)
+  - veredas_cdmb.geojson        -> Veredas (DANE, espejo Esri Colombia)
+  - aicas_cdmb.geojson          -> Áreas de conservación de aves / AICA (Humboldt)
+  - bosque_seco_cdmb.geojson    -> Bosque seco tropical (MADS)
+  - reserva_ley2_cdmb.geojson   -> Reserva Forestal de Ley 2ª de 1959 (MADS)
 
-Recorta a la jurisdicción CDMB (13 municipios de Santander), simplifica en el
-servidor (maxAllowableOffset) y redondea coordenadas. Mismo patrón que
-gen_oficial.py (RUNAP + IDEAM). No se ejecuta sola: correr a mano cuando la
-fuente se actualice y sobreescribir los assets. Ver README.md.
+Recorta a la jurisdicción CDMB (13 municipios de Santander): clip al bbox
+(_clip_bbox) + simplificación (maxAllowableOffset del servidor y/o
+Douglas-Peucker _simplify_geom) + coords a 5 decimales. No se ejecuta sola:
+correr a mano cuando la fuente se actualice y sobreescribir los assets.
+Ver README.md.
 
     python assets/geo/gen_capas_externas.py
 """
