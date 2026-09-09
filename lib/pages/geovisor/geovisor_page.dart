@@ -102,15 +102,21 @@ class _GeovisorPageState extends State<GeovisorPage> {
   String? _lugarNombre;
   bool _buscandoLugar = false;
 
-  // Capas de contexto (RUNAP / IDEAM) — se cargan la primera vez que se
-  // encienden, no en el arranque.
+  // Capas de contexto — todas EXTERNAS (cada una de la entidad que la
+  // produce). Se cargan la primera vez que se encienden, no en el arranque.
   bool _capaAreas = false;
   bool _capaEtiquetasAreas = true;
   bool _capaHidro = false;
+  bool _capaParamos = false;
+  bool _capaVeredas = false;
   CapaGeo? _areas;
   CapaGeo? _hidro;
+  CapaGeo? _paramos;
+  CapaGeo? _veredas;
   bool _cargandoAreas = false;
   bool _cargandoHidro = false;
+  bool _cargandoParamos = false;
+  bool _cargandoVeredas = false;
 
   // Herramienta de medición / selección de zona. En este modo, tocar el
   // mapa agrega un vértice; con 3+ se puede descargar la zona.
@@ -175,6 +181,30 @@ class _GeovisorPageState extends State<GeovisorPage> {
         if (mounted) setState(() => _hidro = c);
       } catch (_) {}
       if (mounted) setState(() => _cargandoHidro = false);
+    }
+  }
+
+  Future<void> _toggleParamos(bool v) async {
+    setState(() => _capaParamos = v);
+    if (v && _paramos == null && !_cargandoParamos) {
+      setState(() => _cargandoParamos = true);
+      try {
+        final c = await CapaGeo.cargar('assets/geo/paramos_cdmb.geojson');
+        if (mounted) setState(() => _paramos = c);
+      } catch (_) {}
+      if (mounted) setState(() => _cargandoParamos = false);
+    }
+  }
+
+  Future<void> _toggleVeredas(bool v) async {
+    setState(() => _capaVeredas = v);
+    if (v && _veredas == null && !_cargandoVeredas) {
+      setState(() => _cargandoVeredas = true);
+      try {
+        final c = await CapaGeo.cargar('assets/geo/veredas_cdmb.geojson');
+        if (mounted) setState(() => _veredas = c);
+      } catch (_) {}
+      if (mounted) setState(() => _cargandoVeredas = false);
     }
   }
 
@@ -845,6 +875,34 @@ class _GeovisorPageState extends State<GeovisorPage> {
                 ],
               ),
             ],
+            // Páramos delimitados (MADS) — capa externa.
+            if (_capaParamos && _paramos != null)
+              PolygonLayer(
+                polygons: [
+                  for (final e in _paramos!.elementos)
+                    for (final anillo in e.poligonos)
+                      Polygon(
+                        points: anillo,
+                        color: const Color(0xFF5E35B1).withValues(alpha: 0.14),
+                        borderColor: const Color(0xFF5E35B1),
+                        borderStrokeWidth: 1.2,
+                      ),
+                ],
+              ),
+            // Veredas (DANE) — capa externa. Solo contorno, sin relleno.
+            if (_capaVeredas && _veredas != null)
+              PolygonLayer(
+                polygons: [
+                  for (final e in _veredas!.elementos)
+                    for (final anillo in e.poligonos)
+                      Polygon(
+                        points: anillo,
+                        color: Colors.transparent,
+                        borderColor: const Color(0xFF8D6E63),
+                        borderStrokeWidth: 0.7,
+                      ),
+                ],
+              ),
             if (_capaAreas && _areas != null)
               PolygonLayer(
                 polygons: [
@@ -1070,7 +1128,8 @@ class _GeovisorPageState extends State<GeovisorPage> {
               showFlutterMapAttribution: false,
               attributions: [
                 TextSourceAttribution(
-                  'Base © OpenStreetMap · Áreas: RUNAP · Hidrografía: IDEAM',
+                  'Base © OpenStreetMap · Capas externas: RUNAP, MADS, '
+                      'DANE, IDEAM',
                   onTap: () => launchUrl(
                       Uri.parse('https://www.openstreetmap.org/copyright')),
                 ),
@@ -1428,6 +1487,8 @@ class _GeovisorPageState extends State<GeovisorPage> {
         fila(NVColors.accent, 'Municipio / zona seleccionada'),
         fila(const Color(0xFF1E6B3E), 'Área protegida administrada por CDMB'),
         fila(const Color(0xFF556B2F), 'Área protegida de otra entidad'),
+        fila(const Color(0xFF5E35B1), 'Páramo delimitado (MADS)'),
+        fila(const Color(0xFF8D6E63), 'Vereda (DANE)'),
         fila(const Color(0xFF3D7EB8), 'Ríos y cuerpos de agua'),
       ],
     );
@@ -1713,17 +1774,31 @@ class _GeovisorPageState extends State<GeovisorPage> {
     );
   }
 
+  /// Rótulo de una capa de contexto: siempre marca "Externa" y la entidad
+  /// fuente entre paréntesis (RUNAP, MADS, DANE, IDEAM…).
+  static String _rotuloExterna(
+      String base, String fuente, bool cargando, int? n) {
+    if (cargando) return '$base  (cargando…)';
+    return '$base · Externa ($fuente)${n != null ? '  ($n)' : ''}';
+  }
+
   Widget _seccionContexto() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const _Rotulo('Capas de contexto'),
+        const Padding(
+          padding: EdgeInsets.only(bottom: 4),
+          child: Text(
+            'Todas son capas EXTERNAS: cada una viene de la entidad que la '
+            'produce (entre paréntesis) y se cita en las descargas. Se cargan '
+            'al encenderlas.',
+            style: TextStyle(fontSize: 10.5, color: NVColors.textoSecundario),
+          ),
+        ),
         _check(
-          _cargandoAreas
-              ? 'Áreas protegidas  (cargando…)'
-              : _areas != null
-                  ? 'Áreas protegidas — RUNAP  (${_areas!.elementos.length})'
-                  : 'Áreas protegidas — RUNAP',
+          _rotuloExterna('Áreas protegidas', 'RUNAP', _cargandoAreas,
+              _areas?.elementos.length),
           _capaAreas,
           _toggleAreas,
         ),
@@ -1744,9 +1819,20 @@ class _GeovisorPageState extends State<GeovisorPage> {
               },
             ),
         _check(
-          _cargandoHidro
-              ? 'Hidrografía  (cargando…)'
-              : 'Hidrografía — IDEAM  (ríos y cuerpos de agua)',
+          _rotuloExterna('Páramos delimitados', 'MADS', _cargandoParamos,
+              _paramos?.elementos.length),
+          _capaParamos,
+          _toggleParamos,
+        ),
+        _check(
+          _rotuloExterna('Veredas', 'DANE', _cargandoVeredas,
+              _veredas?.elementos.length),
+          _capaVeredas,
+          _toggleVeredas,
+        ),
+        _check(
+          _rotuloExterna('Hidrografía (ríos y cuerpos de agua)', 'IDEAM',
+              _cargandoHidro, _hidro?.elementos.length),
           _capaHidro,
           _toggleHidro,
         ),
@@ -2094,9 +2180,11 @@ class _PanelAyuda extends StatelessWidget {
                   parrafos: [
                     'Enciende o apaga: los negocios, el mapa de calor '
                         '(densidad), los límites municipales y las capas de '
-                        'contexto — áreas protegidas (RUNAP) e hidrografía '
-                        '(IDEAM). Las capas de contexto se descargan solo al '
-                        'encenderlas.',
+                        'contexto. Estas últimas son todas EXTERNAS —vienen de '
+                        'la entidad que las produce, señalada entre '
+                        'paréntesis—: áreas protegidas (RUNAP), páramos '
+                        'delimitados (MADS), veredas (DANE) e hidrografía '
+                        '(IDEAM). Se descargan solo al encenderlas.',
                     'La leyenda al final explica qué significa cada color.',
                   ],
                 ),
@@ -2136,9 +2224,14 @@ class _PanelAyuda extends StatelessWidget {
                   icono: Icons.verified_outlined,
                   titulo: 'Fuentes',
                   parrafos: [
-                    'Cartografía base: © OpenStreetMap. Áreas protegidas: RUNAP '
-                        '(Parques Nacionales). Hidrografía: IDEAM. Datos de '
-                        'negocios: CDMB.',
+                    'Cartografía base: © OpenStreetMap. Capas de contexto '
+                        '(externas): áreas protegidas — RUNAP (Parques '
+                        'Nacionales Naturales); páramos delimitados — MADS '
+                        '(Ministerio de Ambiente y Desarrollo Sostenible); '
+                        'veredas — DANE; hidrografía — IDEAM. Datos de '
+                        'negocios verdes: CDMB.',
+                    'Cada capa externa se cita también en las descargas '
+                        '(GeoJSON, CSV y reporte).',
                     'El geovisor es informativo y no constituye cartografía '
                         'oficial de linderos.',
                   ],

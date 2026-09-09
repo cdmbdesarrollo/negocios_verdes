@@ -89,4 +89,18 @@ void main() {
     expect(h.contains('Caf&eacute;, Verde') || h.contains('Café, Verde'), isTrue);
     expect(h.contains('window.print()'), isTrue);
   });
+
+  test('las descargas citan siempre las fuentes de las capas externas', () {
+    // GeoJSON: lista de fuentes a nivel FeatureCollection.
+    final fc = json.decode(geoJsonNegocios([n], origen: 'https://x.co')) as Map;
+    expect(fc['fuentes_capas_externas'], fuentesCapasExternas);
+
+    // Reporte HTML: sección + pie con RUNAP / MADS / DANE / IDEAM.
+    final h = htmlReporte(
+        titulo: 'Zona X', negocios: [n], origen: 'https://x.co');
+    expect(h.contains('Fuentes de las capas'), isTrue);
+    for (final f in ['RUNAP', 'MADS', 'DANE', 'IDEAM']) {
+      expect(h.contains(f), isTrue, reason: 'falta $f en el reporte');
+    }
+  });
 }

@@ -4,8 +4,8 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:latlong2/latlong.dart';
 
 /// Un elemento de una capa geográfica del geovisor (área protegida, río,
-/// cuerpo de agua…). Sale de un GeoJSON en `assets/geo/` bajado de
-/// OpenStreetMap y simplificado — ver `assets/geo/README.md`.
+/// cuerpo de agua, páramo, vereda…). Sale de un GeoJSON en `assets/geo/`,
+/// un snapshot simplificado de una fuente externa — ver `assets/geo/README.md`.
 class CapaGeoElemento {
   final String? nombre;
   final String? tipo;

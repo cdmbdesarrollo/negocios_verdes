@@ -64,10 +64,13 @@ flutter:
   # (idealmente con fondo transparente) sirve, no hace falta tocar código.
   assets:
     - assets/images/logo.png
-    # Capas del geovisor (OSM, simplificadas). Ver assets/geo/README.md.
+    # Capas del geovisor (snapshots simplificados de fuentes externas).
+    # Ver assets/geo/README.md.
     - assets/geo/municipios_cdmb.geojson
     - assets/geo/areas_protegidas_cdmb.geojson
     - assets/geo/hidrografia_cdmb.geojson
+    - assets/geo/paramos_cdmb.geojson
+    - assets/geo/veredas_cdmb.geojson
     # Iconografía de marca (colibrí, frailejón, oso de anteojos, logos de
     # CDMB/Negocios Verdes/Feria Regional) para acentos decorativos en
     # varias páginas -- ver cada Image.asset para el porqué de cada spot.

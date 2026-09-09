@@ -43,6 +43,38 @@ Civil.
   otra CAR / PNN), `url` (ficha en runap.parquesnacionales.gov.co),
   `hectareas`.
 
+## paramos_cdmb.geojson  — **EXTERNA (MADS)**
+
+**Páramos delimitados** de la jurisdicción CDMB (7 polígonos): complejo
+**Jurisdicciones – Santurbán – Berlín** (Res. 2090 de 2014), **Almorzadero**
+(Res. 152 de 2018) y parte de **Yariguíes** (Res. 1554 de 2016).
+
+- **Fuente:** Feature Service público de **Datos Abiertos MADS** (Ministerio
+  de Ambiente y Desarrollo Sostenible) en ArcGIS Online:
+  `services6.arcgis.com/hxAwRYAu9QHliJ8T/arcgis/rest/services/Páramos_Delimitados/FeatureServer/0`.
+- **Tamaño:** ~80 KB. `properties`: `nombre`, `tipo` (`páramo`), `fuente`
+  (`MADS`), `acto` (acto administrativo), `escala`, `hectareas`.
+- Capa **opt-in**, se carga solo al encenderla.
+
+## veredas_cdmb.geojson  — **EXTERNA (DANE)**
+
+**Veredas** de los 13 municipios de la jurisdicción CDMB (~384 polígonos).
+Resuelve el pendiente histórico: hasta ahora solo teníamos el *nombre* de la
+vereda (en el panel del geovisor), no el límite.
+
+- **Fuente:** capa veredal de referencia del **DANE**. Su servicio propio
+  (`geoportal.dane.gov.co`) **no entrega geometría** por consulta, así que se
+  usa el espejo público **"Veredas de Colombia"** de Esri Colombia Community
+  Maps (mismos campos y códigos DIVIPOLA `DPTOMPIO`, cada vereda con su
+  `FUENTE` = POT municipal; vigencia 2016):
+  `ags.esri.co/arcgis/rest/services/DatosAbiertos/VEREDAS_2016/MapServer/0`.
+- **Filtro:** `DPTOMPIO IN (…)` con los 13 códigos DIVIPOLA (68001, 68132,
+  68169, 68255, 68276, 68307, 68406, 68444, 68547, 68615, 68780, 68820,
+  68867).
+- **Tamaño:** ~290 KB. `properties`: `nombre`, `tipo` (`vereda`), `fuente`
+  (`DANE`), `municipio`, `codigo` (DIVIPOLA vereda), `hectareas`.
+- Capa **opt-in**, se carga solo al encenderla.
+
 ## hidrografia_cdmb.geojson  — **OFICIAL (IDEAM)**
 
 Hidrografía del **IDEAM** (cartografía básica IGAC 1:100.000):
@@ -58,24 +90,28 @@ Hidrografía del **IDEAM** (cartografía básica IGAC 1:100.000):
   `río` / `laguna` / `ciénaga`.
 - Capa **opt-in** en el geovisor (se carga solo al encenderla).
 
-### Regenerar (áreas + hidrografía)
+### Regenerar
 
-`gen_oficial.py` en el scratchpad de la sesión (RUNAP + IDEAM por ArcGIS
-REST). Bounding box: `-73.95,6.65,-72.65,7.9`. `gen_capas.py` era la
-versión vieja desde OSM (obsoleta).
+- **`gen_capas_externas.py`** (en esta carpeta) — páramos (MADS) + veredas
+  (DANE / espejo Esri Colombia). `python assets/geo/gen_capas_externas.py`:
+  trae por ArcGIS REST (`f=geojson`, `maxAllowableOffset` para simplificar
+  en el servidor, coords a 5 decimales), recorta al bbox y sobreescribe los
+  dos assets.
+- `gen_oficial.py` — áreas protegidas (RUNAP) + hidrografía (IDEAM). Vive en
+  el scratchpad de la sesión que lo creó (pendiente de traerlo al repo).
 
-## Otras fuentes que valdría revisar
+Bounding box común: `-73.95,6.6,-72.65,7.95`.
 
+**Regla:** las capas propias del **GeoServer de la CDMB** (POMCAS, uso del
+suelo, amenazas locales, cartografía 25k, DEM) NO se consumen en vivo — es
+infraestructura inestable. Si alguna hace falta, se pide el export
+(shapefile / GeoPackage) y se hace un snapshot local, igual que estas.
+
+## Otras fuentes que valdría sumar (mismo patrón de snapshot)
+
+- **Frontera agrícola nacional (UPRA)** — para negocios agro. Su servicio
+  (`geoservicios.upra.gov.co`) estaba caído al implementar esto; sumar con
+  `gen_capas_externas.py` cuando responda.
+- **Coberturas de la tierra / Corine Land Cover (IDEAM)** —
+  `visualizador.ideam.gov.co/gisserver/rest/services`.
 - **colombiaenmapas.gov.co** — visor/geoservicios de la ICDE (IGAC, DANE…).
-- **Geoportal de la CDMB** — seguramente publica coberturas, POMCAS,
-  amenazas, uso del suelo. Si aparece el WMS/REST, se enchufa igual.
-- **DANE MGN** — municipios y **veredas** (nivel "sector rural").
-
-## Veredas — pendiente
-
-OSM **no tiene** los límites de las veredas de estos municipios (sí los
-nombres, ya se usan en el panel del geovisor agrupando negocios). El
-dato bueno lo tiene **CDMB** (cartografía veredal propia) o el **DANE**
-(nivel "sector rural" del MGN). Cuando exista el shapefile, se convierte a
-GeoJSON con `properties.nombre` + `properties.municipio` y se enchufa como
-una capa más.

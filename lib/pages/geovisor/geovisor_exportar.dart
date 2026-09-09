@@ -7,6 +7,19 @@ import '../../models/negocio.dart';
 /// Funciones puras para las descargas del geovisor (GeoJSON / CSV / reporte
 /// HTML). Separadas del widget para poder probarlas con `flutter test`.
 
+/// Fuentes de las capas EXTERNAS del geovisor. Se cita SIEMPRE en cada
+/// descarga (GeoJSON, CSV y reporte), esté encendida o no la capa.
+const List<String> fuentesCapasExternas = [
+  'Cartografía base: © OpenStreetMap (ODbL)',
+  'Áreas protegidas: RUNAP — Parques Nacionales Naturales de Colombia',
+  'Páramos delimitados: MADS — Ministerio de Ambiente y Desarrollo Sostenible',
+  'Veredas: DANE (nivel de referencia veredal)',
+  'Hidrografía: IDEAM',
+  'Datos de negocios verdes: CDMB',
+];
+
+String get _fuentesLinea => fuentesCapasExternas.join('. ');
+
 String _cat(Negocio n) => n.categoriaOficial?.slug == 'pendiente-clasificar'
     ? ''
     : (n.categoriaOficial?.nombre ?? '');
@@ -66,13 +79,15 @@ String geoJsonNegocios(
   for (final n in negocios) {
     feats.add(_featureNegocio(n, origen));
   }
-  return const JsonEncoder.withIndent('  ').convert({
+  return JsonEncoder.withIndent('  ').convert({
     'type': 'FeatureCollection',
     'name': 'geovisor_negocios_verdes',
-    'crs': {
+    'crs': const {
       'type': 'name',
       'properties': {'name': 'urn:ogc:def:crs:OGC:1.3:CRS84'}
     },
+    'fuente': 'Geovisor Negocios Verdes de la CDMB — $origen',
+    'fuentes_capas_externas': fuentesCapasExternas,
     'features': feats,
   });
 }
@@ -214,12 +229,14 @@ ${perimetroKm != null ? '  <div class="kpi"><b>${perimetroKm.toStringAsFixed(2)}
 </div>
 ${munOrd.isEmpty ? '' : '<h2>Por municipio</h2><ul>${munOrd.map((e) => '<li>${_esc(e.key)}: ${e.value}</li>').join()}</ul>'}
 ${areasProtegidas.isEmpty ? '' : '<h2>Áreas protegidas que toca la zona</h2><ul>${areasProtegidas.map((a) => '<li>${_esc(a)}</li>').join()}</ul>'}
+<h2>Fuentes de las capas</h2>
+<ul>${fuentesCapasExternas.map((f) => '<li>${_esc(f)}</li>').join()}</ul>
 <h2>Negocios verdes (${negocios.length})</h2>
 <table><thead><tr><th>Nombre</th><th>Categoría</th><th>Municipio</th><th>Vereda</th><th>Reconocimientos</th><th></th></tr></thead>
 <tbody>
 $filas
 </tbody></table>
-<p class="pie">Fuente: Geovisor Negocios Verdes de la CDMB ($origen). Cartografía base © OpenStreetMap. Áreas protegidas: RUNAP. Hidrografía: IDEAM. Este reporte es informativo y no constituye cartografía oficial.</p>
+<p class="pie">Fuente: Geovisor Negocios Verdes de la CDMB ($origen). ${_esc(_fuentesLinea)}. Las capas de contexto son externas, de cada entidad citada. Este reporte es informativo y no constituye cartografía oficial.</p>
 </body></html>''';
 }
 
