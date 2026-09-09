@@ -83,7 +83,6 @@ class _GeovisorPageState extends State<GeovisorPage> {
   bool _capaMunicipios = true;
   bool _capaEtiquetas = true;
   bool _capaNegocios = true;
-  bool _capaCalor = false;
   int? _anioMin; // registrados desde ese año
   double _zoomActual = 9.2; // para alternar pines livianos / con foto
   bool _medirArea = true; // false = solo distancia (línea abierta)
@@ -117,6 +116,20 @@ class _GeovisorPageState extends State<GeovisorPage> {
   bool _cargandoHidro = false;
   bool _cargandoParamos = false;
   bool _cargandoVeredas = false;
+
+  // Capas de contexto adicionales, todas polígono de un solo estilo. Se
+  // manejan de forma genérica (ver _capasSimples / _toggleSimple).
+  static const _capasSimples = <_CapaSimple>[
+    _CapaSimple('aicas', 'Áreas de conservación de aves (AICA)', 'Humboldt',
+        'assets/geo/aicas_cdmb.geojson', Color(0xFF00897B)),
+    _CapaSimple('bosque_seco', 'Bosque seco tropical', 'MADS',
+        'assets/geo/bosque_seco_cdmb.geojson', Color(0xFFC17817)),
+    _CapaSimple('reserva_ley2', 'Reserva Forestal (Ley 2ª de 1959)', 'MADS',
+        'assets/geo/reserva_ley2_cdmb.geojson', Color(0xFF33691E)),
+  ];
+  final Map<String, CapaGeo> _capaSimpleData = {};
+  final Set<String> _capaSimpleOn = {};
+  final Set<String> _capaSimpleCargando = {};
 
   // Herramienta de medición / selección de zona. En este modo, tocar el
   // mapa agrega un vértice; con 3+ se puede descargar la zona.
@@ -205,6 +218,20 @@ class _GeovisorPageState extends State<GeovisorPage> {
         if (mounted) setState(() => _veredas = c);
       } catch (_) {}
       if (mounted) setState(() => _cargandoVeredas = false);
+    }
+  }
+
+  Future<void> _toggleSimple(_CapaSimple c, bool v) async {
+    setState(() => v ? _capaSimpleOn.add(c.id) : _capaSimpleOn.remove(c.id));
+    if (v &&
+        !_capaSimpleData.containsKey(c.id) &&
+        !_capaSimpleCargando.contains(c.id)) {
+      setState(() => _capaSimpleCargando.add(c.id));
+      try {
+        final capa = await CapaGeo.cargar(c.asset);
+        if (mounted) setState(() => _capaSimpleData[c.id] = capa);
+      } catch (_) {}
+      if (mounted) setState(() => _capaSimpleCargando.remove(c.id));
     }
   }
 
@@ -903,6 +930,22 @@ class _GeovisorPageState extends State<GeovisorPage> {
                       ),
                 ],
               ),
+            // Capas de contexto simples (AICA, bosque seco, RF Ley 2ª).
+            for (final c in _capasSimples)
+              if (_capaSimpleOn.contains(c.id) &&
+                  _capaSimpleData[c.id] != null)
+                PolygonLayer(
+                  polygons: [
+                    for (final e in _capaSimpleData[c.id]!.elementos)
+                      for (final anillo in e.poligonos)
+                        Polygon(
+                          points: anillo,
+                          color: c.color.withValues(alpha: 0.13),
+                          borderColor: c.color,
+                          borderStrokeWidth: 1.1,
+                        ),
+                  ],
+                ),
             if (_capaAreas && _areas != null)
               PolygonLayer(
                 polygons: [
@@ -971,21 +1014,7 @@ class _GeovisorPageState extends State<GeovisorPage> {
                     ),
                 ],
               ),
-            // Mapa de calor: círculos translúcidos superpuestos = densidad.
-            if (_capaCalor)
-              CircleLayer(
-                circles: [
-                  for (final n in visibles)
-                    CircleMarker(
-                      point: LatLng(n.latitud!, n.longitud!),
-                      radius: 26,
-                      useRadiusInMeter: false,
-                      color: const Color(0xFF01BD32).withValues(alpha: 0.14),
-                      borderStrokeWidth: 0,
-                    ),
-                ],
-              ),
-            if (_capaNegocios && !_capaCalor)
+            if (_capaNegocios)
               MarkerClusterLayerWidget(
                 options: MarkerClusterLayerOptions(
                   maxClusterRadius: 55,
@@ -1442,8 +1471,6 @@ class _GeovisorPageState extends State<GeovisorPage> {
       children: [
         _check('Negocios verdes  (${_negociosVisibles.length})',
             _capaNegocios, (v) => setState(() => _capaNegocios = v)),
-        _check('Mapa de calor (densidad)', _capaCalor,
-            (v) => setState(() => _capaCalor = v)),
         const Divider(height: 20),
         _check('Límites municipales', _capaMunicipios,
             (v) => setState(() => _capaMunicipios = v)),
@@ -1490,6 +1517,7 @@ class _GeovisorPageState extends State<GeovisorPage> {
         fila(const Color(0xFF5E35B1), 'Páramo delimitado (MADS)'),
         fila(const Color(0xFF8D6E63), 'Vereda (DANE)'),
         fila(const Color(0xFF3D7EB8), 'Ríos y cuerpos de agua'),
+        for (final c in _capasSimples) fila(c.color, c.leyenda),
       ],
     );
   }
@@ -1774,12 +1802,12 @@ class _GeovisorPageState extends State<GeovisorPage> {
     );
   }
 
-  /// Rótulo de una capa de contexto: siempre marca "Externa" y la entidad
-  /// fuente entre paréntesis (RUNAP, MADS, DANE, IDEAM…).
+  /// Rótulo de una capa de contexto: nombre + la entidad externa que la
+  /// produce, entre paréntesis (RUNAP, MADS, DANE, IDEAM…).
   static String _rotuloExterna(
       String base, String fuente, bool cargando, int? n) {
     if (cargando) return '$base  (cargando…)';
-    return '$base · Externa ($fuente)${n != null ? '  ($n)' : ''}';
+    return '$base ($fuente)${n != null ? '  ($n)' : ''}';
   }
 
   Widget _seccionContexto() {
@@ -1790,9 +1818,8 @@ class _GeovisorPageState extends State<GeovisorPage> {
         const Padding(
           padding: EdgeInsets.only(bottom: 4),
           child: Text(
-            'Todas son capas EXTERNAS: cada una viene de la entidad que la '
-            'produce (entre paréntesis) y se cita en las descargas. Se cargan '
-            'al encenderlas.',
+            'Cada capa viene de la entidad externa que la produce (entre '
+            'paréntesis) y se cita en las descargas. Se cargan al encenderlas.',
             style: TextStyle(fontSize: 10.5, color: NVColors.textoSecundario),
           ),
         ),
@@ -1836,6 +1863,14 @@ class _GeovisorPageState extends State<GeovisorPage> {
           _capaHidro,
           _toggleHidro,
         ),
+        for (final c in _capasSimples)
+          _check(
+            _rotuloExterna(c.titulo, c.fuente,
+                _capaSimpleCargando.contains(c.id),
+                _capaSimpleData[c.id]?.elementos.length),
+            _capaSimpleOn.contains(c.id),
+            (v) => _toggleSimple(c, v),
+          ),
       ],
     );
   }
@@ -1962,6 +1997,22 @@ class _GeovisorPageState extends State<GeovisorPage> {
     );
   }
 
+}
+
+/// Una capa de contexto "simple": un GeoJSON de polígonos con un solo
+/// estilo, sin sublistas ni etiquetas. Todas externas — `fuente` es la
+/// entidad que la produce (se muestra entre paréntesis y se cita en las
+/// descargas).
+class _CapaSimple {
+  final String id;
+  final String titulo;
+  final String fuente;
+  final String asset;
+  final Color color;
+  const _CapaSimple(
+      this.id, this.titulo, this.fuente, this.asset, this.color);
+
+  String get leyenda => '$titulo ($fuente)';
 }
 
 class _Rotulo extends StatelessWidget {
@@ -2178,13 +2229,15 @@ class _PanelAyuda extends StatelessWidget {
                   icono: Icons.layers,
                   titulo: 'Pestaña "Capas"',
                   parrafos: [
-                    'Enciende o apaga: los negocios, el mapa de calor '
-                        '(densidad), los límites municipales y las capas de '
-                        'contexto. Estas últimas son todas EXTERNAS —vienen de '
-                        'la entidad que las produce, señalada entre '
-                        'paréntesis—: áreas protegidas (RUNAP), páramos '
-                        'delimitados (MADS), veredas (DANE) e hidrografía '
-                        '(IDEAM). Se descargan solo al encenderlas.',
+                    'Enciende o apaga: los negocios, los límites municipales y '
+                        'las capas de contexto. Estas últimas vienen de la '
+                        'entidad externa que las produce, señalada entre '
+                        'paréntesis: áreas protegidas (RUNAP), páramos '
+                        'delimitados (MADS), veredas (DANE), hidrografía '
+                        '(IDEAM), áreas de conservación de aves (Humboldt), '
+                        'bosque seco tropical y reserva forestal de Ley 2ª '
+                        '(MADS). Se descargan solo al encenderlas y se citan '
+                        'en cada descarga.',
                     'La leyenda al final explica qué significa cada color.',
                   ],
                 ),
@@ -2228,10 +2281,12 @@ class _PanelAyuda extends StatelessWidget {
                         '(externas): áreas protegidas — RUNAP (Parques '
                         'Nacionales Naturales); páramos delimitados — MADS '
                         '(Ministerio de Ambiente y Desarrollo Sostenible); '
-                        'veredas — DANE; hidrografía — IDEAM. Datos de '
-                        'negocios verdes: CDMB.',
+                        'veredas — DANE; hidrografía — IDEAM; áreas de '
+                        'conservación de aves (AICA) — Instituto Humboldt; '
+                        'bosque seco tropical y reserva forestal de Ley 2ª de '
+                        '1959 — MADS. Datos de negocios verdes: CDMB.',
                     'Cada capa externa se cita también en las descargas '
-                        '(GeoJSON, CSV y reporte).',
+                        '(GeoJSON y reporte).',
                     'El geovisor es informativo y no constituye cartografía '
                         'oficial de linderos.',
                   ],

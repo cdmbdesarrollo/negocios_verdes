@@ -71,6 +71,9 @@ flutter:
     - assets/geo/hidrografia_cdmb.geojson
     - assets/geo/paramos_cdmb.geojson
     - assets/geo/veredas_cdmb.geojson
+    - assets/geo/aicas_cdmb.geojson
+    - assets/geo/bosque_seco_cdmb.geojson
+    - assets/geo/reserva_ley2_cdmb.geojson
     # Iconografía de marca (colibrí, frailejón, oso de anteojos, logos de
     # CDMB/Negocios Verdes/Feria Regional) para acentos decorativos en
     # varias páginas -- ver cada Image.asset para el porqué de cada spot.

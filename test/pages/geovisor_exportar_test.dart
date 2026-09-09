@@ -99,7 +99,7 @@ void main() {
     final h = htmlReporte(
         titulo: 'Zona X', negocios: [n], origen: 'https://x.co');
     expect(h.contains('Fuentes de las capas'), isTrue);
-    for (final f in ['RUNAP', 'MADS', 'DANE', 'IDEAM']) {
+    for (final f in ['RUNAP', 'MADS', 'DANE', 'IDEAM', 'Humboldt']) {
       expect(h.contains(f), isTrue, reason: 'falta $f en el reporte');
     }
   });

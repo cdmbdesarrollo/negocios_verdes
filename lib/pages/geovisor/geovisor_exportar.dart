@@ -15,6 +15,9 @@ const List<String> fuentesCapasExternas = [
   'Páramos delimitados: MADS — Ministerio de Ambiente y Desarrollo Sostenible',
   'Veredas: DANE (nivel de referencia veredal)',
   'Hidrografía: IDEAM',
+  'Áreas de conservación de aves (AICA): Instituto Humboldt',
+  'Bosque seco tropical: MADS',
+  'Reserva Forestal de Ley 2ª de 1959: MADS',
   'Datos de negocios verdes: CDMB',
 ];
 

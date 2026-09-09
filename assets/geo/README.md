@@ -75,6 +75,52 @@ vereda (en el panel del geovisor), no el límite.
   (`DANE`), `municipio`, `codigo` (DIVIPOLA vereda), `hectareas`.
 - Capa **opt-in**, se carga solo al encenderla.
 
+## aicas_cdmb.geojson  — **EXTERNA (Instituto Humboldt)**
+
+**Áreas de Importancia para la Conservación de las Aves (AICA)** que tocan
+la jurisdicción (3): **Serranía de Yariguíes** (CO073), **Cerro La Judía**
+(CO171, en Floridablanca/Piedecuesta) y **Bosques secos del valle del río
+Chicamocha** (CO074). Relevante para el aviturismo, uno de los segmentos
+fuertes de negocios verdes en Santander.
+
+- **Fuente:** capa `AICAS_20240315` del org de Datos Abiertos del MADS en
+  ArcGIS Online (`services6.arcgis.com/hxAwRYAu9QHliJ8T`). El programa AICA
+  lo coordina el **Instituto Humboldt** (con Asociación Calidris / BirdLife).
+- **Tamaño:** ~7 KB. `properties`: `nombre`, `tipo` (`aica`), `fuente`
+  (`Humboldt`), `codigo` (código BirdLife).
+- Capa **opt-in**.
+
+## bosque_seco_cdmb.geojson  — **EXTERNA (MADS)**
+
+Ecosistema estratégico **Bosque Seco Tropical** (fragmento del cañón del
+Chicamocha–Sogamoso que entra en Girón, Piedecuesta, Rionegro y Lebrija).
+Base para negocios verdes de zona seca: aviturismo, apicultura, productos de
+sábila/cactáceas, restauración.
+
+- **Fuente:** `Ecosistemas_Estratégicos_Bosque_Seco_Tropical` del org de
+  Datos Abiertos del MADS (`services6.arcgis.com/hxAwRYAu9QHliJ8T`).
+- **Recorte + simplificación:** clip al bbox CDMB + Douglas-Peucker
+  (`maxAllowableOffset` del servidor no aplica en esta capa). ~86 KB.
+- `properties`: `nombre`, `tipo` (`bosque-seco`), `fuente` (`MADS`),
+  `region`.
+- Capa **opt-in**.
+
+## reserva_ley2_cdmb.geojson  — **EXTERNA (MADS)**
+
+**Reserva Forestal de Ley 2ª de 1959** en la jurisdicción (2 polígonos):
+la **Reserva Forestal del Río Magdalena** (Res. 1924 de 2013 de
+zonificación — cubre el flanco occidental hacia el Magdalena Medio:
+Lebrija, Rionegro) y un área en sustracción temporal. Es contexto
+regulatorio: define dónde hay restricciones y qué tipo de aprovechamiento
+está permitido.
+
+- **Fuente:** `Reservas_Forestales_de_Ley_2da_de_1959_` del org de Datos
+  Abiertos del MADS (`services6.arcgis.com/hxAwRYAu9QHliJ8T`).
+- **Recorte + simplificación:** clip al bbox CDMB + Douglas-Peucker. ~24 KB.
+- `properties`: `nombre`, `tipo` (`reserva-forestal`), `fuente` (`MADS`),
+  `acto`.
+- Capa **opt-in**.
+
 ## hidrografia_cdmb.geojson  — **OFICIAL (IDEAM)**
 
 Hidrografía del **IDEAM** (cartografía básica IGAC 1:100.000):
@@ -92,11 +138,13 @@ Hidrografía del **IDEAM** (cartografía básica IGAC 1:100.000):
 
 ### Regenerar
 
-- **`gen_capas_externas.py`** (en esta carpeta) — páramos (MADS) + veredas
-  (DANE / espejo Esri Colombia). `python assets/geo/gen_capas_externas.py`:
-  trae por ArcGIS REST (`f=geojson`, `maxAllowableOffset` para simplificar
-  en el servidor, coords a 5 decimales), recorta al bbox y sobreescribe los
-  dos assets.
+- **`gen_capas_externas.py`** (en esta carpeta) — páramos (MADS), veredas
+  (DANE / espejo Esri Colombia), AICAS (Humboldt), bosque seco tropical y
+  reserva forestal Ley 2ª (MADS). `python assets/geo/gen_capas_externas.py`:
+  trae por ArcGIS REST (`f=geojson`), recorta al bbox (`_clip_bbox`,
+  Sutherland-Hodgman), simplifica (`maxAllowableOffset` del servidor y/o
+  Douglas-Peucker `_simplify_geom`), redondea a 5 decimales y sobreescribe
+  los assets.
 - `gen_oficial.py` — áreas protegidas (RUNAP) + hidrografía (IDEAM). Vive en
   el scratchpad de la sesión que lo creó (pendiente de traerlo al repo).
 
@@ -110,8 +158,14 @@ infraestructura inestable. Si alguna hace falta, se pide el export
 ## Otras fuentes que valdría sumar (mismo patrón de snapshot)
 
 - **Frontera agrícola nacional (UPRA)** — para negocios agro. Su servicio
-  (`geoservicios.upra.gov.co`) estaba caído al implementar esto; sumar con
+  (`geoservicios.upra.gov.co/.../ordenamiento_productivo/frontera_agricola`)
+  estaba caído (`service not started`) al implementar esto; sumar con
   `gen_capas_externas.py` cuando responda.
-- **Coberturas de la tierra / Corine Land Cover (IDEAM)** —
-  `visualizador.ideam.gov.co/gisserver/rest/services`.
+- **Coberturas de la tierra / Corine Land Cover 2018 (IDEAM o MADS
+  `Cobertura_2018`)** — contexto de bosque/ecosistema; capa pesada, exige
+  clip + DP agresivo.
+- **Capa Nacional de Humedales (MADS)** — ~2.500 polígonos en el bbox;
+  habría que filtrar por tamaño.
+- **Amenaza por movimientos en masa (SGC, `srvags.sgc.gov.co`)** — contexto
+  de riesgo.
 - **colombiaenmapas.gov.co** — visor/geoservicios de la ICDE (IGAC, DANE…).
