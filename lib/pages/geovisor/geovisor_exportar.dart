@@ -195,11 +195,11 @@ String htmlReporte({
   var zona = $zonaJs, negs = $negsJs;
   var m = L.map('mapa', {scrollWheelZoom:false});
   // No tile.openstreetmap.org: el reporte se abre como archivo local (sin
-  // Referer) y OSM responde 403 "Access blocked" a cada tesela. CARTO sirve
-  // los mismos datos de OSM sin exigir Referer.
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-    {maxZoom:19, subdomains:'abcd',
-     attribution:'&copy; OpenStreetMap &copy; CARTO'}).addTo(m);
+  // Referer) y OSM responde 403 "Access blocked" a cada tesela. CARTO
+  // tampoco sirve: ahora pide API key. Esri World Street Map no exige ni
+  // Referer ni key.
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    {maxZoom:19, attribution:'Tiles &copy; Esri'}).addTo(m);
   var grupo = [];
   if (zona.length >= 3) {
     var poly = L.polygon(zona, {color:'#FF8623', weight:2, fillOpacity:0.10}).addTo(m);
