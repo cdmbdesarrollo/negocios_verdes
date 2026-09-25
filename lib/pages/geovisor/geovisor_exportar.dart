@@ -196,10 +196,12 @@ String htmlReporte({
   var m = L.map('mapa', {scrollWheelZoom:false});
   // No tile.openstreetmap.org: el reporte se abre como archivo local (sin
   // Referer) y OSM responde 403 "Access blocked" a cada tesela. CARTO
-  // tampoco sirve: ahora pide API key. Esri World Street Map no exige ni
-  // Referer ni key.
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-    {maxZoom:19, attribution:'Tiles &copy; Esri'}).addTo(m);
+  // tampoco sirve: ahora pide API key. Las teselas de Esri no exigen ni
+  // Referer ni key. Satélite + capa transparente de nombres encima.
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    {maxZoom:19, attribution:'Imágenes &copy; Esri, Maxar, Earthstar Geographics'}).addTo(m);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+    {maxZoom:19}).addTo(m);
   var grupo = [];
   if (zona.length >= 3) {
     var poly = L.polygon(zona, {color:'#FF8623', weight:2, fillOpacity:0.10}).addTo(m);
@@ -207,7 +209,7 @@ String htmlReporte({
   }
   negs.forEach(function(x){
     var mk = L.circleMarker([x[0], x[1]],
-      {radius:6, color:'#038f67', fillColor:'#01BD32', fillOpacity:0.9, weight:2})
+      {radius:6, color:'#ffffff', fillColor:'#01BD32', fillOpacity:0.95, weight:2})
       .addTo(m).bindPopup(x[2]);
     grupo.push(mk);
   });
