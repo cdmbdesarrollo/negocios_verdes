@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'responsive.dart';
 import 'widgets/logo_negocios_verdes.dart';
@@ -50,6 +51,36 @@ List<EnlaceAdmin> _enlacesVisibles(bool esSuper) =>
 bool _enlaceActivo(String rutaActual, EnlaceAdmin enlace) {
   if (enlace.ruta == '/admin') return rutaActual == '/admin';
   return rutaActual == enlace.ruta || rutaActual.startsWith('${enlace.ruta}/');
+}
+
+/// Abre [ruta] (del admin o del sitio público) en una pestaña nueva del
+/// navegador — pedido explícito: tener el sitio público o otra sección
+/// abiertos en una pestaña mientras se administra en otra. La sesión de
+/// Supabase vive en localStorage, así que la pestaña nueva ya entra
+/// autenticada. Uri.base.resolve: mismo origen que está sirviendo la app
+/// (localhost en desarrollo, el dominio real en producción).
+Future<void> abrirEnNuevaPestana(String ruta) =>
+    launchUrl(Uri.base.resolve(ruta), webOnlyWindowName: '_blank');
+
+/// Botón chico "abrir en pestaña nueva" que va al final de cada ítem del
+/// menú. [color] cambia según el fondo (barra oscura vs. drawer blanco).
+class _BotonNuevaPestana extends StatelessWidget {
+  final String ruta;
+  final Color color;
+
+  const _BotonNuevaPestana({required this.ruta, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: 'Abrir en una pestaña nueva',
+      visualDensity: VisualDensity.compact,
+      iconSize: 17,
+      color: color,
+      icon: const Icon(Icons.open_in_new),
+      onPressed: () => abrirEnNuevaPestana(ruta),
+    );
+  }
 }
 
 String _tituloSeccion(String rutaActual) {
@@ -183,6 +214,11 @@ class _AdminShellPageState extends State<AdminShellPage> {
                   // oscuro.
                   selectedTileColor: NVColors.verdeMenu,
                   selectedColor: NVColors.textoPrincipal,
+                  trailing: _enlaceActivo(rutaActual, enlace)
+                      ? null
+                      : _BotonNuevaPestana(
+                          ruta: enlace.ruta,
+                          color: NVColors.textoSecundario),
                   onTap: () {
                     Navigator.of(context).pop();
                     context.go(enlace.ruta);
@@ -192,6 +228,8 @@ class _AdminShellPageState extends State<AdminShellPage> {
               ListTile(
                 leading: const Icon(Icons.public),
                 title: const Text('Ver sitio público'),
+                trailing: const _BotonNuevaPestana(
+                    ruta: '/', color: NVColors.textoSecundario),
                 onTap: () {
                   Navigator.of(context).pop();
                   context.go('/');
@@ -256,6 +294,10 @@ class _BarraLateral extends StatelessWidget {
                       titulo: enlace.titulo,
                       activo: _enlaceActivo(rutaActual, enlace),
                       onTap: () => context.go(enlace.ruta),
+                      // En la sección donde ya se está no tiene sentido.
+                      rutaNuevaPestana: _enlaceActivo(rutaActual, enlace)
+                          ? null
+                          : enlace.ruta,
                     ),
                 ],
               ),
@@ -271,6 +313,7 @@ class _BarraLateral extends StatelessWidget {
                     titulo: 'Ver sitio público',
                     activo: false,
                     onTap: () => context.go('/'),
+                    rutaNuevaPestana: '/',
                   ),
                   _itemBarra(
                     context,
@@ -294,6 +337,7 @@ class _BarraLateral extends StatelessWidget {
     required String titulo,
     required bool activo,
     required VoidCallback onTap,
+    String? rutaNuevaPestana,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
@@ -309,24 +353,36 @@ class _BarraLateral extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(
-              children: [
-                Icon(icono,
-                    color: activo
-                        ? NVColors.textoPrincipal
-                        : Colors.white70,
-                    size: 20),
-                const SizedBox(width: 12),
-                Text(
-                  titulo,
-                  style: TextStyle(
-                    color: activo ? NVColors.textoPrincipal : Colors.white70,
-                    fontWeight: activo ? FontWeight.w600 : FontWeight.normal,
-                    fontSize: 13.5,
+            // Alto fijo: el ítem mide igual con o sin el botón de pestaña
+            // nueva (el IconButton es más alto que el texto).
+            padding: const EdgeInsets.fromLTRB(14, 2, 2, 2),
+            child: SizedBox(
+              height: 40,
+              child: Row(
+                children: [
+                  Icon(icono,
+                      color: activo
+                          ? NVColors.textoPrincipal
+                          : Colors.white70,
+                      size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      titulo,
+                      style: TextStyle(
+                        color:
+                            activo ? NVColors.textoPrincipal : Colors.white70,
+                        fontWeight:
+                            activo ? FontWeight.w600 : FontWeight.normal,
+                        fontSize: 13.5,
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                  if (rutaNuevaPestana != null)
+                    _BotonNuevaPestana(
+                        ruta: rutaNuevaPestana, color: Colors.white38),
+                ],
+              ),
             ),
           ),
         ),
