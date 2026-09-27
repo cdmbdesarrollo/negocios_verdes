@@ -27,6 +27,25 @@ class OpcionCampoService {
     }
   }
 
+  /// Solo los valores de un campo, en su orden — para un selector suelto
+  /// fuera de la ficha técnica (p. ej. el cargo en FormPersonaDialog).
+  Future<List<String>> listarValores(String campo) async {
+    try {
+      final data = await _supabase
+          .from('opciones_campo')
+          .select('valor')
+          .eq('campo', campo)
+          .order('orden', ascending: true)
+          .order('valor', ascending: true);
+      return [
+        for (final fila in data as List)
+          (fila as Map<String, dynamic>)['valor'].toString(),
+      ];
+    } catch (e) {
+      throw Exception('No se pudo cargar la lista de opciones: $e');
+    }
+  }
+
   /// Agrega una opción nueva a un campo — "deja una opción adicional si es
   /// necesario para el administrador". Vía RPC (no insert directo) para
   /// que quede auditada en admin_logs, mismo criterio que el resto de

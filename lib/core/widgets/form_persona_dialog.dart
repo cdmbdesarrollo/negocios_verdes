@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../catalogos.dart';
 import '../../models/persona.dart';
+import '../../services/opcion_campo_service.dart';
 import '../../services/personas_service.dart';
 import '../../theme/nv_colors.dart';
+import 'dialogo_opcion_nueva.dart';
+import 'selector_con_catalogo.dart';
 
 /// Diálogo para crear o editar una persona de cualquiera de las 3 bases
 /// (responsable CDMB / delegado / representante legal — ver 0029 / 0031 /
@@ -38,7 +41,15 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
   late final TextEditingController _telefono;
   late final TextEditingController _correo;
   late final TextEditingController _direccion;
-  late final TextEditingController _cargo;
+  /// Cargo parametrizado (pedido explícito): se elige de una lista en
+  /// opciones_campo (ver [TipoPersonaX.campoCargo]) en vez de texto libre,
+  /// para que no convivan "Responsable" y "Responsabe".
+  String? _cargo;
+  List<String> _cargos = [];
+  /// Sube en cada intento de "Agregar opción nueva…" para volver a montar
+  /// el selector — si no, al cancelar se quedaba mostrando ese ítem.
+  int _versionCargo = 0;
+  final _opcionCampoService = OpcionCampoService();
   String? _tipoDocumento;
   String? _municipio;
   String _naturaleza = 'Natural';
@@ -69,12 +80,48 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
     _telefono = TextEditingController(text: i?.telefono ?? '');
     _correo = TextEditingController(text: i?.correo ?? '');
     _direccion = TextEditingController(text: i?.direccion ?? '');
-    _cargo = TextEditingController(text: i?.cargo ?? '');
+    _cargo = (i?.cargo ?? '').isEmpty ? null : i!.cargo;
     _tipoDocumento = i?.tipoDocumento;
     _municipio = i?.municipio;
     _naturaleza = i != null && i.esJuridica ? 'Jurídica' : 'Natural';
     if (_esRepr && i != null && i.id.isNotEmpty) {
       _cargarNegocios();
+    }
+    if (!_esRepr) _cargarCargos();
+  }
+
+  Future<void> _cargarCargos() async {
+    try {
+      final cargos =
+          await _opcionCampoService.listarValores(widget.tipo.campoCargo);
+      if (mounted) setState(() => _cargos = cargos);
+    } catch (_) {
+      // Sin la lista igual se puede guardar la persona (el cargo es
+      // opcional) y agregar un cargo nuevo desde el selector.
+    }
+  }
+
+  Future<void> _agregarCargo(BuildContext context) async {
+    final elegido = await pedirOpcionNueva(context,
+        existentes: _cargos, etiqueta: 'Cargo');
+    if (mounted) setState(() => _versionCargo++);
+    if (elegido == null) return;
+    try {
+      if (elegido.esNueva) {
+        await _opcionCampoService.agregar(
+            campo: widget.tipo.campoCargo, valor: elegido.valor);
+      }
+      if (!mounted) return;
+      setState(() {
+        if (!_cargos.contains(elegido.valor)) {
+          _cargos = [..._cargos, elegido.valor];
+        }
+        _cargo = elegido.valor;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      }
     }
   }
 
@@ -179,7 +226,6 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
     _telefono.dispose();
     _correo.dispose();
     _direccion.dispose();
-    _cargo.dispose();
     super.dispose();
   }
 
@@ -207,7 +253,7 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
         correo: _nn(_correo),
         direccion: _nn(_direccion),
         municipio: _municipio,
-        cargo: _esRepr ? null : _nn(_cargo),
+        cargo: _esRepr ? null : _cargo,
       );
       final id = await widget.servicio.guardarPersona(widget.tipo, propuesta);
       if (!mounted) return;
@@ -320,10 +366,16 @@ class _FormPersonaDialogState extends State<FormPersonaDialog> {
               ),
               const SizedBox(height: 10),
               if (!_esRepr) ...[
-                TextField(
-                  controller: _cargo,
-                  textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(labelText: 'Cargo'),
+                // Key con la lista: el dropdown solo lee su valor inicial una
+                // vez; al llegar los cargos, agregar uno o cancelar se vuelve
+                // a montar.
+                SelectorConCatalogo(
+                  key: ValueKey('cargo-${_cargos.length}-$_cargo-$_versionCargo'),
+                  etiqueta: 'Cargo',
+                  valor: _cargo,
+                  opciones: _cargos,
+                  onCambio: (v) => setState(() => _cargo = v),
+                  onAgregarOpcion: _agregarCargo,
                 ),
                 const SizedBox(height: 10),
               ],

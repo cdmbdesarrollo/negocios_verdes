@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../catalogos.dart';
 import '../../../core/admin_guard.dart';
+import '../../../core/widgets/dialogo_opcion_nueva.dart';
 import '../../../core/widgets/selector_con_catalogo.dart';
 import '../../../core/widgets/selector_persona.dart';
 import '../../../models/actividad_productiva.dart';
@@ -765,38 +766,24 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
   /// seleccionada de una vez, así el admin no tiene que buscarla de
   /// nuevo en la lista.
   Future<void> _agregarOpcion(BuildContext context, String campo) async {
-    final controller = TextEditingController();
-    final valor = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Agregar opción nueva'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: 'Valor'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(dialogContext, controller.text),
-            child: const Text('Agregar'),
-          ),
-        ],
-      ),
-    );
-    if (valor == null || valor.trim().isEmpty) return;
+    // Mismo diálogo que el cargo de personas: si lo escrito ya existe (sin
+    // contar mayúsculas/tildes) o es casi igual a una opción existente, se
+    // reusa esa en vez de crear una variante.
+    final elegido =
+        await pedirOpcionNueva(context, existentes: _valoresDe(campo));
+    if (elegido == null) return;
     try {
-      final opcion =
-          await _opcionCampoService.agregar(campo: campo, valor: valor.trim());
+      if (elegido.esNueva) {
+        final opcion = await _opcionCampoService.agregar(
+            campo: campo, valor: elegido.valor);
+        if (!mounted) return;
+        setState(() {
+          _opciones = {..._opciones};
+          _opciones.putIfAbsent(campo, () => []).add(opcion);
+        });
+      }
       if (!mounted) return;
-      setState(() {
-        _opciones = {..._opciones};
-        _opciones.putIfAbsent(campo, () => []).add(opcion);
-        _valoresSelector[campo] = opcion.valor;
-      });
+      setState(() => _valoresSelector[campo] = elegido.valor);
     } catch (e) {
       _avisar(e.toString().replaceFirst('Exception: ', ''));
     }

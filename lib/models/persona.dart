@@ -14,6 +14,15 @@ extension TipoPersonaX on TipoPersona {
         TipoPersona.representante => 'Representante legal',
       };
 
+  /// Campo de opciones_campo con la lista parametrizada de cargos
+  /// (representante no tiene cargo). Una lista por tipo: los cargos del
+  /// personal CDMB no son los mismos que los de un delegado del negocio.
+  String get campoCargo => switch (this) {
+        TipoPersona.responsable => 'cargo_responsable',
+        TipoPersona.delegado => 'cargo_delegado',
+        TipoPersona.representante => 'cargo_representante',
+      };
+
   String get tabla => switch (this) {
         TipoPersona.responsable => 'responsables_cdmb',
         TipoPersona.delegado => 'delegados',
