@@ -584,13 +584,19 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
           ),
         ),
         const SizedBox(height: 8),
+        // Pedido explícito: en vez de "Ver en el geovisor" (llevaba al mapa
+        // general del municipio, no a este negocio), la ruta desde donde
+        // está el visitante. Google Maps usa sola la ubicación actual como
+        // origen (pide el permiso ella misma) y en el celular abre la app —
+        // no hace falta geolocator ni calcular nada acá.
         Align(
           alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: () => context.go(
-                '/geovisor?mun=${Uri.encodeComponent(negocio.municipio)}'),
-            icon: const Icon(Icons.travel_explore, size: 18),
-            label: const Text('Ver en el geovisor'),
+          child: OutlinedButton.icon(
+            onPressed: () => _abrir(
+                'https://www.google.com/maps/dir/?api=1&destination='
+                '${negocio.latitud},${negocio.longitud}'),
+            icon: const Icon(Icons.directions_outlined, size: 18),
+            label: const Text('Cómo llegar'),
           ),
         ),
       ],
