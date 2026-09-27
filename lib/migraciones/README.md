@@ -327,6 +327,15 @@ en un Supabase nuevo:
     de Vercel). El cambio de contraseña propio de cada admin ("Mi cuenta",
     `/admin/cuenta`) es client-side (`supabase.auth.updateUser`), sin SQL.
     Sin dependencias de orden más allá de 0002.
+40. `0040_negocio_productos.sql` — **productos destacados**: tabla
+    `negocio_productos` (hasta 3 por negocio, `orden` 0–2 con `unique
+    (negocio_id, orden)`, foto + descripción de hasta 300 caracteres, al
+    menos una de las dos). Reemplazan a la galería de fotos en la ficha
+    pública (se muestran en fila encima de "Ubicación") y en el formulario
+    admin. RLS igual que `negocio_fotos`: lectura pública si el negocio
+    está activo, todo para `es_admin()`. Las fotos van al bucket
+    `negocios-fotos` en `negocios/<id>/productos/`. `negocio_fotos` no se
+    borra (historial; estaba vacía) pero la app ya no la usa.
 
 ## Sobre trabajo concurrente de dos sesiones
 

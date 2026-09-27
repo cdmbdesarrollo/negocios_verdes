@@ -9,14 +9,14 @@ import '../../../core/widgets/selector_persona.dart';
 import '../../../models/actividad_productiva.dart';
 import '../../../models/categoria_oficial.dart';
 import '../../../models/ficha_tecnica_negocio.dart';
-import '../../../models/negocio_foto.dart';
+import '../../../models/negocio_producto.dart';
 import '../../../models/opcion_campo.dart';
 import '../../../models/persona.dart';
 import '../../../models/subcategoria.dart';
 import '../../../models/vereda.dart';
 import '../../../services/actividad_productiva_service.dart';
 import '../../../services/categoria_service.dart';
-import '../../../services/negocio_foto_service.dart';
+import '../../../services/negocio_producto_service.dart';
 import '../../../services/negocio_service.dart';
 import '../../../services/opcion_campo_service.dart';
 import '../../../services/personas_service.dart';
@@ -24,6 +24,7 @@ import '../../../services/subcategoria_service.dart';
 import '../../../services/vereda_service.dart';
 import '../../../theme/nv_colors.dart';
 import 'widgets/galeria_editor.dart';
+import 'widgets/productos_editor.dart';
 import 'widgets/selector_taxonomia_negocio.dart';
 import 'widgets/selector_ubicacion_mapa.dart';
 
@@ -97,8 +98,8 @@ const _kNovedadOpciones = ['ACTIVO', 'INACTIVO', 'RETIRADO', 'SUSPENDIDO'];
 
 /// Un solo formulario para crear y editar (negocioId nulo = crear). El id
 /// del negocio se genera en el cliente ANTES de guardar (ver initState) —
-/// lo necesita GaleriaEditor para las rutas de Storage de portada/galería
-/// desde el primer momento, no solo después de guardar.
+/// lo necesitan GaleriaEditor/ProductosEditor para las rutas de Storage de
+/// portada/productos desde el primer momento, no solo después de guardar.
 class AdminNegocioFormPage extends StatefulWidget {
   final String? negocioId;
 
@@ -115,7 +116,7 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
   final _actividadService = ActividadProductivaService();
   final _veredaService = VeredaService();
   final _negocioService = NegocioService();
-  final _negocioFotoService = NegocioFotoService();
+  final _negocioProductoService = NegocioProductoService();
   final _opcionCampoService = OpcionCampoService();
   final _personasService = PersonasService();
 
@@ -222,8 +223,8 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
   bool _avalado = false;
   String? _fotoPortadaUrl;
   String? _fotoPortadaPath;
-  List<NegocioFoto> _galeriaInicial = [];
-  List<FotoLocal> _galeriaActual = [];
+  List<NegocioProducto> _productosIniciales = [];
+  List<NegocioProducto> _productosActuales = [];
 
   @override
   void initState() {
@@ -315,18 +316,11 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
         _subcategoriaIds = existente.subcategorias.map((s) => s.id).toSet();
         _actividadIds =
             existente.actividadesProductivas.map((a) => a.id).toSet();
-        _galeriaInicial = existente.fotos;
-        // Crítico: _galeriaActual es lo que _sincronizarGaleria() vuelve a
-        // insertar al guardar (borra todo _galeriaInicial primero). Si el
-        // admin guarda SIN tocar la galería, GaleriaEditor nunca dispara
-        // onGaleriaCambiada (solo lo hace al agregar/quitar/reordenar), así
-        // que sin esta línea _galeriaActual se quedaba en su valor por
-        // defecto (lista vacía) y el guardado borraba las fotos existentes
-        // sin volver a insertar ninguna — las fotos "desaparecían solas"
-        // en una edición posterior que no tocaba la galería para nada.
-        _galeriaActual = existente.fotos
-            .map((f) => FotoLocal(url: f.url, storagePath: f.storagePath))
-            .toList();
+        _productosIniciales = existente.productos;
+        // Si el admin guarda sin tocar los productos, ProductosEditor nunca
+        // avisa — sin esto el borrar-y-reinsertar del guardado los dejaba
+        // en cero (mismo bug que tuvo la galería de fotos).
+        _productosActuales = existente.productos;
 
         final ficha = await _negocioService.obtenerFichaTecnica(_negocioId);
         _poblarFicha(ficha);
@@ -477,7 +471,8 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
 
       await _guardarFichaTecnica();
       await _sincronizarAsignaciones();
-      await _sincronizarGaleria();
+      await _negocioProductoService.reemplazar(
+          _negocioId, _productosActuales);
 
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -602,28 +597,6 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
           personaId: _representanteId!,
           nit: nit,
           naturalezaJuridica: _naturalezaJuridica);
-    }
-  }
-
-  /// Borrar+reinsertar, igual que negocios_subcategorias en la RPC — a esta
-  /// escala (hasta 5 fotos) es más simple y confiable que diffear altas,
-  /// bajas y reordenamientos por separado. Corre DESPUÉS de que el negocio
-  /// ya existe en la base de datos (si no, negocio_fotos.negocio_id no
-  /// tendría a qué apuntar).
-  Future<void> _sincronizarGaleria() async {
-    if (_esEdicion) {
-      for (final foto in _galeriaInicial) {
-        await _negocioFotoService.eliminar(foto.id);
-      }
-    }
-    for (var i = 0; i < _galeriaActual.length; i++) {
-      final foto = _galeriaActual[i];
-      await _negocioFotoService.agregar(
-        negocioId: _negocioId,
-        url: foto.url,
-        storagePath: foto.storagePath,
-        orden: i,
-      );
     }
   }
 
@@ -1387,12 +1360,18 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
             negocioId: _negocioId,
             portadaUrlInicial: _fotoPortadaUrl,
             portadaPathInicial: _fotoPortadaPath,
-            galeriaInicial: _galeriaInicial,
             onPortadaCambiada: (url, path) {
               _fotoPortadaUrl = url;
               _fotoPortadaPath = path;
             },
-            onGaleriaCambiada: (fotos) => _galeriaActual = fotos,
+          ),
+          const SizedBox(height: 14),
+          _seccion('Productos destacados'),
+          ProductosEditor(
+            negocioId: _negocioId,
+            productosIniciales: _productosIniciales,
+            onProductosCambiados: (productos) =>
+                _productosActuales = productos,
           ),
           const SizedBox(height: 14),
           _seccion('Reconocimientos'),

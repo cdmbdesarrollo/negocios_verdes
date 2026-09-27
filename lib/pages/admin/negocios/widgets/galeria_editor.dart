@@ -2,23 +2,15 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/selector_imagen.dart';
-import '../../../../models/negocio_foto.dart';
 import '../../../../services/storage_service.dart';
 import '../../../../theme/nv_colors.dart';
 
-const int _maxFotosGaleria = 5;
-
-class FotoLocal {
-  final String url;
-  final String storagePath;
-  const FotoLocal({required this.url, required this.storagePath});
-}
-
-/// Sección de fotos del formulario de negocio: portada (obligatoria para
-/// poder publicar) + galería (hasta 5). Sube cada imagen a Storage apenas se
-/// selecciona (con un nombre único, ver StorageService) y avisa al
-/// formulario padre del estado actual vía los callbacks — el padre solo
-/// necesita el resultado final al guardar, no gestiona la subida.
+/// Foto de portada/logo del formulario de negocio. Sube la imagen a Storage
+/// apenas se selecciona (con un nombre único, ver StorageService) y avisa al
+/// formulario padre vía el callback — el padre solo necesita el resultado
+/// final al guardar, no gestiona la subida. La galería de fotos que vivía
+/// aquí se reemplazó por los 3 productos destacados (ver ProductosEditor y
+/// 0040_negocio_productos.sql).
 ///
 /// Sin redimensionado/compresión automática en esta primera versión — solo
 /// se valida tamaño máximo (1 MB) y se rechaza HEIC/HEIF (muchos navegadores
@@ -27,18 +19,14 @@ class GaleriaEditor extends StatefulWidget {
   final String negocioId;
   final String? portadaUrlInicial;
   final String? portadaPathInicial;
-  final List<NegocioFoto> galeriaInicial;
   final void Function(String? url, String? path) onPortadaCambiada;
-  final void Function(List<FotoLocal> fotos) onGaleriaCambiada;
 
   const GaleriaEditor({
     super.key,
     required this.negocioId,
     this.portadaUrlInicial,
     this.portadaPathInicial,
-    this.galeriaInicial = const [],
     required this.onPortadaCambiada,
-    required this.onGaleriaCambiada,
   });
 
   @override
@@ -52,17 +40,11 @@ class _GaleriaEditorState extends State<GaleriaEditor> {
   String? _portadaPath;
   bool _subiendoPortada = false;
 
-  late List<FotoLocal> _galeria;
-  bool _subiendoGaleria = false;
-
   @override
   void initState() {
     super.initState();
     _portadaUrl = widget.portadaUrlInicial;
     _portadaPath = widget.portadaPathInicial;
-    _galeria = widget.galeriaInicial
-        .map((f) => FotoLocal(url: f.url, storagePath: f.storagePath))
-        .toList();
   }
 
   void _avisar(String mensaje) {
@@ -102,61 +84,6 @@ class _GaleriaEditorState extends State<GaleriaEditor> {
     widget.onPortadaCambiada(null, null);
   }
 
-  /// Deja elegir hasta el espacio disponible EN UNA sola selección (antes
-  /// obligaba a repetir "agregar" una por una para completar la galería).
-  /// Sube las válidas en orden y las agrega todas juntas al final.
-  Future<void> _agregarFotoGaleria() async {
-    final espacioDisponible = _maxFotosGaleria - _galeria.length;
-    if (espacioDisponible <= 0) {
-      _avisar(
-          'Ya tienes $_maxFotosGaleria fotos en la galería — quita alguna para agregar otra.');
-      return;
-    }
-    final elegidas = await elegirImagenesValidadas(
-        onError: _avisar, maximo: espacioDisponible);
-    if (elegidas.isEmpty) return;
-    setState(() => _subiendoGaleria = true);
-    try {
-      final nuevas = <FotoLocal>[];
-      for (final elegida in elegidas) {
-        final subida = await _storage.subirImagen(
-          bytes: elegida.bytes,
-          bucket: kBucketNegociosFotos,
-          carpeta: 'negocios/${widget.negocioId}/galeria',
-          extension: elegida.extension,
-        );
-        nuevas.add(FotoLocal(url: subida.url, storagePath: subida.path));
-      }
-      if (!mounted) return;
-      setState(() => _galeria = [..._galeria, ...nuevas]);
-      widget.onGaleriaCambiada(_galeria);
-    } catch (e) {
-      if (mounted) _avisar(e.toString().replaceFirst('Exception: ', ''));
-    } finally {
-      if (mounted) setState(() => _subiendoGaleria = false);
-    }
-  }
-
-  void _quitarFotoGaleria(int indice) {
-    setState(() {
-      _galeria = List.of(_galeria)..removeAt(indice);
-    });
-    widget.onGaleriaCambiada(_galeria);
-  }
-
-  void _moverFoto(int indice, int direccion) {
-    final destino = indice + direccion;
-    if (destino < 0 || destino >= _galeria.length) return;
-    setState(() {
-      final copia = List.of(_galeria);
-      final temp = copia[indice];
-      copia[indice] = copia[destino];
-      copia[destino] = temp;
-      _galeria = copia;
-    });
-    widget.onGaleriaCambiada(_galeria);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -173,15 +100,6 @@ class _GaleriaEditorState extends State<GaleriaEditor> {
         ),
         const SizedBox(height: 8),
         _slotPortada(),
-        const SizedBox(height: 24),
-        const Text('Galería de fotos', style: TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 4),
-        Text(
-          'Hasta $_maxFotosGaleria fotos destacadas (${_galeria.length}/$_maxFotosGaleria).',
-          style: const TextStyle(color: NVColors.textoSecundario, fontSize: 12),
-        ),
-        const SizedBox(height: 8),
-        _grillaGaleria(),
       ],
     );
   }
@@ -235,77 +153,6 @@ class _GaleriaEditorState extends State<GaleriaEditor> {
     );
   }
 
-  Widget _grillaGaleria() {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        for (var i = 0; i < _galeria.length; i++) _slotGaleria(i),
-        if (_galeria.length < _maxFotosGaleria) _slotAgregar(),
-      ],
-    );
-  }
-
-  Widget _slotGaleria(int indice) {
-    final foto = _galeria[indice];
-    return SizedBox(
-      width: 120,
-      height: 120,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: NVColors.borde),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: CachedNetworkImage(imageUrl: foto.url, fit: BoxFit.cover),
-          ),
-          Positioned(
-            top: 4,
-            right: 4,
-            child: _botonQuitar(onPressed: () => _quitarFotoGaleria(indice)),
-          ),
-          Positioned(
-            bottom: 4,
-            left: 4,
-            right: 4,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _botonMover(
-                    Icons.chevron_left, indice > 0, () => _moverFoto(indice, -1)),
-                _botonMover(Icons.chevron_right, indice < _galeria.length - 1,
-                    () => _moverFoto(indice, 1)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _slotAgregar() {
-    return SizedBox(
-      width: 120,
-      height: 120,
-      child: Material(
-        color: NVColors.primaryLight,
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: _subiendoGaleria ? null : _agregarFotoGaleria,
-          child: _subiendoGaleria
-              ? const Center(child: CircularProgressIndicator())
-              : const Center(
-                  child: Icon(Icons.add_photo_alternate_outlined,
-                      color: NVColors.verdeVivo, size: 32)),
-        ),
-      ),
-    );
-  }
-
   Widget _botonQuitar({required VoidCallback onPressed}) {
     return InkWell(
       onTap: onPressed,
@@ -315,21 +162,6 @@ class _GaleriaEditorState extends State<GaleriaEditor> {
         decoration:
             const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
         child: const Icon(Icons.close, size: 16, color: Colors.white),
-      ),
-    );
-  }
-
-  Widget _botonMover(IconData icono, bool habilitado, VoidCallback onPressed) {
-    return InkWell(
-      onTap: habilitado ? onPressed : null,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.all(2),
-        decoration: BoxDecoration(
-          color: habilitado ? Colors.black54 : Colors.black26,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icono, size: 16, color: Colors.white),
       ),
     );
   }

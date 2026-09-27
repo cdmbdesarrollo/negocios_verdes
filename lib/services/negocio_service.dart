@@ -14,7 +14,7 @@ import '../models/negocio.dart';
 // el admin. Este hint fija cuál de los dos es el embed "plano" de arriba.
 const String _embeds =
     'categorias_oficiales!negocios_categoria_oficial_id_fkey(*), veredas(*), '
-    'negocio_fotos(*), '
+    'negocio_productos(*), '
     'negocios_subcategorias(subcategorias(*)), '
     'negocios_categorias(categorias_oficiales(*)), '
     'negocios_actividades(actividades_productivas(*))';
@@ -207,7 +207,7 @@ class NegocioService {
   ///
   /// [id] es SIEMPRE requerido, incluso al crear: el formulario lo genera
   /// con Uuid().v4() antes de abrir el editor de fotos, porque necesita ese
-  /// id de antemano para las rutas de Storage de portada/galería. La RPC
+  /// id de antemano para las rutas de Storage de portada/productos. La RPC
   /// decide crear vs. actualizar comprobando si ese id ya existe, no si es
   /// nulo — ver el comentario en la propia función SQL.
   Future<String> guardar({

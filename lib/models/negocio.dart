@@ -1,6 +1,6 @@
 import 'actividad_productiva.dart';
 import 'categoria_oficial.dart';
-import 'negocio_foto.dart';
+import 'negocio_producto.dart';
 import 'subcategoria.dart';
 import 'vereda.dart';
 
@@ -95,7 +95,9 @@ class Negocio {
   /// publica.
   final String? novedad;
   final int? anioRegistro;
-  final List<NegocioFoto> fotos;
+  /// Hasta 3 productos destacados (0040_negocio_productos.sql), ya
+  /// ordenados. Reemplazaron a la galería de fotos.
+  final List<NegocioProducto> productos;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -137,7 +139,7 @@ class Negocio {
     this.tipoNegocioVerde,
     this.novedad,
     this.anioRegistro,
-    this.fotos = const [],
+    this.productos = const [],
     this.createdAt,
     this.updatedAt,
   });
@@ -154,7 +156,7 @@ class Negocio {
   factory Negocio.fromJson(Map<String, dynamic> json) {
     final categoriaJson = _desenvolverUno(json['categorias_oficiales']);
     final veredaJson = _desenvolverUno(json['veredas']);
-    final fotosJson = _desenvolverLista(json['negocio_fotos']);
+    final productosJson = _desenvolverLista(json['negocio_productos']);
     final subcategoriasJoin = _desenvolverLista(json['negocios_subcategorias']);
     final categoriasJoin = _desenvolverLista(json['negocios_categorias']);
     final actividadesJoin = _desenvolverLista(json['negocios_actividades']);
@@ -210,7 +212,7 @@ class Negocio {
       tipoNegocioVerde: json['tipo_negocio_verde']?.toString(),
       novedad: json['novedad']?.toString(),
       anioRegistro: (json['anio_registro'] as num?)?.toInt(),
-      fotos: fotosJson.map(NegocioFoto.fromJson).toList()
+      productos: productosJson.map(NegocioProducto.fromJson).toList()
         ..sort((a, b) => a.orden.compareTo(b.orden)),
       createdAt: DateTime.tryParse(json['created_at']?.toString() ?? ''),
       updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? ''),
@@ -260,7 +262,7 @@ class Negocio {
       tipoNegocioVerde: tipoNegocioVerde,
       novedad: novedad,
       anioRegistro: anioRegistro,
-      fotos: fotos,
+      productos: productos,
       createdAt: createdAt,
       updatedAt: updatedAt,
     );

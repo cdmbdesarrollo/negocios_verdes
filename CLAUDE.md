@@ -107,6 +107,12 @@ sincroniza las 3 tablas puente (`negocios_categorias`,
 `negocios_subcategorias`, `negocios_actividades`) con el mismo patrón de
 borrar-todo-y-reinsertar en cada guardado.
 
+Cada negocio tiene hasta 3 **productos destacados** (`negocio_productos`,
+0040: foto + descripción, solo vitrina, sin pedidos) — reemplazaron a la
+galería de fotos (`negocio_fotos` queda en la base sin uso). El formulario
+admin los sincroniza aparte de la RPC, después de `guardar_negocio`, con
+el mismo borrar-todo-y-reinsertar (`NegocioProductoService.reemplazar`).
+
 ## Antes de que la app funcione de verdad
 
 1. Crear un proyecto nuevo en supabase.com (separado del de HuellaQR).

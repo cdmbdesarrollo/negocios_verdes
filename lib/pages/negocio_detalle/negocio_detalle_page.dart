@@ -11,6 +11,7 @@ import '../../catalogos.dart';
 import '../../core/seo_tags.dart';
 import '../../core/widgets/avalado_badge.dart';
 import '../../core/widgets/botones_zoom_mapa.dart';
+import '../../core/widgets/capa_teselas_osm.dart';
 import '../../core/widgets/boton_whatsapp.dart';
 import '../../core/widgets/pie_pagina.dart';
 import '../../core/widgets/emprendimiento_verde_badge.dart';
@@ -19,6 +20,7 @@ import '../../core/widgets/sello_marca_badge.dart';
 import '../../models/categoria_oficial.dart';
 import '../../models/municipio_geo.dart';
 import '../../models/negocio.dart';
+import '../../models/negocio_producto.dart';
 import '../../models/subcategoria.dart';
 import '../../services/negocio_service.dart';
 import '../../theme/nv_colors.dart';
@@ -295,12 +297,12 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
                                 const TextStyle(fontSize: 15, height: 1.4)),
                       ),
                     ],
-                    if (negocio.fotos.isNotEmpty) ...[
-                      const SizedBox(height: 24),
+                    if (_productosVisibles(negocio).isNotEmpty) ...[
+                      const SizedBox(height: 28),
                       _tituloSeccion(
-                          Icons.photo_library_outlined, 'Galería'),
+                          Icons.star_outline, 'Productos destacados'),
                       const SizedBox(height: 12),
-                      _galeria(negocio),
+                      _productos(_productosVisibles(negocio)),
                     ],
                     if (negocio.tieneUbicacion) ...[
                       const SizedBox(height: 24),
@@ -422,37 +424,87 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
     );
   }
 
-  Widget _galeria(Negocio negocio) {
-    return SizedBox(
-      height: 110,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: negocio.fotos.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 10),
-        itemBuilder: (context, i) => InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => _abrirVisor(context, negocio, i),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: CachedNetworkImage(
-              imageUrl: negocio.fotos[i].url,
-              width: 110,
-              height: 110,
-              fit: BoxFit.cover,
-            ),
-          ),
-        ),
-      ),
+  List<NegocioProducto> _productosVisibles(Negocio negocio) =>
+      negocio.productos.where((p) => !p.estaVacio).toList();
+
+  /// Los (hasta 3) productos destacados en fila — pedido explícito: foto
+  /// arriba, descripción debajo, "en horizontal de forma destacada", sin
+  /// ninguna interacción (es vitrina, no se pide nada desde acá). En ancho
+  /// de escritorio cada tarjeta mide siempre un tercio, aunque haya 1 o 2
+  /// productos, para que no se estiren; en celular la fila se desliza de
+  /// lado en vez de apilarse. Sin IntrinsicHeight a propósito (ver
+  /// CLAUDE.md): las tarjetas se alinean arriba y cada una mide lo suyo.
+  Widget _productos(List<NegocioProducto> productos) {
+    const separacion = 16.0;
+    return LayoutBuilder(
+      builder: (context, c) {
+        final ancho = c.maxWidth >= 600
+            ? (c.maxWidth - 2 * separacion) / 3
+            : 250.0;
+        final fila = Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (var i = 0; i < productos.length; i++) ...[
+              if (i > 0) const SizedBox(width: separacion),
+              SizedBox(width: ancho, child: _tarjetaProducto(productos[i])),
+            ],
+          ],
+        );
+        if (c.maxWidth >= 600) return fila;
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: fila,
+        );
+      },
     );
   }
 
-  void _abrirVisor(BuildContext context, Negocio negocio, int indiceInicial) {
-    showDialog(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.92),
-      builder: (_) => _VisorGaleria(
-        urls: [for (final f in negocio.fotos) f.url],
-        indiceInicial: indiceInicial,
+  Widget _tarjetaProducto(NegocioProducto producto) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: NVColors.borde),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AspectRatio(
+            aspectRatio: 4 / 3,
+            child: producto.tieneFoto
+                ? CachedNetworkImage(
+                    imageUrl: producto.fotoUrl!,
+                    fit: BoxFit.cover,
+                    placeholder: (_, _) =>
+                        const ColoredBox(color: NVColors.primaryLight),
+                  )
+                // Sin foto: el logo del programa, mismo respaldo que la
+                // portada de la ficha.
+                : Container(
+                    color: NVColors.primaryLight,
+                    padding: const EdgeInsets.all(28),
+                    child: Image.asset(
+                        'assets/images/iconografia/logo_negocios_verdes.png',
+                        fit: BoxFit.contain),
+                  ),
+          ),
+          if (producto.tieneDescripcion)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+              child: Text(
+                producto.descripcion!,
+                style: const TextStyle(fontSize: 14.5, height: 1.4),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -477,12 +529,7 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
                     maxZoom: 18,
                   ),
                   children: [
-                    TileLayer(
-                      urlTemplate:
-                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName:
-                          'co.gov.cdmb.negocios_verdes_cdmb',
-                    ),
+                    const CapaTeselasOsm(),
                     // Contorno del municipio (mismo dato del geovisor), para
                     // ubicar el negocio dentro de su municipio.
                     if (muni != null)
@@ -834,120 +881,6 @@ class _SelloPrograma extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Visor de galería a pantalla completa — las miniaturas antes no hacían
-/// nada al tocarlas. BoxFit.contain (no cover) a propósito: acá sí importa
-/// ver la foto completa, no recortada.
-class _VisorGaleria extends StatefulWidget {
-  final List<String> urls;
-  final int indiceInicial;
-
-  const _VisorGaleria({required this.urls, required this.indiceInicial});
-
-  @override
-  State<_VisorGaleria> createState() => _VisorGaleriaState();
-}
-
-class _VisorGaleriaState extends State<_VisorGaleria> {
-  late final PageController _controller;
-  late int _indice;
-
-  @override
-  void initState() {
-    super.initState();
-    _indice = widget.indiceInicial;
-    _controller = PageController(initialPage: _indice);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _ir(int destino) {
-    if (destino < 0 || destino >= widget.urls.length) return;
-    _controller.animateToPage(
-      destino,
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeInOut,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final variasFotos = widget.urls.length > 1;
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(12),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          PageView.builder(
-            controller: _controller,
-            itemCount: widget.urls.length,
-            onPageChanged: (i) => setState(() => _indice = i),
-            itemBuilder: (context, i) => InteractiveViewer(
-              child: Center(
-                child: CachedNetworkImage(
-                  imageUrl: widget.urls[i],
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 0,
-            right: 0,
-            child: _botonRedondo(Icons.close, () => Navigator.pop(context)),
-          ),
-          if (variasFotos) ...[
-            Positioned(
-              left: 4,
-              child: _botonRedondo(
-                  Icons.chevron_left, () => _ir(_indice - 1)),
-            ),
-            Positioned(
-              right: 4,
-              child: _botonRedondo(
-                  Icons.chevron_right, () => _ir(_indice + 1)),
-            ),
-            Positioned(
-              bottom: 8,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '${_indice + 1} / ${widget.urls.length}',
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _botonRedondo(IconData icono, VoidCallback onTap) {
-    return Material(
-      color: Colors.black.withValues(alpha: 0.5),
-      shape: const CircleBorder(),
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Icon(icono, color: Colors.white, size: 26),
-        ),
       ),
     );
   }

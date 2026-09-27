@@ -4,6 +4,7 @@ import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../core/widgets/botones_zoom_mapa.dart';
+import '../../../core/widgets/capa_teselas_osm.dart';
 import '../../../core/widgets/pin_negocio_mapa.dart';
 import '../../../models/negocio.dart';
 import '../../../theme/nv_colors.dart';
@@ -73,10 +74,7 @@ class ResultadosMapa extends StatelessWidget {
         maxZoom: 18,
       ),
       children: [
-        TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'co.gov.cdmb.negocios_verdes_cdmb',
-        ),
+        const CapaTeselasOsm(),
         MarkerClusterLayerWidget(
           options: MarkerClusterLayerOptions(
             maxClusterRadius: 65,
