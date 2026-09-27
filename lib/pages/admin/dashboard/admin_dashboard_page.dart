@@ -21,6 +21,22 @@ enum _Vista { global, estado, emprendimientoVerde, selloMarca, avalado }
 /// Estados CDMB (columna `negocios.novedad`, CHECK `negocios_novedad_valida`).
 const _kEstados = ['ACTIVO', 'INACTIVO', 'RETIRADO', 'SUSPENDIDO'];
 
+/// Puntaje con coma decimal, como se escribe en Colombia (60,3).
+String _fmtPuntaje(double p) => p.toStringAsFixed(1).replaceAll('.', ',');
+
+/// Promedio y cantidad de negocios calificados de un grupo de puntajes.
+typedef _Resumen = ({double promedio, int negocios});
+
+_Resumen _resumir(Iterable<PuntajeNegocio> ps) {
+  var suma = 0.0;
+  var n = 0;
+  for (final p in ps) {
+    suma += p.puntaje;
+    n++;
+  }
+  return (promedio: n == 0 ? 0.0 : suma / n, negocios: n);
+}
+
 String _capitalizar(String s) =>
     s.isEmpty ? s : '${s[0]}${s.substring(1).toLowerCase()}';
 
@@ -58,8 +74,13 @@ class AdminDashboardPage extends StatefulWidget {
 class _AdminDashboardPageState extends State<AdminDashboardPage> {
   final _service = NegocioService();
   List<Negocio>? _negocios;
-  List<({String nombre, String slug, int anio, double puntaje})>? _topPuntajes;
-  Map<int, double> _promedioPorAnio = {};
+  /// Solo puntajes calificados (> 0) — ver listarPuntajesCalificados().
+  List<PuntajeNegocio> _puntajes = [];
+
+  /// Año elegido en "Puntajes por año" (null = el más reciente con datos).
+  int? _anioPuntaje;
+  bool _rankingCompleto = false;
+  static const _topRanking = 10;
   String? _error;
   _Vista _vista = _Vista.global;
 
@@ -93,17 +114,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Future<void> _cargar() async {
     try {
       final negocios = await _service.listarTodosAdmin();
-      var top = <({String nombre, String slug, int anio, double puntaje})>[];
-      var promedio = <int, double>{};
+      var puntajes = <PuntajeNegocio>[];
       try {
-        top = await _service.obtenerTopPuntajes();
-        promedio = await _service.promedioPuntajePorAnio();
+        puntajes = await _service.listarPuntajesCalificados();
       } catch (_) {}
       if (mounted) {
         setState(() {
           _negocios = negocios;
-          _topPuntajes = top;
-          _promedioPorAnio = promedio;
+          _puntajes = puntajes;
         });
       }
     } catch (e) {
@@ -132,6 +150,15 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         .length;
 
     final porMunicipio = _conteo(negocios, (n) => n.municipio);
+
+    // Los puntajes siguen la vista elegida (estado, reconocimiento…).
+    final idsVista = {for (final n in negocios) n.id};
+    final puntajes =
+        _puntajes.where((p) => idsVista.contains(p.negocioId)).toList();
+    final porAnio = <int, _Resumen>{
+      for (final anio in {for (final p in puntajes) p.anio})
+        anio: _resumir(puntajes.where((p) => p.anio == anio)),
+    };
     final porCategoria = _conteo(
         negocios, (n) => n.categoriaOficial?.nombre ?? 'Sin categoría');
     // Vista normal: torta por estado CDMB. Vista = un estado concreto: esa
@@ -280,15 +307,24 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             ),
             const SizedBox(height: 24),
 
-            if (_promedioPorAnio.isNotEmpty) ...[
+            if (porAnio.isNotEmpty) ...[
               _tituloGrafica('Puntaje de seguimiento promedio por año'),
+              const Text(
+                'Solo cuenta los negocios calificados ese año: los que no '
+                'existían o no se evaluaron (puntaje 0 o vacío) no entran al '
+                'promedio. Debajo de cada año, cuántos negocios se '
+                'promediaron.',
+                style: TextStyle(fontSize: 12, color: NVColors.textoSecundario),
+              ),
+              const SizedBox(height: 8),
               NVCard(
                 child: SizedBox(
-                  height: 240,
-                  child: _LineaPromedio(promedio: _promedioPorAnio),
+                  height: 260,
+                  child: _LineaPromedio(porAnio: porAnio),
                 ),
               ),
               const SizedBox(height: 24),
+              ..._seccionPuntajesPorAnio(puntajes, porAnio),
             ],
 
             if (_vista == _Vista.global) ...[
@@ -311,22 +347,119 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               const SizedBox(height: 24),
             ],
 
-            if (_topPuntajes != null && _topPuntajes!.isNotEmpty) ...[
-              _tituloGrafica(
-                  'Mejores puntajes (${_topPuntajes!.first.anio})'),
-              NVCard(
-                child: Column(
-                  children: [
-                    for (final (i, fila) in _topPuntajes!.indexed)
-                      _filaTopPuntaje(i + 1, fila),
-                  ],
-                ),
-              ),
-            ],
           ],
         ),
       ),
     );
+  }
+
+  /// "Puntajes por año" — pedido explícito: elegir el año (2026, 2025,
+  /// 2024…) y ver el listado de mejores puntajes de ese año, más el
+  /// promedio por municipio de ese mismo año.
+  List<Widget> _seccionPuntajesPorAnio(
+      List<PuntajeNegocio> puntajes, Map<int, _Resumen> porAnio) {
+    final anios = porAnio.keys.toList()..sort((a, b) => b.compareTo(a));
+    final anio = _anioPuntaje != null && anios.contains(_anioPuntaje)
+        ? _anioPuntaje!
+        : anios.first;
+    final delAnio = puntajes.where((p) => p.anio == anio).toList()
+      ..sort((a, b) => b.puntaje.compareTo(a.puntaje));
+    final resumen = porAnio[anio]!;
+
+    final municipios = {for (final p in delAnio) p.municipio}.toList();
+    final porMunicipio = [
+      for (final m in municipios)
+        (municipio: m, r: _resumir(delAnio.where((p) => p.municipio == m))),
+    ]..sort((a, b) => b.r.promedio.compareTo(a.r.promedio));
+
+    final ranking =
+        _rankingCompleto ? delAnio : delAnio.take(_topRanking).toList();
+
+    final tarjetaRanking = NVCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Mejores puntajes $anio',
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          for (final (i, fila) in ranking.indexed)
+            _filaTopPuntaje(i + 1, fila),
+          if (delAnio.length > _topRanking)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: () =>
+                    setState(() => _rankingCompleto = !_rankingCompleto),
+                child: Text(_rankingCompleto
+                    ? 'Ver solo los $_topRanking mejores'
+                    : 'Ver los ${delAnio.length} negocios calificados'),
+              ),
+            ),
+        ],
+      ),
+    );
+
+    final tarjetaMunicipios = NVCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Promedio por municipio $anio',
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          for (final m in porMunicipio)
+            _filaPromedio(
+              m.municipio.isEmpty ? 'Sin municipio' : m.municipio,
+              m.r,
+            ),
+        ],
+      ),
+    );
+
+    return [
+      _tituloGrafica('Puntajes por año'),
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final a in anios)
+            ChipFiltro(
+              etiqueta: '$a',
+              seleccionado: a == anio,
+              onTap: () => setState(() {
+                _anioPuntaje = a;
+                _rankingCompleto = false;
+              }),
+            ),
+        ],
+      ),
+      const SizedBox(height: 8),
+      Text(
+        '$anio: promedio ${_fmtPuntaje(resumen.promedio)} de '
+        '${resumen.negocios} negocios calificados',
+        style: const TextStyle(
+            fontWeight: FontWeight.w600, color: NVColors.primaryDark),
+      ),
+      const SizedBox(height: 12),
+      LayoutBuilder(
+        builder: (context, c) => c.maxWidth >= 760
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: tarjetaRanking),
+                  const SizedBox(width: 16),
+                  Expanded(child: tarjetaMunicipios),
+                ],
+              )
+            : Column(
+                children: [
+                  tarjetaRanking,
+                  const SizedBox(height: 16),
+                  tarjetaMunicipios,
+                ],
+              ),
+      ),
+      const SizedBox(height: 24),
+    ];
   }
 
   // ---------- helpers de datos ----------
@@ -433,8 +566,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  Widget _filaTopPuntaje(
-      int puesto, ({String nombre, String slug, int anio, double puntaje}) f) {
+  Widget _filaTopPuntaje(int puesto, PuntajeNegocio f) {
     final medalla = switch (puesto) {
       1 => '🥇',
       2 => '🥈',
@@ -442,7 +574,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       _ => '$puesto',
     };
     return InkWell(
-      onTap: () => context.go('/admin/negocios'),
+      onTap: () => context.go('/admin/negocios/${f.negocioId}/editar'),
       borderRadius: BorderRadius.circular(8),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -454,13 +586,60 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     style: const TextStyle(fontWeight: FontWeight.bold))),
             const SizedBox(width: 8),
             Expanded(
-                child: Text(f.nombre,
-                    maxLines: 1, overflow: TextOverflow.ellipsis)),
-            Text(f.puntaje.toStringAsFixed(1),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(f.nombre,
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                  if (f.municipio.isNotEmpty)
+                    Text(f.municipio,
+                        style: const TextStyle(
+                            fontSize: 11, color: NVColors.textoSecundario)),
+                ],
+              ),
+            ),
+            Text(_fmtPuntaje(f.puntaje),
                 style: const TextStyle(
                     fontWeight: FontWeight.bold, color: NVColors.verdeVivo)),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Fila "Municipio ····· 62,4 · 35 negocios" con barra sobre 100.
+  Widget _filaPromedio(String etiqueta, _Resumen r) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                  child: Text(etiqueta, style: const TextStyle(fontSize: 13))),
+              const SizedBox(width: 8),
+              Text(_fmtPuntaje(r.promedio),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(
+                '  · ${r.negocios} '
+                '${r.negocios == 1 ? 'negocio' : 'negocios'}',
+                style: const TextStyle(
+                    fontSize: 11, color: NVColors.textoSecundario),
+              ),
+            ],
+          ),
+          const SizedBox(height: 5),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: (r.promedio / 100).clamp(0.0, 1.0),
+              minHeight: 8,
+              backgroundColor: NVColors.fondo,
+              valueColor: const AlwaysStoppedAnimation(NVColors.verdeVivo),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -707,18 +886,19 @@ class _Torta extends StatelessWidget {
 }
 
 class _LineaPromedio extends StatelessWidget {
-  final Map<int, double> promedio;
-  const _LineaPromedio({required this.promedio});
+  final Map<int, _Resumen> porAnio;
+  const _LineaPromedio({required this.porAnio});
 
   @override
   Widget build(BuildContext context) {
-    final anios = promedio.keys.toList()..sort();
+    final anios = porAnio.keys.toList()..sort();
     final spots = [
-      for (final a in anios) FlSpot(a.toDouble(), promedio[a]!),
+      for (final a in anios) FlSpot(a.toDouble(), porAnio[a]!.promedio),
     ];
     final linea = LineChartBarData(
       spots: spots,
       isCurved: true,
+      preventCurveOverShooting: true,
       color: NVColors.primary,
       barWidth: 3,
       dotData: const FlDotData(show: true),
@@ -731,6 +911,10 @@ class _LineaPromedio extends StatelessWidget {
       LineChartData(
         minY: 0,
         maxY: 100,
+        // Margen a los lados para que el primer/último año no queden
+        // pegados al borde (y con un solo año haya ancho que dibujar).
+        minX: anios.first - (anios.length == 1 ? 1 : 0.3),
+        maxX: anios.last + (anios.length == 1 ? 1 : 0.3),
         // El valor de cada año se muestra SIEMPRE, no solo al tocar.
         showingTooltipIndicators: [
           for (var i = 0; i < spots.length; i++)
@@ -755,12 +939,25 @@ class _LineaPromedio extends StatelessWidget {
             sideTitles: SideTitles(
               showTitles: true,
               interval: 1,
+              reservedSize: 40,
               getTitlesWidget: (value, meta) {
                 if (value % 1 != 0) return const SizedBox();
+                final r = porAnio[value.toInt()];
+                if (r == null) return const SizedBox();
                 return Padding(
                   padding: const EdgeInsets.only(top: 6),
-                  child: Text('${value.toInt()}',
-                      style: const TextStyle(fontSize: 10)),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('${value.toInt()}',
+                          style: const TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.w600)),
+                      Text('${r.negocios} negocios',
+                          style: const TextStyle(
+                              fontSize: 9.5,
+                              color: NVColors.textoSecundario)),
+                    ],
+                  ),
                 );
               },
             ),
@@ -774,7 +971,7 @@ class _LineaPromedio extends StatelessWidget {
             getTooltipItems: (touched) => [
               for (final t in touched)
                 LineTooltipItem(
-                  t.y.toStringAsFixed(1),
+                  _fmtPuntaje(t.y),
                   const TextStyle(
                       color: NVColors.textoPrincipal,
                       fontSize: 11,

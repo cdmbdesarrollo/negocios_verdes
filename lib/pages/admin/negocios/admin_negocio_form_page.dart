@@ -1755,6 +1755,18 @@ class _AdminNegocioFormPageState extends State<AdminNegocioFormPage> {
                       ),
                       keyboardType: const TextInputType.numberWithOptions(
                           decimal: true),
+                      // El puntaje es sobre 100 — 0,67 en vez de 67 ya pasó
+                      // en la carga original y hundía el promedio del año
+                      // (ver 0042_fix_puntajes_decimales.sql).
+                      validator: (v) {
+                        final t = (v ?? '').trim();
+                        if (t.isEmpty) return null;
+                        final p = double.tryParse(t.replaceAll(',', '.'));
+                        if (p == null) return 'No es un número';
+                        if (p < 0 || p > 100) return 'Entre 0 y 100';
+                        if (p > 0 && p < 1) return 'Sobre 100 (ej. 67)';
+                        return null;
+                      },
                     ),
                   ),
                 SizedBox(

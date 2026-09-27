@@ -340,6 +340,11 @@ en un Supabase nuevo:
     caracteres, opcional): título de cada producto destacado, entre la foto
     y la descripción. El check "no vacío" pasa a nombre OR foto OR
     descripción. Depende de 0040.
+42. `0042_fix_puntajes_decimales.sql` — **corrección de datos**: 4
+    puntajes de `negocio_puntajes` venían como fracción de la carga 0026
+    (0.61/0.67/0.67/0.68 en vez de 61/67/67/68) y bajaban el promedio de
+    2023 y 2024; se multiplican por 100. Nuevo CHECK de rango 0–100. Los
+    0.00 (no calificados) se dejan: el panel ya los excluye.
 
 ## Sobre trabajo concurrente de dos sesiones
 

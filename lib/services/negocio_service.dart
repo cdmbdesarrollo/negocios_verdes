@@ -39,6 +39,16 @@ const String _selectPublico =
     'emprendimiento_verde, sello_marca, avalado, destacado, activo, '
     'created_at, updated_at, $_embeds';
 
+/// Un puntaje de seguimiento de un negocio en un año (ver
+/// [NegocioService.listarPuntajesCalificados]).
+typedef PuntajeNegocio = ({
+  String negocioId,
+  String nombre,
+  String municipio,
+  int anio,
+  double puntaje,
+});
+
 class NegocioService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
@@ -449,68 +459,35 @@ class NegocioService {
     }
   }
 
-  /// Puntaje promedio de todos los negocios por año — para la gráfica de
-  /// evolución del panel (la "gráfica" ya no vive en cada negocio, ver
-  /// pedido explícito: "el negocio verde no debería tener gráfica, el
-  /// dashboard sí"). Trae todo `negocio_puntajes` (cientos de filas, no
-  /// miles) y promedia en el cliente.
-  Future<Map<int, double>> promedioPuntajePorAnio() async {
+  /// Todos los puntajes de seguimiento CALIFICADOS (puntaje > 0), con el
+  /// negocio al que pertenecen — el panel calcula a partir de esto el
+  /// promedio por año, el ranking de cualquier año y el promedio por
+  /// municipio, y lo cruza con la vista elegida (estado, reconocimiento).
+  /// Cientos de filas, no miles: una sola consulta alcanza.
+  ///
+  /// `puntaje > 0`: un 0 en `negocio_puntajes` es un negocio que NO se
+  /// calificó ese año (quedó en 0 en el Excel de origen), no un resultado
+  /// real de cero — contarlo hundiría el promedio. Y un negocio que no
+  /// existía un año simplemente no tiene fila para ese año.
+  Future<List<PuntajeNegocio>> listarPuntajesCalificados() async {
     try {
-      // `puntaje > 0`: un 0 en `negocio_puntajes` casi siempre es un negocio
-      // que NO se calificó ese año (quedó en 0 en el Excel de origen), no un
-      // seguimiento con resultado real de cero — meterlo en el promedio lo
-      // hunde sin motivo (pedido explícito).
       final data = await _supabase
           .from('negocio_puntajes')
-          .select('anio, puntaje')
+          .select('negocio_id, anio, puntaje, negocios(nombre, municipio)')
           .gt('puntaje', 0);
-      final sumas = <int, double>{};
-      final cuentas = <int, int>{};
-      for (final e in data as List) {
-        final fila = e as Map<String, dynamic>;
-        final anio = (fila['anio'] as num).toInt();
-        final p = (fila['puntaje'] as num).toDouble();
-        sumas[anio] = (sumas[anio] ?? 0) + p;
-        cuentas[anio] = (cuentas[anio] ?? 0) + 1;
-      }
-      return {
-        for (final anio in sumas.keys) anio: sumas[anio]! / cuentas[anio]!,
-      };
-    } catch (e) {
-      throw Exception('No se pudo cargar el promedio de puntajes: $e');
-    }
-  }
-
-  /// Los mejores puntajes del año más reciente con datos — "top mejores
-  /// puntajes" del dashboard (pedido explícito). Si [anio] es null usa el
-  /// año más alto que exista en negocio_puntajes.
-  Future<List<({String nombre, String slug, int anio, double puntaje})>>
-      obtenerTopPuntajes({int? anio, int limite = 10}) async {
-    try {
-      var anioUsado = anio;
-      if (anioUsado == null) {
-        final anos = await anosConPuntajes();
-        if (anos.isEmpty) return [];
-        anioUsado = anos.last;
-      }
-      final data = await _supabase
-          .from('negocio_puntajes')
-          .select('anio, puntaje, negocios(nombre, slug)')
-          .eq('anio', anioUsado)
-          .order('puntaje', ascending: false)
-          .limit(limite);
       return (data as List).map((e) {
         final fila = e as Map<String, dynamic>;
         final negocio = fila['negocios'] as Map<String, dynamic>?;
         return (
+          negocioId: fila['negocio_id'].toString(),
           nombre: negocio?['nombre']?.toString() ?? '(negocio borrado)',
-          slug: negocio?['slug']?.toString() ?? '',
+          municipio: negocio?['municipio']?.toString() ?? '',
           anio: (fila['anio'] as num).toInt(),
           puntaje: (fila['puntaje'] as num).toDouble(),
         );
       }).toList();
     } catch (e) {
-      throw Exception('No se pudieron cargar los mejores puntajes: $e');
+      throw Exception('No se pudieron cargar los puntajes: $e');
     }
   }
 
