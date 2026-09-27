@@ -8,9 +8,10 @@ import '../../../../theme/nv_colors.dart';
 
 const int kMaxProductos = 3;
 const int kMaxCaracteresProducto = 300;
+const int kMaxCaracteresNombreProducto = 80;
 
 /// Los 3 productos destacados del negocio (ver 0040_negocio_productos.sql):
-/// cada uno con una foto y una descripción corta. Reemplazaron a la galería
+/// cada uno con nombre, foto y descripción corta. Reemplazaron a la galería
 /// de fotos. Mismo contrato que GaleriaEditor: la foto se sube a Storage
 /// apenas se elige y el padre recibe el estado completo vía
 /// [onProductosCambiados] — solo lo usa al guardar. Siempre entrega los 3
@@ -36,6 +37,7 @@ class _ProductosEditorState extends State<ProductosEditor> {
 
   late final List<String?> _fotoUrl;
   late final List<String?> _fotoPath;
+  late final List<TextEditingController> _nombreCtrls;
   late final List<TextEditingController> _descripcionCtrls;
   final List<bool> _subiendo = List.filled(kMaxProductos, false);
 
@@ -48,6 +50,10 @@ class _ProductosEditorState extends State<ProductosEditor> {
     _fotoPath = [
       for (var i = 0; i < kMaxProductos; i++) inicial(i)?.fotoStoragePath
     ];
+    _nombreCtrls = [
+      for (var i = 0; i < kMaxProductos; i++)
+        TextEditingController(text: inicial(i)?.nombre ?? '')
+    ];
     _descripcionCtrls = [
       for (var i = 0; i < kMaxProductos; i++)
         TextEditingController(text: inicial(i)?.descripcion ?? '')
@@ -56,7 +62,7 @@ class _ProductosEditorState extends State<ProductosEditor> {
 
   @override
   void dispose() {
-    for (final c in _descripcionCtrls) {
+    for (final c in [..._nombreCtrls, ..._descripcionCtrls]) {
       c.dispose();
     }
     super.dispose();
@@ -72,6 +78,9 @@ class _ProductosEditorState extends State<ProductosEditor> {
     widget.onProductosCambiados([
       for (var i = 0; i < kMaxProductos; i++)
         NegocioProducto(
+          nombre: _nombreCtrls[i].text.trim().isEmpty
+              ? null
+              : _nombreCtrls[i].text.trim(),
           fotoUrl: _fotoUrl[i],
           fotoStoragePath: _fotoPath[i],
           descripcion: _descripcionCtrls[i].text.trim().isEmpty
@@ -121,9 +130,9 @@ class _ProductosEditorState extends State<ProductosEditor> {
       children: [
         const Text(
           'Hasta 3 productos o servicios que el negocio quiere destacar, cada '
-          'uno con una foto y una descripción corta. En la ficha pública se '
-          'ven en fila, encima del mapa de ubicación. Los espacios vacíos no '
-          'se muestran.',
+          'uno con su nombre, una foto y una descripción corta. En la ficha '
+          'pública se ven en fila, encima del mapa de ubicación. Los '
+          'espacios vacíos no se muestran.',
           style: TextStyle(color: NVColors.textoSecundario, fontSize: 12),
         ),
         const SizedBox(height: 10),
@@ -156,9 +165,18 @@ class _ProductosEditorState extends State<ProductosEditor> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Producto ${i + 1}',
-              style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
+          TextField(
+            controller: _nombreCtrls[i],
+            maxLength: kMaxCaracteresNombreProducto,
+            textCapitalization: TextCapitalization.sentences,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+            decoration: InputDecoration(
+              labelText: 'Nombre del producto ${i + 1}',
+              hintText: 'Ej.: Café especial',
+            ),
+            onChanged: (_) => _notificar(),
+          ),
+          const SizedBox(height: 4),
           _slotFoto(i),
           const SizedBox(height: 10),
           TextField(

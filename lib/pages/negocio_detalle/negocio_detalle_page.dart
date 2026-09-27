@@ -496,12 +496,29 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
                         fit: BoxFit.contain),
                   ),
           ),
-          if (producto.tieneDescripcion)
+          if (producto.tieneNombre || producto.tieneDescripcion)
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-              child: Text(
-                producto.descripcion!,
-                style: const TextStyle(fontSize: 14.5, height: 1.4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (producto.tieneNombre)
+                    Text(
+                      producto.nombre!,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: NVColors.primaryDark,
+                      ),
+                    ),
+                  if (producto.tieneNombre && producto.tieneDescripcion)
+                    const SizedBox(height: 6),
+                  if (producto.tieneDescripcion)
+                    Text(
+                      producto.descripcion!,
+                      style: const TextStyle(fontSize: 14.5, height: 1.4),
+                    ),
+                ],
               ),
             ),
         ],

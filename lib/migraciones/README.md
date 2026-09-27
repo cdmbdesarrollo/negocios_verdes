@@ -336,6 +336,10 @@ en un Supabase nuevo:
     está activo, todo para `es_admin()`. Las fotos van al bucket
     `negocios-fotos` en `negocios/<id>/productos/`. `negocio_fotos` no se
     borra (historial; estaba vacía) pero la app ya no la usa.
+41. `0041_nombre_productos.sql` — `negocio_productos.nombre` (hasta 80
+    caracteres, opcional): título de cada producto destacado, entre la foto
+    y la descripción. El check "no vacío" pasa a nombre OR foto OR
+    descripción. Depende de 0040.
 
 ## Sobre trabajo concurrente de dos sesiones
 
