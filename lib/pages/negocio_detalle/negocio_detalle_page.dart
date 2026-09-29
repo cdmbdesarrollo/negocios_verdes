@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -48,10 +50,44 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
   /// muestra igual sin el contorno.
   MunicipioGeo? _municipioGeo;
 
+  /// Aviso sobre el pin del mini-mapa (nombre + Cómo llegar + Street View).
+  /// Se muestra al pasar el mouse (desktop) o al tocar el pin (celular, donde
+  /// no hay hover); tocarlo lo deja fijo hasta cerrarlo o tocar el mapa. El
+  /// timer da margen para mover el mouse del pin al aviso sin que se cierre.
+  bool _avisoFijado = false;
+  bool _avisoHover = false;
+  Timer? _timerAviso;
+
   @override
   void initState() {
     super.initState();
     _cargar();
+  }
+
+  @override
+  void dispose() {
+    _timerAviso?.cancel();
+    super.dispose();
+  }
+
+  void _entrarAviso() {
+    _timerAviso?.cancel();
+    if (!_avisoHover) setState(() => _avisoHover = true);
+  }
+
+  void _salirAviso() {
+    _timerAviso?.cancel();
+    _timerAviso = Timer(const Duration(milliseconds: 250), () {
+      if (mounted) setState(() => _avisoHover = false);
+    });
+  }
+
+  void _cerrarAviso() {
+    _timerAviso?.cancel();
+    setState(() {
+      _avisoFijado = false;
+      _avisoHover = false;
+    });
   }
 
   @override
@@ -544,6 +580,9 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
                     initialZoom: 14,
                     minZoom: 8,
                     maxZoom: 18,
+                    onTap: (_, _) {
+                      if (_avisoFijado || _avisoHover) _cerrarAviso();
+                    },
                   ),
                   children: [
                     const CapaTeselasOsm(),
@@ -571,12 +610,44 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
                             LatLng(negocio.latitud!, negocio.longitud!),
                         width: 46,
                         height: 46,
-                        child: PinNegocioMapa(
-                          fotoPortadaUrl: negocio.fotoPortadaUrl,
-                          destacado: true,
-                          tamano: 44,
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          onEnter: (_) => _entrarAviso(),
+                          onExit: (_) => _salirAviso(),
+                          child: GestureDetector(
+                            onTap: () => setState(() {
+                              _avisoFijado = !_avisoFijado;
+                              if (!_avisoFijado) _avisoHover = false;
+                            }),
+                            child: PinNegocioMapa(
+                              fotoPortadaUrl: negocio.fotoPortadaUrl,
+                              destacado: true,
+                              tamano: 44,
+                            ),
+                          ),
                         ),
                       ),
+                      // El aviso va como un segundo marcador (encima del pin,
+                      // anclado por abajo) para que se mueva con el mapa.
+                      if (_avisoFijado || _avisoHover)
+                        Marker(
+                          point:
+                              LatLng(negocio.latitud!, negocio.longitud!),
+                          width: 250,
+                          height: 130,
+                          alignment: Alignment.topCenter,
+                          child: Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 26),
+                              child: MouseRegion(
+                                onEnter: (_) => _entrarAviso(),
+                                onExit: (_) => _salirAviso(),
+                                child: _avisoPin(negocio),
+                              ),
+                            ),
+                          ),
+                        ),
                     ]),
                     RichAttributionWidget(
                       alignment: AttributionAlignment.bottomLeft,
@@ -617,6 +688,68 @@ class _NegocioDetallePageState extends State<NegocioDetallePage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _avisoPin(Negocio negocio) {
+    final coords = '${negocio.latitud},${negocio.longitud}';
+    return Material(
+      color: Colors.white,
+      elevation: 4,
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 8, 6, 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Flexible(
+                  child: Text(negocio.nombre,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 13)),
+                ),
+                const SizedBox(width: 4),
+                InkWell(
+                  onTap: _cerrarAviso,
+                  child: const Icon(Icons.close, size: 16),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton.icon(
+                    style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact),
+                    onPressed: () => _abrir(
+                        'https://www.google.com/maps/dir/?api=1&destination='
+                        '$coords'),
+                    icon: const Icon(Icons.directions_outlined, size: 16),
+                    label: const Text('Cómo llegar'),
+                  ),
+                  TextButton.icon(
+                    style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact),
+                    onPressed: () => _abrir(
+                        'https://www.google.com/maps/@?api=1&map_action=pano'
+                        '&viewpoint=$coords'),
+                    icon: const Icon(Icons.streetview, size: 16),
+                    label: const Text('Street View'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

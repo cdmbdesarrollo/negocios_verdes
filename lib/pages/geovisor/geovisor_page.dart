@@ -2627,18 +2627,33 @@ class _TarjetaNegocio extends StatelessWidget {
                   style: const TextStyle(fontSize: 12)),
             ],
             const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            Wrap(
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 4,
               children: [
-                if (negocio.tieneUbicacion)
+                if (negocio.tieneUbicacion) ...[
                   TextButton.icon(
+                    style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact),
+                    onPressed: () => launchUrl(
+                        Uri.parse(
+                            'https://www.google.com/maps/dir/?api=1'
+                            '&destination=${negocio.latitud},${negocio.longitud}'),
+                        mode: LaunchMode.externalApplication),
+                    icon: const Icon(Icons.directions_outlined, size: 16),
+                    label: const Text('Cómo llegar'),
+                  ),
+                  TextButton.icon(
+                    style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact),
                     onPressed: () => launchUrl(Uri.parse(
                         'https://www.google.com/maps/@?api=1&map_action=pano'
                         '&viewpoint=${negocio.latitud},${negocio.longitud}')),
                     icon: const Icon(Icons.streetview, size: 16),
                     label: const Text('Street View'),
                   ),
-                const SizedBox(width: 4),
+                ],
                 FilledButton.icon(
                   onPressed: () => context.go('/negocio/${negocio.slug}'),
                   icon: const Icon(Icons.open_in_new, size: 16),
