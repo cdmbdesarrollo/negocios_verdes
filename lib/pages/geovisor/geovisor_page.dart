@@ -1957,19 +1957,26 @@ class _GeovisorPageState extends State<GeovisorPage> {
           _capaParamos,
           _toggleParamos,
         ),
+        if (_capaParamos && _paramos != null)
+          ..._listaElementos(_paramos!.elementos,
+              Icons.terrain_outlined, const Color(0xFF5E35B1)),
         _check(
           _rotuloExterna('Veredas', 'DANE', _cargandoVeredas,
               _veredas?.elementos.length),
           _capaVeredas,
           _toggleVeredas,
         ),
+        if (_capaVeredas && _veredas != null) ..._listaVeredasDane(),
         _check(
           _rotuloExterna('Hidrografía (ríos y cuerpos de agua)', 'IDEAM',
               _cargandoHidro, _hidro?.elementos.length),
           _capaHidro,
           _toggleHidro,
         ),
-        for (final c in _capasSimples)
+        if (_capaHidro && _hidro != null)
+          ..._listaElementos(_hidro!.elementos,
+              Icons.water_outlined, const Color(0xFF3D7EB8)),
+        for (final c in _capasSimples) ...[
           _check(
             _rotuloExterna(c.titulo, c.fuente,
                 _capaSimpleCargando.contains(c.id),
@@ -1977,9 +1984,101 @@ class _GeovisorPageState extends State<GeovisorPage> {
             _capaSimpleOn.contains(c.id),
             (v) => _toggleSimple(c, v),
           ),
+          if (_capaSimpleOn.contains(c.id) && _capaSimpleData[c.id] != null)
+            ..._listaElementos(_capaSimpleData[c.id]!.elementos,
+                Icons.layers_outlined, c.color),
+        ],
       ],
     );
   }
+
+  /// Lista clicable (encuadra el mapa) de los elementos con nombre de una
+  /// capa, como la de áreas protegidas. Los que comparten nombre (p. ej.
+  /// varios tramos del mismo río) se juntan en una sola fila.
+  List<Widget> _listaElementos(
+      List<CapaGeoElemento> elementos, IconData icono, Color color) {
+    return [
+      for (final e in _agruparPorNombre(elementos))
+        _FilaArea(
+          elemento: e,
+          icono: icono,
+          color: color,
+          subtitulo: [
+            if ((e.tipo ?? '').isNotEmpty)
+              e.tipo![0].toUpperCase() + e.tipo!.substring(1),
+            if ((e.prop('hectareas') ?? '0') != '0') '${e.prop('hectareas')} ha',
+          ].join(' · '),
+          onZoom: () => _encuadrar(_puntosDe(e)),
+        ),
+    ];
+  }
+
+  /// Las veredas DANE son ~380: una lista plana sería inmanejable, así que
+  /// van agrupadas por municipio (desplegables, abierto el municipio
+  /// filtrado si hay uno).
+  List<Widget> _listaVeredasDane() {
+    final porMunicipio = <String, List<CapaGeoElemento>>{};
+    for (final e in _veredas!.elementos) {
+      porMunicipio.putIfAbsent(e.prop('municipio') ?? '(sin municipio)',
+          () => []).add(e);
+    }
+    final municipios = porMunicipio.keys.toList()..sort();
+    return [
+      for (final m in municipios)
+        ExpansionTile(
+          key: PageStorageKey('veredas-dane-$m'),
+          dense: true,
+          tilePadding: const EdgeInsets.only(left: 8, right: 4),
+          childrenPadding: const EdgeInsets.only(left: 8),
+          initiallyExpanded: _municipioSel != null &&
+              quitarTildes(_municipioSel!.toLowerCase()) ==
+                  quitarTildes(m.toLowerCase()),
+          title: Text('$m (${_agruparPorNombre(porMunicipio[m]!).length})',
+              style: const TextStyle(fontSize: 12.5)),
+          children: [
+            for (final e in _agruparPorNombre(porMunicipio[m]!))
+              _FilaArea(
+                elemento: e,
+                icono: Icons.grass_outlined,
+                color: const Color(0xFF8D6E63),
+                subtitulo: (e.prop('hectareas') ?? '0') != '0'
+                    ? '${e.prop('hectareas')} ha'
+                    : '',
+                onZoom: () => _encuadrar(_puntosDe(e)),
+              ),
+          ],
+        ),
+    ];
+  }
+
+  static List<CapaGeoElemento> _agruparPorNombre(
+      List<CapaGeoElemento> elementos) {
+    final grupos = <String, List<CapaGeoElemento>>{};
+    for (final e in elementos) {
+      final n = (e.nombre ?? '').trim();
+      if (n.isEmpty) continue;
+      grupos.putIfAbsent(n, () => []).add(e);
+    }
+    final out = [
+      for (final g in grupos.values)
+        g.length == 1
+            ? g.first
+            : CapaGeoElemento(
+                nombre: g.first.nombre,
+                tipo: g.first.tipo,
+                poligonos: [for (final e in g) ...e.poligonos],
+                lineas: [for (final e in g) ...e.lineas],
+              ),
+    ];
+    out.sort((a, b) => quitarTildes(a.nombre!.toLowerCase())
+        .compareTo(quitarTildes(b.nombre!.toLowerCase())));
+    return out;
+  }
+
+  static List<LatLng> _puntosDe(CapaGeoElemento e) => [
+        for (final r in e.poligonos) ...r,
+        for (final l in e.lineas) ...l,
+      ];
 
   Widget _buscador() {
     final q = quitarTildes(_busquedaCtrl.text.trim().toLowerCase());
@@ -2195,28 +2294,41 @@ class _FilaLista extends StatelessWidget {
   }
 }
 
+/// Fila de la lista de elementos de una capa de contexto (tocar = encuadrar
+/// el mapa en ese elemento). Nació para las áreas protegidas; las demás
+/// capas la reusan con su propio ícono, color y [subtitulo].
 class _FilaArea extends StatelessWidget {
   final CapaGeoElemento elemento;
   final VoidCallback onZoom;
-  final VoidCallback onLink;
+  final VoidCallback? onLink;
+  final IconData icono;
+  final Color color;
+
+  /// Si es null se arma el de áreas protegidas (tipo · administra · ha).
+  final String? subtitulo;
+
   const _FilaArea({
     required this.elemento,
     required this.onZoom,
-    required this.onLink,
+    this.onLink,
+    this.icono = Icons.forest_outlined,
+    this.color = const Color(0xFF556B2F),
+    this.subtitulo,
   });
 
   @override
   Widget build(BuildContext context) {
     final e = elemento;
     final ha = e.prop('hectareas');
-    final sub = [
-      if ((e.tipo ?? '').isNotEmpty) e.tipo!,
-      if (e.prop('administra') == 'CDMB')
-        'CDMB'
-      else if ((e.prop('administra') ?? '').isNotEmpty)
-        e.prop('administra')!,
-      if (ha != null && ha != '0') '$ha ha',
-    ].join(' · ');
+    final sub = subtitulo ??
+        [
+          if ((e.tipo ?? '').isNotEmpty) e.tipo!,
+          if (e.prop('administra') == 'CDMB')
+            'CDMB'
+          else if ((e.prop('administra') ?? '').isNotEmpty)
+            e.prop('administra')!,
+          if (ha != null && ha != '0') '$ha ha',
+        ].join(' · ');
     return InkWell(
       onTap: onZoom,
       child: Padding(
@@ -2224,10 +2336,9 @@ class _FilaArea extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.only(top: 2),
-              child: Icon(Icons.forest_outlined,
-                  size: 13, color: Color(0xFF556B2F)),
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Icon(icono, size: 13, color: color),
             ),
             const SizedBox(width: 6),
             Expanded(
@@ -2248,7 +2359,7 @@ class _FilaArea extends StatelessWidget {
                 ],
               ),
             ),
-            if ((e.prop('url') ?? '').isNotEmpty)
+            if (onLink != null && (e.prop('url') ?? '').isNotEmpty)
               InkWell(
                 onTap: onLink,
                 child: const Padding(
